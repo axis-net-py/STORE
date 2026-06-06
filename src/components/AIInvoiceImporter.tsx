@@ -162,7 +162,7 @@ export function AIInvoiceImporter() {
               )}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground pt-1">
-              {status === "processing" ? "O Aurelius ERP está extraindo os dados comerciais por IA." : "Resultado da operação"}
+              {status === "processing" ? "O Cooper ERP está extraindo os dados comerciais por IA." : "Resultado da operação"}
             </DialogDescription>
           </DialogHeader>
 

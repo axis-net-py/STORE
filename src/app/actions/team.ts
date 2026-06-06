@@ -163,8 +163,8 @@ export async function createUserAction(data: { name: string; email: string; role
   const hasPerm = await checkPermission(session.user.id, "users:manage", tenantId);
   if (!hasPerm) throw new Error("Forbidden");
 
-  // Default password for new members: "Aurelius123!" so they can log in and change it
-  const hashedPassword = await hash("Aurelius123!", 10);
+  // Default password for new members: "Cooper123!" so they can log in and change it
+  const hashedPassword = await hash("Cooper123!", 10);
 
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },

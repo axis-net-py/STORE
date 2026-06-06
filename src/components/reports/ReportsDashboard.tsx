@@ -127,7 +127,7 @@ export default function ReportsDashboard() {
       <div className="print-only mb-8">
         <div className="flex justify-between items-end border-b-2 border-primary pb-4">
           <div>
-            <span className="text-[10px] uppercase tracking-widest text-primary font-bold">AXIS ERP — AURELIUS</span>
+            <span className="text-[10px] uppercase tracking-widest text-primary font-bold">AXIS ERP — COOPER</span>
             <h1 className="text-2xl font-bold tracking-tight text-foreground mt-1 uppercase">
               {getReportTitle()}
             </h1>

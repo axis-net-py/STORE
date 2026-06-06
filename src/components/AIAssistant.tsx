@@ -32,7 +32,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "bot",
-      text: "Olá! Sou o Assistente AURELIUS IA. Posso ajudar você a gerenciar o ERP comercial. Diga comandos como:\n• 'cadastrar produto Teclado Mecânico com preço 150000 e custo 100000'\n• 'cadastrar cliente Roberto Silva'\n• 'cadastrar fornecedor distribuidora Asunción'\n• 'lançar transação de receita de 500000'\n\nOu envie imagens/PDFs de faturas de compra para cadastrá-las automaticamente no sistema.",
+      text: "Olá! Sou o Assistente COOPER IA. Posso ajudar você a gerenciar o ERP comercial. Diga comandos como:\n• 'cadastrar produto Teclado Mecânico com preço 150000 e custo 100000'\n• 'cadastrar cliente Roberto Silva'\n• 'cadastrar fornecedor distribuidora Asunción'\n• 'lançar transação de receita de 500000'\n\nOu envie imagens/PDFs de faturas de compra para cadastrá-las automaticamente no sistema.",
     },
   ]);
   const [inputText, setInputText] = useState("");
@@ -244,7 +244,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary animate-pulse" />
               <div>
-                <h3 className="text-sm font-bold text-foreground">AURELIUS IA</h3>
+                <h3 className="text-sm font-bold text-foreground">COOPER IA</h3>
                 <span className="text-[9px] font-semibold text-emerald-500 uppercase tracking-widest">Online</span>
               </div>
             </div>

@@ -514,7 +514,7 @@ Se a intenção do usuário corresponder a um cadastro, retorne um objeto JSON p
 Se for apenas conversa ou dúvida, retorne:
 {
   "action": "chat",
-  "message": "Sua resposta amigável sobre o sistema AURELIUS Core ERP"
+  "message": "Sua resposta amigável sobre o sistema COOPER Core ERP"
 }`;
 
       if (process.env.GEMINI_API_KEY) {

@@ -95,7 +95,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-primary tracking-tight uppercase tracking-widest">
-            AURELIUS
+            COOPER
           </h1>
         </div>
 

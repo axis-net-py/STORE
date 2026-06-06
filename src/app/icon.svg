@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00331c" />
+      <stop offset="100%" stop-color="#005230" />
+    </linearGradient>
+    <!-- Gold Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f3e098" />
+      <stop offset="50%" stop-color="#d4a843" />
+      <stop offset="100%" stop-color="#a77a1d" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base rounded background -->
+  <rect width="32" height="32" rx="7" fill="url(#bgGrad)" />
+
+  <!-- Stylized geometric 'A' -->
+  <path d="M16 6 L25 24 H20.5 L16 14.5 L11.5 24 H7 L16 6 Z" fill="url(#goldGrad)" />
+  <!-- Inner negative space cutout -->
+  <polygon points="16,10 18.5,15.5 13.5,15.5" fill="#00331c" />
+  
+  <!-- Sleek neon green agricultural leaf -->
+  <path d="M16 6 C20 10 21 16 17 19 C15 16 14.5 11 16 6 Z" fill="#4ade80" opacity="0.9" />
+</svg>

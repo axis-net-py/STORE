@@ -1,0 +1,341 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #fafafa;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #004225;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #004225;
+  --badge-posted-bg: #e3f0e9;
+  --badge-posted-text: #004225;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #0f0f0f;
+  --card-foreground: #fafafa;
+  --popover: #0f0f0f;
+  --popover-foreground: #fafafa;
+  --primary: #00663a;
+  --primary-foreground: #ffffff;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #fafafa;
+  --muted: #171717;
+  --muted-foreground: #a1a1aa;
+  --accent: #1a1a1a;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #2e2e2e;
+  --input: #2e2e2e;
+  --ring: #00663a;
+  --badge-posted-bg: rgba(0, 102, 58, 0.2);
+  --badge-posted-text: #4ade80;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* AXIS Custom Utility Classes */
+
+.axis-btn-primary {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+  transition: all 150ms;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.axis-btn-primary:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 90%, white);
+}
+
+.axis-btn-primary:active {
+  transform: scale(0.97);
+}
+
+.axis-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.axis-btn-gold {
+  background: linear-gradient(135deg, #d4a843 0%, #c9952e 50%, #b8860b 100%);
+  color: #0a0a0a;
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.1);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.2);
+}
+
+.axis-btn-gold:hover {
+  background: linear-gradient(135deg, #e0b84f 0%, #d4a843 50%, #c9952e 100%);
+}
+
+.axis-glass-panel {
+  background: rgba(0, 0, 0, 0.02);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dark .axis-glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.old-money-card {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.02) 0%,
+    rgba(0, 0, 0, 0.005) 100%
+  );
+}
+
+.dark .old-money-card {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.01) 100%
+  );
+}
+
+.glass-pop-up {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.dark .glass-pop-up {
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.exchange-rate-positive {
+  color: #22c55e;
+  border-color: rgb(34 197 94 / 0.3);
+  background-color: rgb(34 197 94 / 0.1);
+}
+
+.exchange-rate-negative {
+  color: #ef4444;
+  border-color: rgb(239 68 68 / 0.3);
+  background-color: rgb(239 68 68 / 0.1);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.print-only {
+  display: none !important;
+}
+
+@media print {
+  /* Reset layout constraints and colors for printing */
+  html,
+  body,
+  main,
+  #root,
+  .flex,
+  .flex-col {
+    background: #ffffff !important;
+    color: #1f2937 !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  main {
+    padding: 24px !important;
+  }
+
+  /* Ensure all text is crisp, but allow brand green accents */
+  body {
+    color: #1f2937 !important;
+    background-color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  h1, h2, h3, h4, h5, h6, .text-primary {
+    color: #004225 !important; /* British Racing Green print accent */
+  }
+
+  .border-primary {
+    border-color: #004225 !important;
+  }
+
+  /* Force table formatting to be clean, spacious, and readable */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+    margin-top: 16px !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Spacious corporate layout for tables */
+  th, td {
+    padding: 16px 20px !important;
+    text-align: left;
+  }
+
+  th {
+    border-bottom: 2px solid #004225 !important;
+    color: #004225 !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  td {
+    border-bottom: 1px solid #e4e4e7 !important;
+    font-size: 12px !important;
+    color: #374151 !important;
+  }
+
+  /* Remove card containers and borders on print layout */
+  .rounded-xl.border.bg-card {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Hide UI elements with extremely high specificity so utility class resets like .flex do not override them */
+  aside,
+  header,
+  nav,
+  button,
+  .no-print,
+  [role="dialog"],
+  .dialog-content,
+  .axis-btn-primary,
+  .axis-btn-gold,
+  aside.flex,
+  header.flex,
+  nav.flex,
+  div.no-print,
+  section.no-print,
+  button.no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print-only,
+  div.print-only,
+  span.print-only {
+    display: block !important;
+  }
+
+  /* Summary totals print formatting */
+  .print\:border-t {
+    border-top: 2px solid #004225 !important;
+    padding-top: 20px !important;
+    margin-top: 24px !important;
+  }
+}
+

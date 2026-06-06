@@ -9,7 +9,7 @@
   --card-foreground: #1e293b;
   --popover: #ffffff;
   --popover-foreground: #1e293b;
-  --primary: #0056b3;
+  --primary: #1d2d3e;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
@@ -21,9 +21,9 @@
   --destructive-foreground: #fafafa;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #0056b3;
-  --badge-posted-bg: #e6f0fa;
-  --badge-posted-text: #0056b3;
+  --ring: #1d2d3e;
+  --badge-posted-bg: #e8ebf0;
+  --badge-posted-text: #1d2d3e;
 }
 
 .dark {

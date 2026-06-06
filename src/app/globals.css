@@ -3,9 +3,9 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
+  --background: #FAF9F5;
   --foreground: #0a0a0a;
-  --card: #fafafa;
+  --card: #ffffff;
   --card-foreground: #0a0a0a;
   --popover: #ffffff;
   --popover-foreground: #0a0a0a;

@@ -71,7 +71,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || "cooper-erp-axis-secret-987654321",
 };
 
 const handler = NextAuth(authOptions);

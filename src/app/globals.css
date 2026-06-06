@@ -4,49 +4,49 @@
 
 :root {
   --background: #FAF9F5;
-  --foreground: #0a0a0a;
+  --foreground: #090d16;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #090d16;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
+  --popover-foreground: #090d16;
   --primary: #0056b3;
   --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
   --ring: #0056b3;
   --badge-posted-bg: #e6f2ff;
   --badge-posted-text: #0056b3;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #0f0f0f;
-  --card-foreground: #fafafa;
-  --popover: #0f0f0f;
-  --popover-foreground: #fafafa;
-  --primary: #0066cc;
+  --background: #070c14;
+  --foreground: #f8fafc;
+  --card: #0d1527;
+  --card-foreground: #f8fafc;
+  --popover: #0d1527;
+  --popover-foreground: #f8fafc;
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #fafafa;
-  --muted: #171717;
-  --muted-foreground: #a1a1aa;
-  --accent: #1a1a1a;
-  --accent-foreground: #fafafa;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
-  --border: #2e2e2e;
-  --input: #2e2e2e;
-  --ring: #0066cc;
-  --badge-posted-bg: rgba(0, 102, 204, 0.2);
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #3b82f6;
+  --badge-posted-bg: rgba(59, 130, 246, 0.2);
   --badge-posted-text: #60a5fa;
 }
 
@@ -94,19 +94,39 @@
   }
 }
 
+/* Custom premium elevations and typography shadow */
+.rounded-xl.border.bg-card,
+.rounded-lg.border.bg-card,
+.border.bg-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.01), 0 4px 18px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border-color: rgba(226, 232, 240, 0.85);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .rounded-xl.border.bg-card,
+.dark .rounded-lg.border.bg-card,
+.dark .border.bg-card {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  border-color: rgba(30, 41, 59, 0.7);
+}
+
 /* AXIS Custom Utility Classes */
 
 .axis-btn-primary {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary) 0%, color-mix(in srgb, var(--color-primary) 85%, black) 100%);
   color: var(--color-primary-foreground);
   font-weight: 600;
   border-radius: var(--radius-lg);
-  transition: all 150ms;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 86, 179, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 80%, black 20%);
+  cursor: pointer;
 }
 
 .axis-btn-primary:hover {
-  background-color: color-mix(in srgb, var(--color-primary) 90%, white);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 92%, white) 0%, var(--color-primary) 100%);
+  box-shadow: 0 6px 16px rgba(0, 86, 179, 0.22), 0 2px 4px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
 }
 
 .axis-btn-primary:active {

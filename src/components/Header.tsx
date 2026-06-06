@@ -24,7 +24,7 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
   const { language, setLanguage } = useLanguage();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border/50 bg-card/90 backdrop-blur-md px-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)] sticky top-0 z-30">
+    <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 sticky top-0 z-30">
       {/* Left */}
       <div className="flex items-center gap-3">
         <Button

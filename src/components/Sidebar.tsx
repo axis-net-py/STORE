@@ -88,11 +88,11 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
         className={cn(
           "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 group",
           active
-            ? "bg-blue-600/15 text-blue-400 border-r-2 border-blue-500 hover:bg-blue-600/20"
-            : "text-slate-400 hover:bg-white/5 hover:text-white"
+            ? "bg-[#2e3f53] text-white border-r-2 border-[#0a6ed1]"
+            : "text-[#94a3b8] hover:bg-[#253548] hover:text-white"
         )}
       >
-        <Icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-blue-400" : "text-slate-400 group-hover:text-white")} />
+        <Icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-white" : "text-[#94a3b8] group-hover:text-white")} />
         {!collapsed && <span className="truncate">{label}</span>}
         {!collapsed && active && <ChevronRight className="ml-auto h-3 w-3 opacity-80" />}
       </Link>
@@ -112,13 +112,13 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex flex-col border-r border-slate-800 bg-[#091b35] transition-all duration-200 h-full text-slate-300",
+        "flex flex-col border-r border-[#2e3f53] bg-[#1d2d3e] transition-all duration-200 h-full text-slate-300",
         collapsed ? "w-14" : "w-56"
       )}
     >
       {/* Logo */}
-      <div className={cn("flex h-14 items-center border-b border-slate-800 px-3", collapsed ? "justify-center" : "gap-2")}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-blue-700 text-white text-xs font-bold shadow-md shadow-blue-950/50">
+      <div className={cn("flex h-14 items-center border-b border-[#2e3f53] px-3", collapsed ? "justify-center" : "gap-2")}>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#0a6ed1] text-white text-xs font-bold shadow-sm">
           C
         </div>
         {!collapsed && (
@@ -134,7 +134,7 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
       </nav>
 
       {/* Bottom nav */}
-      <div className="border-t border-slate-800 px-2 py-3 space-y-2">
+      <div className="border-t border-[#2e3f53] px-2 py-3 space-y-2">
         <div className="space-y-0.5">
           {bottomItems.map((item) => (
             <NavLink key={item.href} icon={item.icon} labelKey={item.key} defaultLabel={item.defaultLabel} href={item.href} />
@@ -142,12 +142,12 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
         </div>
         
         {!collapsed && (
-          <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-slate-800/80">
+          <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-[#2e3f53]/60">
             {/* Language Toggle Button */}
             <button
               type="button"
               onClick={() => setLanguage(language === "pt" ? "es" : "pt")}
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-slate-800 bg-[#071325] hover:bg-slate-800 hover:border-slate-700 text-[11px] font-bold text-slate-400 hover:text-white transition-all shadow-inner cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-[#2e3f53] bg-[#152332] hover:bg-[#253548] hover:border-[#384b60] text-[11px] font-bold text-slate-400 hover:text-white transition-all shadow-inner cursor-pointer"
               title={language === "pt" ? "Cambiar a Español" : "Mudar para Português"}
             >
               {language === "pt" ? (
@@ -162,7 +162,7 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
             <button
               type="button"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-slate-800 bg-[#071325] hover:bg-slate-800 hover:border-slate-700 text-[11px] font-bold text-slate-400 hover:text-white transition-all shadow-inner cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-[#2e3f53] bg-[#152332] hover:bg-[#253548] hover:border-[#384b60] text-[11px] font-bold text-slate-400 hover:text-white transition-all shadow-inner cursor-pointer"
               title="Alternar Tema"
             >
               {theme === "dark" ? (

@@ -3,13 +3,13 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #FAF9F5;
-  --foreground: #090d16;
+  --background: #f4f6f9;
+  --foreground: #1e293b;
   --card: #ffffff;
-  --card-foreground: #090d16;
+  --card-foreground: #1e293b;
   --popover: #ffffff;
-  --popover-foreground: #090d16;
-  --primary: #0056b3;
+  --popover-foreground: #1e293b;
+  --primary: #0a6ed1;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
@@ -21,32 +21,32 @@
   --destructive-foreground: #fafafa;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #0056b3;
-  --badge-posted-bg: #e6f2ff;
-  --badge-posted-text: #0056b3;
+  --ring: #0a6ed1;
+  --badge-posted-bg: #e6f0fa;
+  --badge-posted-text: #0a6ed1;
 }
 
 .dark {
-  --background: #070c14;
+  --background: #0f172a;
   --foreground: #f8fafc;
-  --card: #0d1527;
+  --card: #1e293b;
   --card-foreground: #f8fafc;
-  --popover: #0d1527;
+  --popover: #1e293b;
   --popover-foreground: #f8fafc;
   --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  --secondary: #1e293b;
+  --secondary: #0f172a;
   --secondary-foreground: #f8fafc;
   --muted: #0f172a;
   --muted-foreground: #94a3b8;
-  --accent: #1e293b;
+  --accent: #0f172a;
   --accent-foreground: #f8fafc;
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
-  --border: #1e293b;
-  --input: #1e293b;
+  --border: #334155;
+  --input: #334155;
   --ring: #3b82f6;
-  --badge-posted-bg: rgba(59, 130, 246, 0.2);
+  --badge-posted-bg: rgba(59, 130, 246, 0.15);
   --badge-posted-text: #60a5fa;
 }
 
@@ -98,35 +98,34 @@
 .rounded-xl.border.bg-card,
 .rounded-lg.border.bg-card,
 .border.bg-card {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.01), 0 4px 18px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  border-color: rgba(226, 232, 240, 0.85);
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border-color: var(--color-border);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .dark .rounded-xl.border.bg-card,
 .dark .rounded-lg.border.bg-card,
 .dark .border.bg-card {
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.03);
-  border-color: rgba(30, 41, 59, 0.7);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  border-color: var(--color-border);
 }
 
 /* AXIS Custom Utility Classes */
 
 .axis-btn-primary {
-  background: linear-gradient(135deg, var(--color-primary) 0%, color-mix(in srgb, var(--color-primary) 85%, black) 100%);
+  background-color: var(--color-primary);
   color: var(--color-primary-foreground);
   font-weight: 600;
-  border-radius: var(--radius-lg);
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 86, 179, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 80%, black 20%);
+  border-radius: var(--radius-md);
+  transition: background-color 150ms ease, border-color 150ms ease;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 90%, black);
   cursor: pointer;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .axis-btn-primary:hover {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 92%, white) 0%, var(--color-primary) 100%);
-  box-shadow: 0 6px 16px rgba(0, 86, 179, 0.22), 0 2px 4px rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
+  background-color: color-mix(in srgb, var(--color-primary) 90%, black);
+  border-color: color-mix(in srgb, var(--color-primary) 80%, black);
 }
 
 .axis-btn-primary:active {

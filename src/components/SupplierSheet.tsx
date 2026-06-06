@@ -54,13 +54,13 @@ export function SupplierSheet({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name) return;
+    if (!businessName) return;
 
     setLoading(true);
     try {
       if (isEdit && supplier) {
         await updateSupplier(supplier.id, {
-          name,
+          name: businessName,
           businessName,
           document,
           documentType,
@@ -75,7 +75,7 @@ export function SupplierSheet({
         });
       } else {
         await createSupplier({
-          name,
+          name: businessName,
           businessName,
           document,
           documentType,
@@ -117,21 +117,21 @@ export function SupplierSheet({
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 max-h-[80vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Nome Fantasia</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Razão Social</Label>
               <Input
                 required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Distribuidora Central"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder="Ex: Distribuidora Central S.A."
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Razão Social</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Telefone</Label>
               <Input
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="Ex: Distribuidora Central S.A."
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Ex: +595 991 234 567"
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
@@ -199,18 +199,6 @@ export function SupplierSheet({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Telefone</Label>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+595 991 234 567"
-                className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
               <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Endereço</Label>
               <Input
                 value={address}
@@ -219,6 +207,9 @@ export function SupplierSheet({
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Cidade</Label>
               <Input
@@ -228,9 +219,6 @@ export function SupplierSheet({
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">País</Label>
               <Select value={country} onValueChange={setCountry}>
@@ -243,15 +231,17 @@ export function SupplierSheet({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 flex items-center gap-2 pt-6">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <Label className="text-[13px]">Ativo</Label>
-            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <Label htmlFor="isActive" className="text-[13px] cursor-pointer">Ativo</Label>
           </div>
 
           <div className="mt-4 pt-6 border-t border-border flex justify-between items-center gap-3">

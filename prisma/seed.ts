@@ -50,6 +50,19 @@ async function main() {
     },
   });
 
+  // Create Jocelaine user
+  await prisma.user.upsert({
+    where: { email: "jocelaine@lap.com" },
+    update: {},
+    create: {
+      email: "jocelaine@lap.com",
+      name: "Jocelaine",
+      password: await hash("123456", 12),
+      role: "SOVEREIGN",
+      tenantId: tenant.id,
+    },
+  });
+
   // Create chart of accounts
   const accounts = [
     { code: "1.1.01", namePt: "Caixa", nameEs: "Caja", type: "ASSET" as const },

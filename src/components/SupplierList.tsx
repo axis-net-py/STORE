@@ -9,10 +9,10 @@ import { Input } from "@/components/ui/input";
 
 export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; tenantId: string }) {
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<"name" | "businessName" | "document" | "email" | "paymentTerms" | "isActive" | null>(null);
+  const [sortField, setSortField] = useState<"phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive" | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const handleSort = (field: "name" | "businessName" | "document" | "email" | "paymentTerms" | "isActive") => {
+  const handleSort = (field: "phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive") => {
     if (sortField === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -24,7 +24,7 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
   const filteredSuppliers = suppliers.filter((s) => {
     const term = search.toLowerCase();
     return (
-      s.name.toLowerCase().includes(term) ||
+      (s.phone && s.phone.toLowerCase().includes(term)) ||
       (s.businessName && s.businessName.toLowerCase().includes(term)) ||
       (s.document && s.document.toLowerCase().includes(term)) ||
       (s.email && s.email.toLowerCase().includes(term))
@@ -59,7 +59,7 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         <Input
-          placeholder="Buscar por Nome Fantasia, Razão Social, Documento..."
+          placeholder="Buscar por Telefone, Razão Social, Documento..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-md h-[38px] rounded-lg border-border bg-card"
@@ -71,8 +71,8 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Nome Fantasia{renderSortIndicator("name")}
+              <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-muted/50 select-none">
+                Telefone{renderSortIndicator("phone")}
               </TableHead>
               <TableHead onClick={() => handleSort("businessName")} className="cursor-pointer hover:bg-muted/50 select-none">
                 Razão Social{renderSortIndicator("businessName")}
@@ -102,7 +102,7 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
             ) : (
               sortedSuppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
-                  <TableCell className="font-medium">{supplier.name}</TableCell>
+                  <TableCell className="font-medium">{supplier.phone ?? "-"}</TableCell>
                   <TableCell>{supplier.businessName ?? "-"}</TableCell>
                   <TableCell>{supplier.document ? `${supplier.documentType ?? "DOC"}: ${supplier.document}` : "-"}</TableCell>
                   <TableCell>{supplier.email ?? "-"}</TableCell>

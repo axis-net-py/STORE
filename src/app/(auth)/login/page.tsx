@@ -90,7 +90,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-slate-50 to-blue-50/40 p-4">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
         <div className="text-center mb-8">

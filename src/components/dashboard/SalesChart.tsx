@@ -69,9 +69,9 @@ export function SalesChart({ dateRange, currency }: SalesChartProps) {
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <defs>
-            <linearGradient id="gradientGreen" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(153, 100%, 13%)" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="hsl(153, 100%, 13%)" stopOpacity={0} />
+            <linearGradient id="gradientBlue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(211, 100%, 35%)" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="hsl(211, 100%, 35%)" stopOpacity={0} />
             </linearGradient>
           </defs>
 
@@ -103,11 +103,11 @@ export function SalesChart({ dateRange, currency }: SalesChartProps) {
           <Area
             type="monotone"
             dataKey="total"
-            stroke="hsl(153, 100%, 13%)"
+            stroke="hsl(211, 100%, 35%)"
             strokeWidth={2}
-            fill="url(#gradientGreen)"
+            fill="url(#gradientBlue)"
             dot={false}
-            activeDot={{ r: 4, stroke: 'hsl(153, 100%, 13%)', strokeWidth: 2, fill: 'hsl(var(--background))' }}
+            activeDot={{ r: 4, stroke: 'hsl(211, 100%, 35%)', strokeWidth: 2, fill: 'hsl(var(--background))' }}
           />
         </AreaChart>
       </ResponsiveContainer>

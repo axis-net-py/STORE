@@ -245,7 +245,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
               <Sparkles className="w-5 h-5 text-primary animate-pulse" />
               <div>
                 <h3 className="text-sm font-bold text-foreground">COOPER IA</h3>
-                <span className="text-[9px] font-semibold text-emerald-500 uppercase tracking-widest">Online</span>
+                <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-widest">Online</span>
               </div>
             </div>
             <button
@@ -279,7 +279,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
                     msg.sender === "user"
                       ? "bg-primary/10 border border-primary/20 text-foreground font-medium"
                       : msg.isDiagnostic
-                      ? "bg-emerald-950/20 border border-emerald-800/30 text-foreground"
+                      ? "bg-blue-950/20 border border-blue-800/30 text-foreground"
                       : "bg-muted/40 border border-border text-foreground/90"
                   }`}
                 >
@@ -377,7 +377,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
         className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 active:scale-95 text-white ${
           isOpen
             ? "bg-slate-800 hover:bg-slate-700 hover:rotate-90"
-            : "bg-gradient-to-tr from-emerald-600 to-teal-500 hover:shadow-emerald-950/20 hover:scale-105"
+            : "bg-gradient-to-tr from-blue-600 to-sky-500 hover:shadow-blue-950/20 hover:scale-105"
         }`}
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageSquare className="w-5.5 h-5.5 animate-pulse" />}

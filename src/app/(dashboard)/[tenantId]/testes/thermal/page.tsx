@@ -8,19 +8,19 @@ import { ThermalPrintHelper } from "@/components/thermal/ThermalPrintHelper";
 
 export default function ThermalTestPage() {
   return (
-    <div className="min-h-screen bg-[#171717] text-[#fafafa] p-8">
+    <div className="min-h-screen bg-slate-50 text-foreground p-8">
       <h1 className="text-xl font-semibold mb-6 flex items-center gap-2">
         Teste de Escaneabilidade Térmica
       </h1>
 
-      <p className="text-sm text-[#fafafa]/40 mb-8">
+      <p className="text-sm text-muted-foreground mb-8">
         Gere uma etiqueta 50mm e teste a leitura do código de barras/SKU com um scanner ou celular.
         O código deve ser composto por pixels pretos puros (sem tons de cinza).
       </p>
 
       {/* Label Preview */}
       <div className="mb-8">
-        <h2 className="text-sm font-medium text-white/60 mb-4">Pré-visualização (Escala 1:1)</h2>
+        <h2 className="text-sm font-medium text-muted-foreground mb-4">Pré-visualização (Escala 1:1)</h2>
         <div
           id="thermal-label-content"
           style={{
@@ -33,7 +33,7 @@ export default function ThermalTestPage() {
           }}
         >
           <div style={{ textAlign: 'center', marginBottom: '6pt', borderBottom: '1pt solid #000', paddingBottom: '4pt' }}>
-            <div style={{ fontFamily: 'Helvetica-Bold', fontSize: '9pt' }}>AXIS</div>
+            <div style={{ fontFamily: 'Helvetica-Bold', fontSize: '9pt' }}>COOPER</div>
             <div style={{ fontSize: '5pt' }}>ETIQUETA DE PRODUTO</div>
           </div>
 
@@ -64,7 +64,7 @@ export default function ThermalTestPage() {
           </div>
 
           <div style={{ textAlign: 'center', fontSize: '5pt', marginTop: '6pt', borderTop: '1pt solid #000', paddingTop: '4pt' }}>
-            AXIS ERP
+            COOPER ERP
           </div>
         </div>
       </div>
@@ -77,9 +77,9 @@ export default function ThermalTestPage() {
       />
 
       {/* Instructions */}
-      <div className="mt-8 border border-[#004225]/30 bg-[#004225]/5 rounded-sm p-4">
-        <h3 className="text-sm font-medium text-[#fafafa] mb-2">Instruções de Teste</h3>
-        <ul className="text-xs text-[#fafafa]/60 space-y-1 list-disc list-inside">
+      <div className="mt-8 border border-[#0056b3]/30 bg-[#0056b3]/5 rounded-sm p-4">
+        <h3 className="text-sm font-medium text-foreground mb-2">Instruções de Teste</h3>
+        <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
           <li>Use um scanner de mão ou o celular para ler o SKU: TEST-SCAN-001</li>
           <li>O código deve ser 100% preto (sem anti-aliasing/cinza)</li>
           <li>Teste em impressoras térmicas de 50mm</li>

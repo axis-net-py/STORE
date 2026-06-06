@@ -98,7 +98,7 @@ export function ThermalPrintHelper({
         padding: '10px 20px',
         backgroundColor: '#171717',
         color: '#fafafa',
-        border: '1px solid #004225',
+        border: '1px solid #0056b3',
         borderRadius: '9999px',
         cursor: 'pointer',
         fontSize: '12px',

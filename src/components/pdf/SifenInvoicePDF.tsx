@@ -15,11 +15,11 @@ import QRCode from 'qrcode';
 
 // ─── Supabase Palette ────────────────────────────────
 const colors = {
-  racingGreen: '#004225',         /* British Racing Green */
-  racingGreenLight: '#00663a',     /* Green Link */
+  racingGreen: '#0056b3',         /* Methylene Blue */
+  racingGreenLight: '#0066cc',     /* Light Blue */
   obsidian: '#171717',             /* Near Black */
   paper: '#fafafa',               /* Off White / Surface */
-  error: '#004225',               /* Destructive (BRG) */
+  error: '#ef4444',               /* Destructive (Red) */
 };
 
 // ─── Styles ────────────────────────────────────────────

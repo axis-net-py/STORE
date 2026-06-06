@@ -9,7 +9,7 @@
   --card-foreground: #0a0a0a;
   --popover: #ffffff;
   --popover-foreground: #0a0a0a;
-  --primary: #004225;
+  --primary: #0056b3;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f5;
   --secondary-foreground: #18181b;
@@ -21,9 +21,9 @@
   --destructive-foreground: #fafafa;
   --border: #e4e4e7;
   --input: #e4e4e7;
-  --ring: #004225;
-  --badge-posted-bg: #e3f0e9;
-  --badge-posted-text: #004225;
+  --ring: #0056b3;
+  --badge-posted-bg: #e6f2ff;
+  --badge-posted-text: #0056b3;
 }
 
 .dark {
@@ -33,7 +33,7 @@
   --card-foreground: #fafafa;
   --popover: #0f0f0f;
   --popover-foreground: #fafafa;
-  --primary: #00663a;
+  --primary: #0066cc;
   --primary-foreground: #ffffff;
   --secondary: #1a1a1a;
   --secondary-foreground: #fafafa;
@@ -45,9 +45,9 @@
   --destructive-foreground: #fafafa;
   --border: #2e2e2e;
   --input: #2e2e2e;
-  --ring: #00663a;
-  --badge-posted-bg: rgba(0, 102, 58, 0.2);
-  --badge-posted-text: #4ade80;
+  --ring: #0066cc;
+  --badge-posted-bg: rgba(0, 102, 204, 0.2);
+  --badge-posted-text: #60a5fa;
 }
 
 @theme {
@@ -238,7 +238,7 @@
     padding: 24px !important;
   }
 
-  /* Ensure all text is crisp, but allow brand green accents */
+  /* Ensure all text is crisp, but allow brand blue accents */
   body {
     color: #1f2937 !important;
     background-color: #ffffff !important;
@@ -247,11 +247,11 @@
   }
 
   h1, h2, h3, h4, h5, h6, .text-primary {
-    color: #004225 !important; /* British Racing Green print accent */
+    color: #0056b3 !important; /* Methylene Blue print accent */
   }
 
   .border-primary {
-    border-color: #004225 !important;
+    border-color: #0056b3 !important;
   }
 
   /* Force table formatting to be clean, spacious, and readable */
@@ -282,8 +282,8 @@
   }
 
   th {
-    border-bottom: 2px solid #004225 !important;
-    color: #004225 !important;
+    border-bottom: 2px solid #0056b3 !important;
+    color: #0056b3 !important;
     font-weight: 700 !important;
     font-size: 11px !important;
     text-transform: uppercase !important;
@@ -333,7 +333,7 @@
 
   /* Summary totals print formatting */
   .print\:border-t {
-    border-top: 2px solid #004225 !important;
+    border-top: 2px solid #0056b3 !important;
     padding-top: 20px !important;
     margin-top: 24px !important;
   }

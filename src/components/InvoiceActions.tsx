@@ -1,9 +1,12 @@
 "use client";
 
-import { Printer, Receipt, Pencil } from "lucide-react";
+import { Printer, Receipt, Pencil, Eye, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { CommercialInvoiceSheet } from "@/components/CommercialInvoiceSheet";
+import { resubmitInvoiceToSifen } from "@/app/actions/sifen";
 
 interface InvoiceActionsProps {
   invoice: any;
@@ -11,18 +14,25 @@ interface InvoiceActionsProps {
 }
 
 export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
+  const router = useRouter();
   const [printingA4, setPrintingA4] = useState(false);
   const [printingReceipt, setPrintingReceipt] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
 
   const isSifen = !!invoice.sifenStatus;
-  const a4Url = isSifen 
-    ? `/api/v1/invoices/${invoice.id}/generate` 
+  const isSales = invoice.type !== "PURCHASE";
+  const a4Url = isSifen
+    ? `/api/v1/invoices/${invoice.id}/generate`
     : `/api/invoices/${invoice.id}/pdf`;
   const receiptUrl = `/api/invoices/${invoice.id}/receipt`;
 
+  // SIFEN-resubmittable when a sales invoice is stuck PENDING or was REJECTED.
+  const canResubmitSifen =
+    isSales && (invoice.sifenStatus === "PENDING" || invoice.sifenStatus === "REJECTED");
+  const sifenApproved = isSales && invoice.sifenStatus === "APPROVED";
+
   const handlePrint = (url: string, setPrinting: (v: boolean) => void) => {
     setPrinting(true);
-    // Create hidden iframe
     const iframe = document.createElement("iframe");
     iframe.style.position = "absolute";
     iframe.style.width = "0";
@@ -41,7 +51,6 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
         window.open(url, "_blank");
       } finally {
         setPrinting(false);
-        // Remove iframe after print dialog opens
         setTimeout(() => {
           if (iframe.parentNode) {
             document.body.removeChild(iframe);
@@ -58,6 +67,39 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
         document.body.removeChild(iframe);
       }
     };
+  };
+
+  const handlePreview = () => {
+    window.open(a4Url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleResubmit = async () => {
+    setResubmitting(true);
+    try {
+      const res = await resubmitInvoiceToSifen(invoice.id);
+      if (res.success) {
+        toast.success(res.message || "Fatura enviada ao SIFEN.", {
+          description: res.cdc ? `CDC: ${res.cdc}` : undefined,
+        });
+      } else {
+        toast.error(res.message || "Falha ao enviar ao SIFEN.");
+      }
+      router.refresh();
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao reenviar ao SIFEN.");
+    } finally {
+      setResubmitting(false);
+    }
+  };
+
+  const handleCopyCdc = async () => {
+    if (!invoice.sifenCdc) return;
+    try {
+      await navigator.clipboard.writeText(invoice.sifenCdc);
+      toast.success("CDC copiado para a área de transferência.");
+    } catch {
+      toast.error("Não foi possível copiar o CDC.");
+    }
   };
 
   return (
@@ -77,8 +119,19 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
         }
       />
 
-      {invoice.type !== "PURCHASE" && (
+      {isSales && (
         <>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePreview}
+            title="Visualizar PDF em nova aba"
+            className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-card hover:bg-accent border-border"
+          >
+            <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>Ver</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -101,6 +154,45 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
             <span>80mm</span>
           </Button>
         </>
+      )}
+
+      {canResubmitSifen && (
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={resubmitting}
+          onClick={handleResubmit}
+          title={
+            invoice.sifenStatus === "REJECTED"
+              ? "Fatura rejeitada pelo SIFEN — tentar reenviar"
+              : "Envio ao SIFEN pendente — tentar reenviar"
+          }
+          className={`h-8 px-2.5 text-xs flex items-center gap-1.5 bg-card hover:bg-accent ${
+            invoice.sifenStatus === "REJECTED"
+              ? "border-red-300 text-red-600 hover:text-red-700"
+              : "border-amber-300 text-amber-600 hover:text-amber-700"
+          }`}
+        >
+          {resubmitting ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Send className="w-3.5 h-3.5" />
+          )}
+          <span>{resubmitting ? "Enviando..." : "Reenviar SET"}</span>
+        </Button>
+      )}
+
+      {sifenApproved && invoice.sifenCdc && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCopyCdc}
+          title={`CDC: ${invoice.sifenCdc}\n(clique para copiar)`}
+          className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-card hover:bg-accent border-emerald-300 text-emerald-600 hover:text-emerald-700"
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>CDC</span>
+        </Button>
       )}
     </div>
   );

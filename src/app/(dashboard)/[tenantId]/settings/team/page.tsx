@@ -171,7 +171,7 @@ export default function TeamSettingsPage() {
     switch (role) {
       case 'SOVEREIGN': return <Crown className="w-3.5 h-3.5 text-amber-500" />;
       case 'ADMIN': return <UserCog className="w-3.5 h-3.5 text-primary" />;
-      case 'OPERATOR': return <Users className="w-3.5 h-3.5 text-blue-500" />;
+      case 'OPERATOR': return <Users className="w-3.5 h-3.5 text-slate-500 dark:text-slate-300" />;
       case 'AUDITOR': return <Shield className="w-3.5 h-3.5 text-purple-500" />;
     }
   };
@@ -188,7 +188,7 @@ export default function TeamSettingsPage() {
     switch (role) {
       case 'SOVEREIGN': return 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400';
       case 'ADMIN': return 'border-primary/30 bg-primary/10 text-primary';
-      case 'OPERATOR': return 'border-blue-500/30 bg-blue-500/10 text-blue-500';
+      case 'OPERATOR': return 'border-slate-400/30 bg-slate-400/10 text-slate-500 dark:text-slate-300';
       case 'AUDITOR': return 'border-purple-500/30 bg-purple-500/10 text-purple-500';
     }
   };

@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <defs>
-    <!-- Background Gradient (Methylene Blue theme) -->
+    <!-- Background Gradient (AXIS emerald theme) -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#002244" />
-      <stop offset="100%" stop-color="#0052a3" />
+      <stop offset="0%" stop-color="#0c2218" />
+      <stop offset="100%" stop-color="#04130c" />
     </linearGradient>
     <!-- Gold Gradient -->
     <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -19,6 +19,6 @@
   <!-- Stylized geometric 'C' -->
   <path d="M24 8 H11 C8.5 8 7 9.5 7 12 V20 C7 22.5 8.5 24 11 24 H24 V19 H12 V13 H24 Z" fill="url(#goldGrad)" />
   
-  <!-- Sleek neon blue node/accent -->
-  <path d="M16 6 C20 10 21 16 17 19 C15 16 14.5 11 16 6 Z" fill="#60a5fa" opacity="0.9" />
+  <!-- Sleek emerald node/accent -->
+  <path d="M16 6 C20 10 21 16 17 19 C15 16 14.5 11 16 6 Z" fill="#3daa78" opacity="0.9" />
 </svg>

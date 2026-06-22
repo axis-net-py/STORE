@@ -376,7 +376,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
         onClick={() => setIsOpen(!isOpen)}
         className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 active:scale-95 text-white ${
           isOpen
-            ? "bg-slate-800 hover:bg-slate-700 hover:rotate-90"
+            ? "bg-zinc-800 hover:bg-zinc-700 hover:rotate-90"
             : "bg-gradient-to-tr from-[#1a4d38] to-[#2d7a57] hover:shadow-emerald-950/20 hover:scale-105"
         }`}
       >

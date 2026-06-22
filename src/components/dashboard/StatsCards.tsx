@@ -76,7 +76,7 @@ const accentMap = {
   emerald: { border: "border-l-emerald-500/80", icon: "text-emerald-500", hover: "group-hover:text-emerald-500 dark:group-hover:text-emerald-400" },
   gold:    { border: "border-l-[#c9a84c]",      icon: "text-[#c9a84c]",   hover: "group-hover:text-[#c9a84c]" },
   amber:   { border: "border-l-amber-500/80",   icon: "text-amber-500",   hover: "group-hover:text-amber-500 dark:group-hover:text-amber-400" },
-  slate:   { border: "border-l-slate-400",      icon: "text-slate-500",   hover: "group-hover:text-slate-500 dark:group-hover:text-slate-300" },
+  neutral: { border: "border-l-zinc-400",       icon: "text-zinc-500",    hover: "group-hover:text-zinc-500 dark:group-hover:text-zinc-300" },
 } as const;
 
 type AccentKey = keyof typeof accentMap;
@@ -151,7 +151,7 @@ export function StatsCards({ dateRange, currency }: StatsCardsProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard accent="emerald" icon={TrendingUp}  title={labels.salesTitle}     sub={labels.salesSub}     value={formatCurrency(data.totalSales, currency)} />
         <KpiCard accent="amber"   icon={TrendingDown} title={labels.purchasesTitle} sub={labels.purchasesSub} value={formatCurrency(data.totalPurchases, currency)} />
-        <KpiCard accent="slate"   icon={Package}      title={labels.productsTitle}  sub={labels.productsSub}  value={data.totalProducts} big />
+        <KpiCard accent="neutral" icon={Package}      title={labels.productsTitle}  sub={labels.productsSub}  value={data.totalProducts} big />
         <KpiCard accent="gold"    icon={Users}        title={labels.customersTitle} sub={labels.customersSub} value={data.totalCustomers} big />
       </div>
 

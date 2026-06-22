@@ -32,24 +32,24 @@
 }
 
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --popover: #1e293b;
-  --popover-foreground: #f8fafc;
+  --background: #0a0f0d;
+  --foreground: #f1f0ea;
+  --card: #111714;
+  --card-foreground: #f1f0ea;
+  --popover: #111714;
+  --popover-foreground: #f1f0ea;
   --primary: #2d7a57;
   --primary-foreground: #ffffff;
-  --secondary: #0f172a;
-  --secondary-foreground: #f8fafc;
-  --muted: #0f172a;
-  --muted-foreground: #94a3b8;
-  --accent: #0f172a;
-  --accent-foreground: #f8fafc;
+  --secondary: #161d19;
+  --secondary-foreground: #f1f0ea;
+  --muted: #161d19;
+  --muted-foreground: #9ca59d;
+  --accent: #1a221e;
+  --accent-foreground: #f1f0ea;
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
-  --border: #334155;
-  --input: #334155;
+  --border: #28302b;
+  --input: #28302b;
   --ring: #2d7a57;
   /* AXIS brand accents */
   --gold: #c9a84c;

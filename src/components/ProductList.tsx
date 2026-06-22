@@ -7,14 +7,22 @@ import { ProductSheet } from "@/components/ProductSheet";
 import type { Product } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tag } from "lucide-react";
+import { Package, ChevronUp, ChevronDown } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+
+type ProductSortField = "sku" | "name" | "price" | "currentStock" | "isActive";
 
 export function ProductList({ products, tenantId }: { products: Product[]; tenantId: string }) {
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
-  const [sortField, setSortField] = useState<"sku" | "name" | "price" | "currentStock" | "isActive" | null>(null);
+  const [sortField, setSortField] = useState<ProductSortField | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const SortIcon = ({ field }: { field: ProductSortField }) =>
+    sortField !== field ? null : sortOrder === "asc"
+      ? <ChevronUp className="inline w-3 h-3 ml-1 text-primary" />
+      : <ChevronDown className="inline w-3 h-3 ml-1 text-primary" />;
 
   // Collect all unique tags from products
   const allTags = Array.from(
@@ -25,7 +33,7 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
     )
   ).sort();
 
-  const handleSort = (field: "sku" | "name" | "price" | "currentStock" | "isActive") => {
+  const handleSort = (field: ProductSortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -77,14 +85,8 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
     return 0;
   });
 
-  const renderSortIndicator = (field: typeof sortField) => {
-    if (sortField !== field) return null;
-    return sortOrder === "asc" ? " ▴" : " ▾";
-  };
-
   return (
     <div className="space-y-4">
-      {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         <div className="flex gap-2 w-full sm:w-auto">
           <Input
@@ -119,39 +121,38 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
         </div>
       </div>
 
-      {/* Table */}
       <div className="rounded-lg border border-border bg-card">
+        {sortedProducts.length === 0 ? (
+          <EmptyState
+            icon={Package}
+            title={search ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}
+            description={search ? `Nenhum resultado para "${search}".` : "Adicione o primeiro produto ou serviço para começar."}
+          />
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead onClick={() => handleSort("sku")} className="cursor-pointer hover:bg-muted/50 select-none">
-                SKU{renderSortIndicator("sku")}
+                SKU<SortIcon field="sku" />
               </TableHead>
               <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Nome{renderSortIndicator("name")}
+                Nome<SortIcon field="name" />
               </TableHead>
               <TableHead onClick={() => handleSort("price")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Preço{renderSortIndicator("price")}
+                Preço<SortIcon field="price" />
               </TableHead>
               <TableHead onClick={() => handleSort("currentStock")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Estoque{renderSortIndicator("currentStock")}
+                Estoque<SortIcon field="currentStock" />
               </TableHead>
               <TableHead>Tags</TableHead>
               <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status{renderSortIndicator("isActive")}
+                Status<SortIcon field="isActive" />
               </TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedProducts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  Nenhum produto encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              sortedProducts.map((product) => (
+            {sortedProducts.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-mono text-sm">{product.sku}</TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
@@ -192,16 +193,13 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <ProductSheet
-                      tenantId={tenantId}
-                      product={product}
-                    />
+                    <ProductSheet tenantId={tenantId} product={product} />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ))}
           </TableBody>
         </Table>
+        )}
       </div>
     </div>
   );

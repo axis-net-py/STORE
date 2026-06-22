@@ -6,13 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { CustomerSheet } from "@/components/CustomerSheet";
 import type { Customer } from "@prisma/client";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Users, ChevronUp, ChevronDown } from "lucide-react";
+
+type CustomerSortField = "name" | "document" | "email" | "category" | "isActive";
 
 export function CustomerList({ customers, tenantId }: { customers: Customer[]; tenantId: string }) {
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<"name" | "document" | "email" | "category" | "isActive" | null>(null);
+  const [sortField, setSortField] = useState<CustomerSortField | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const handleSort = (field: "name" | "document" | "email" | "category" | "isActive") => {
+  const SortIcon = ({ field }: { field: CustomerSortField }) =>
+    sortField !== field ? null : sortOrder === "asc"
+      ? <ChevronUp className="inline w-3 h-3 ml-1 text-primary" />
+      : <ChevronDown className="inline w-3 h-3 ml-1 text-primary" />;
+
+  const handleSort = (field: CustomerSortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -48,14 +57,8 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
     return 0;
   });
 
-  const renderSortIndicator = (field: typeof sortField) => {
-    if (sortField !== field) return null;
-    return sortOrder === "asc" ? " ▴" : " ▾";
-  };
-
   return (
     <div className="space-y-4">
-      {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         <Input
           placeholder="Buscar por Nome, Documento ou E-mail..."
@@ -65,38 +68,37 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
         />
       </div>
 
-      {/* Table */}
       <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Nome{renderSortIndicator("name")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Documento{renderSortIndicator("document")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
-                E-mail{renderSortIndicator("email")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("category")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Categoria{renderSortIndicator("category")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status{renderSortIndicator("isActive")}
-              </TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedCustomers.length === 0 ? (
+        {sortedCustomers.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title={search ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
+            description={search ? `Nenhum resultado para "${search}".` : "Adicione o primeiro cliente para começar."}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  Nenhum cliente cadastrado ou encontrado.
-                </TableCell>
+                <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Nome<SortIcon field="name" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Documento<SortIcon field="document" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  E-mail<SortIcon field="email" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("category")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Categoria<SortIcon field="category" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Status<SortIcon field="isActive" />
+                </TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
-            ) : (
-              sortedCustomers.map((customer) => (
+            </TableHeader>
+            <TableBody>
+              {sortedCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.document ?? "-"}</TableCell>
@@ -112,16 +114,13 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <CustomerSheet
-                      tenantId={tenantId}
-                      customer={customer}
-                    />
+                    <CustomerSheet tenantId={tenantId} customer={customer} />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

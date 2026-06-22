@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { createSupplier, updateSupplier, deleteSupplier } from "@/app/actions/supplier";
 import type { Supplier } from "@prisma/client";
+import { toast } from "sonner";
 
 export function SupplierSheet({
   tenantId,
@@ -43,10 +44,11 @@ export function SupplierSheet({
     setLoading(true);
     try {
       await deleteSupplier(supplier.id);
+      toast.success("Fornecedor excluído com sucesso.");
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      alert(err.message || "Erro ao excluir fornecedor");
+      toast.error(err.message || "Erro ao excluir fornecedor.");
     } finally {
       setLoading(false);
     }
@@ -88,10 +90,11 @@ export function SupplierSheet({
           paymentTerms,
         });
       }
+      toast.success(isEdit ? "Fornecedor atualizado com sucesso." : "Fornecedor cadastrado com sucesso.");
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      alert(err.message || "Erro ao salvar fornecedor");
+      toast.error(err.message || "Erro ao salvar fornecedor.");
     } finally {
       setLoading(false);
     }

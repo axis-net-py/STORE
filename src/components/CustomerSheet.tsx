@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { createCustomer, updateCustomer, deleteCustomer } from "@/app/actions/customer";
 import type { Customer } from "@prisma/client";
+import { toast } from "sonner";
 
 export function CustomerSheet({
   tenantId,
@@ -41,10 +42,11 @@ export function CustomerSheet({
     setLoading(true);
     try {
       await deleteCustomer(customer.id);
+      toast.success("Cliente excluído com sucesso.");
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      alert(err.message || "Erro ao excluir cliente");
+      toast.error(err.message || "Erro ao excluir cliente.");
     } finally {
       setLoading(false);
     }
@@ -58,34 +60,19 @@ export function CustomerSheet({
     try {
       if (isEdit && customer) {
         await updateCustomer(customer.id, {
-          name,
-          document,
-          documentType,
-          email,
-          phone,
-          address,
-          city,
-          country,
-          category,
-          isActive,
+          name, document, documentType, email, phone, address, city, country, category, isActive,
         });
+        toast.success("Cliente atualizado com sucesso.");
       } else {
         await createCustomer({
-          name,
-          document,
-          documentType,
-          email,
-          phone,
-          address,
-          city,
-          country,
-          category,
+          name, document, documentType, email, phone, address, city, country, category,
         });
+        toast.success("Cliente cadastrado com sucesso.");
       }
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      alert(err.message || "Erro ao salvar cliente");
+      toast.error(err.message || "Erro ao salvar cliente.");
     } finally {
       setLoading(false);
     }

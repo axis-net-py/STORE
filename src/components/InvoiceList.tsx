@@ -6,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { InvoiceActions } from "@/components/InvoiceActions";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip } from "lucide-react";
+import { Paperclip, FileText, ChevronUp, ChevronDown } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+
+type InvoiceSortField = "type" | "customer" | "documentNumber" | "issuedAt" | "status" | "sifenStatus" | "totalAmount";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -24,10 +27,15 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedSifenStatus, setSelectedSifenStatus] = useState("all");
 
-  const [sortField, setSortField] = useState<"type" | "customer" | "documentNumber" | "issuedAt" | "status" | "sifenStatus" | "totalAmount" | null>(null);
+  const [sortField, setSortField] = useState<InvoiceSortField | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const handleSort = (field: "type" | "customer" | "documentNumber" | "issuedAt" | "status" | "sifenStatus" | "totalAmount") => {
+  const SortIcon = ({ field }: { field: InvoiceSortField }) =>
+    sortField !== field ? null : sortOrder === "asc"
+      ? <ChevronUp className="inline w-3 h-3 ml-1 text-primary" />
+      : <ChevronDown className="inline w-3 h-3 ml-1 text-primary" />;
+
+  const handleSort = (field: InvoiceSortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -89,11 +97,6 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
     return 0;
   });
 
-  const renderSortIndicator = (field: typeof sortField) => {
-    if (sortField !== field) return null;
-    return sortOrder === "asc" ? " ▴" : " ▾";
-  };
-
   return (
     <div className="space-y-4">
       {/* Filters Bar */}
@@ -142,44 +145,43 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
         </div>
       </div>
 
-      {/* Table */}
       <div className="rounded-lg border border-border bg-card">
+        {sortedInvoices.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={search ? "Nenhuma fatura encontrada" : "Nenhuma fatura cadastrada"}
+            description={search ? `Nenhum resultado para "${search}".` : "Crie a primeira fatura de venda ou compra."}
+          />
+        ) : (
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead onClick={() => handleSort("type")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Tipo{renderSortIndicator("type")}
+                Tipo<SortIcon field="type" />
               </TableHead>
               <TableHead onClick={() => handleSort("customer")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Cliente{renderSortIndicator("customer")}
+                Cliente<SortIcon field="customer" />
               </TableHead>
               <TableHead onClick={() => handleSort("documentNumber")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Fatura{renderSortIndicator("documentNumber")}
+                Fatura<SortIcon field="documentNumber" />
               </TableHead>
               <TableHead onClick={() => handleSort("issuedAt")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Data{renderSortIndicator("issuedAt")}
+                Data<SortIcon field="issuedAt" />
               </TableHead>
               <TableHead onClick={() => handleSort("status")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status{renderSortIndicator("status")}
+                Status<SortIcon field="status" />
               </TableHead>
               <TableHead onClick={() => handleSort("sifenStatus")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status SET{renderSortIndicator("sifenStatus")}
+                Status SET<SortIcon field="sifenStatus" />
               </TableHead>
               <TableHead onClick={() => handleSort("totalAmount")} className="text-right cursor-pointer hover:bg-muted/50 select-none">
-                Total{renderSortIndicator("totalAmount")}
+                Total<SortIcon field="totalAmount" />
               </TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedInvoices.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                  Nenhuma fatura encontrada.
-                </TableCell>
-              </TableRow>
-            ) : (
-              sortedInvoices.map((inv: any) => (
+            {sortedInvoices.map((inv: any) => (
                 <TableRow key={inv.id}>
                   <TableCell>
                     <Badge variant={inv.type === "PURCHASE" ? "default" : "secondary"}>
@@ -252,10 +254,10 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                     <InvoiceActions invoice={inv} tenantId={tenantId} />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
+              ))}
           </TableBody>
         </Table>
+        )}
       </div>
     </div>
   );

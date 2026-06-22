@@ -6,13 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { SupplierSheet } from "@/components/SupplierSheet";
 import type { Supplier } from "@prisma/client";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Truck, ChevronUp, ChevronDown } from "lucide-react";
+
+type SupplierSortField = "phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive";
 
 export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; tenantId: string }) {
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<"phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive" | null>(null);
+  const [sortField, setSortField] = useState<SupplierSortField | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const handleSort = (field: "phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive") => {
+  const SortIcon = ({ field }: { field: SupplierSortField }) =>
+    sortField !== field ? null : sortOrder === "asc"
+      ? <ChevronUp className="inline w-3 h-3 ml-1 text-primary" />
+      : <ChevronDown className="inline w-3 h-3 ml-1 text-primary" />;
+
+  const handleSort = (field: SupplierSortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -49,14 +58,8 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
     return 0;
   });
 
-  const renderSortIndicator = (field: typeof sortField) => {
-    if (sortField !== field) return null;
-    return sortOrder === "asc" ? " ▴" : " ▾";
-  };
-
   return (
     <div className="space-y-4">
-      {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
         <Input
           placeholder="Buscar por Telefone, Razão Social, Documento..."
@@ -66,41 +69,40 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
         />
       </div>
 
-      {/* Table */}
       <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Telefone{renderSortIndicator("phone")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("businessName")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Razão Social{renderSortIndicator("businessName")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Documento{renderSortIndicator("document")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
-                E-mail{renderSortIndicator("email")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("paymentTerms")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Condição Pagto{renderSortIndicator("paymentTerms")}
-              </TableHead>
-              <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status{renderSortIndicator("isActive")}
-              </TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedSuppliers.length === 0 ? (
+        {sortedSuppliers.length === 0 ? (
+          <EmptyState
+            icon={Truck}
+            title={search ? "Nenhum fornecedor encontrado" : "Nenhum fornecedor cadastrado"}
+            description={search ? `Nenhum resultado para "${search}".` : "Adicione o primeiro fornecedor para começar."}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  Nenhum fornecedor cadastrado ou encontrado.
-                </TableCell>
+                <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Telefone<SortIcon field="phone" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("businessName")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Razão Social<SortIcon field="businessName" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Documento<SortIcon field="document" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  E-mail<SortIcon field="email" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("paymentTerms")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Condição Pagto<SortIcon field="paymentTerms" />
+                </TableHead>
+                <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
+                  Status<SortIcon field="isActive" />
+                </TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
-            ) : (
-              sortedSuppliers.map((supplier) => (
+            </TableHeader>
+            <TableBody>
+              {sortedSuppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
                   <TableCell className="font-medium">{supplier.phone ?? "-"}</TableCell>
                   <TableCell>{supplier.businessName ?? "-"}</TableCell>
@@ -115,16 +117,13 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <SupplierSheet
-                      tenantId={tenantId}
-                      supplier={supplier}
-                    />
+                    <SupplierSheet tenantId={tenantId} supplier={supplier} />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

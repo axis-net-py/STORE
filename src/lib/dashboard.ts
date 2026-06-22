@@ -13,6 +13,11 @@ export async function getDashboardStats(dateRange?: { start?: Date; end?: Date }
     purchasesAggregate,
     productsCount,
     customersCount,
+    receivableAggregate,
+    payableAggregate,
+    pendingSifenCount,
+    pendingInvoicesCount,
+    stockProducts,
   ] = await Promise.all([
     prisma.commercialInvoice.aggregate({
       where: { tenantId, type: "SALES", status: "APPROVED" },
@@ -28,13 +33,45 @@ export async function getDashboardStats(dateRange?: { start?: Date; end?: Date }
     prisma.customer.count({
       where: { tenantId, isActive: true },
     }),
+    // Contas a receber (normalizadas em PYG via totalPyg)
+    prisma.transaction.aggregate({
+      where: { tenantId, type: "RECEIVABLE" },
+      _sum: { totalPyg: true },
+    }),
+    prisma.transaction.aggregate({
+      where: { tenantId, type: "PAYABLE" },
+      _sum: { totalPyg: true },
+    }),
+    // Faturas de venda aguardando envio/aprovação no SIFEN
+    prisma.commercialInvoice.count({
+      where: { tenantId, type: "SALES", sifenStatus: "PENDING" },
+    }),
+    // Faturas com status pendente (não aprovadas)
+    prisma.commercialInvoice.count({
+      where: { tenantId, status: "PENDING" },
+    }),
+    // Produtos físicos ativos para calcular estoque baixo
+    prisma.product.findMany({
+      where: { tenantId, isActive: true, isService: false },
+      select: { currentStock: true, minStock: true },
+    }),
   ]);
+
+  // Estoque baixo: tem mínimo definido (> 0) e está no limite ou abaixo
+  const lowStockCount = stockProducts.filter(
+    (p) => Number(p.minStock) > 0 && Number(p.currentStock) <= Number(p.minStock)
+  ).length;
 
   return {
     totalSales: Number(salesAggregate._sum.totalAmount || 0),
     totalPurchases: Number(purchasesAggregate._sum.totalAmount || 0),
     totalProducts: productsCount,
     totalCustomers: customersCount,
+    receivables: Number(receivableAggregate._sum.totalPyg || 0),
+    payables: Number(payableAggregate._sum.totalPyg || 0),
+    lowStockCount,
+    pendingSifenCount,
+    pendingInvoicesCount,
   };
 }
 

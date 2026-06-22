@@ -12,7 +12,17 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, TrendingDown, Package, Users } from 'lucide-react';
+import {
+  TrendingUp,
+  TrendingDown,
+  Package,
+  Users,
+  Wallet,
+  AlertTriangle,
+  Clock,
+  FileText,
+  type LucideIcon,
+} from 'lucide-react';
 
 const geistMono = Geist_Mono({ subsets: ['latin'] });
 
@@ -31,6 +41,14 @@ const tMap: Record<'pt' | 'es', Record<string, string>> = {
     productsSub: "Produtos ativos no catálogo",
     customersTitle: "Clientes Ativos",
     customersSub: "Clientes registrados",
+    receivablesTitle: "Contas a Receber",
+    receivablesSub: "Total a receber (Gs)",
+    lowStockTitle: "Estoque Baixo",
+    lowStockSub: "Produtos no mínimo",
+    sifenPendingTitle: "SIFEN Pendente",
+    sifenPendingSub: "Faturas a enviar à SET",
+    pendingInvoicesTitle: "Faturas Pendentes",
+    pendingInvoicesSub: "Aguardando aprovação",
     error: "Erro ao carregar estatísticas",
   },
   es: {
@@ -42,9 +60,60 @@ const tMap: Record<'pt' | 'es', Record<string, string>> = {
     productsSub: "Productos activos en catálogo",
     customersTitle: "Clientes Activos",
     customersSub: "Clientes registrados",
+    receivablesTitle: "Cuentas por Cobrar",
+    receivablesSub: "Total por cobrar (Gs)",
+    lowStockTitle: "Stock Bajo",
+    lowStockSub: "Productos en el mínimo",
+    sifenPendingTitle: "SIFEN Pendiente",
+    sifenPendingSub: "Facturas a enviar a la SET",
+    pendingInvoicesTitle: "Facturas Pendientes",
+    pendingInvoicesSub: "Esperando aprobación",
     error: "Error al cargar estadísticas",
   }
 };
+
+const accentMap = {
+  emerald: { border: "border-l-emerald-500/80", icon: "text-emerald-500", hover: "group-hover:text-emerald-500 dark:group-hover:text-emerald-400" },
+  gold:    { border: "border-l-[#c9a84c]",      icon: "text-[#c9a84c]",   hover: "group-hover:text-[#c9a84c]" },
+  amber:   { border: "border-l-amber-500/80",   icon: "text-amber-500",   hover: "group-hover:text-amber-500 dark:group-hover:text-amber-400" },
+  slate:   { border: "border-l-slate-400",      icon: "text-slate-500",   hover: "group-hover:text-slate-500 dark:group-hover:text-slate-300" },
+} as const;
+
+type AccentKey = keyof typeof accentMap;
+
+function KpiCard({
+  title, sub, value, icon: Icon, accent, big, attention,
+}: {
+  title: string;
+  sub: string;
+  value: string | number;
+  icon: LucideIcon;
+  accent: AccentKey;
+  big?: boolean;
+  attention?: boolean;
+}) {
+  const a = accentMap[accent];
+  return (
+    <Card className={`border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 ${a.border} group`}>
+      <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+        <CardTitle className={`text-xs font-semibold uppercase tracking-widest text-muted-foreground ${a.hover} transition-colors`}>
+          {title}
+        </CardTitle>
+        <Icon className={`h-4 w-4 ${a.icon} opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300`} />
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-1">
+          <h3 className={`${geistMono.className} ${big ? 'text-3xl' : 'text-xl'} font-extrabold tracking-tight ${attention ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'} truncate`}>
+            {value}
+          </h3>
+          <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+            {sub}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function StatsCards({ dateRange, currency }: StatsCardsProps) {
   const { language } = useLanguage();
@@ -58,9 +127,13 @@ export function StatsCards({ dateRange, currency }: StatsCardsProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-xl" />
+      <div className="space-y-6">
+        {[0, 1].map((row) => (
+          <div key={row} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-xl" />
+            ))}
+          </div>
         ))}
       </div>
     );
@@ -73,86 +146,46 @@ export function StatsCards({ dateRange, currency }: StatsCardsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {/* Total de Vendas */}
-      <Card className="border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 border-l-emerald-500/80 group">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">
-            {labels.salesTitle}
-          </CardTitle>
-          <TrendingUp className="h-4 w-4 text-emerald-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-1">
-            <h3 className={`${geistMono.className} text-xl font-extrabold tracking-tight text-foreground truncate`}>
-              {formatCurrency(data.totalSales, currency)}
-            </h3>
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              {labels.salesSub}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      {/* Linha 1 — visão financeira e catálogo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard accent="emerald" icon={TrendingUp}  title={labels.salesTitle}     sub={labels.salesSub}     value={formatCurrency(data.totalSales, currency)} />
+        <KpiCard accent="amber"   icon={TrendingDown} title={labels.purchasesTitle} sub={labels.purchasesSub} value={formatCurrency(data.totalPurchases, currency)} />
+        <KpiCard accent="slate"   icon={Package}      title={labels.productsTitle}  sub={labels.productsSub}  value={data.totalProducts} big />
+        <KpiCard accent="gold"    icon={Users}        title={labels.customersTitle} sub={labels.customersSub} value={data.totalCustomers} big />
+      </div>
 
-      {/* Total de Compras */}
-      <Card className="border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 border-l-amber-500/80 group">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors">
-            {labels.purchasesTitle}
-          </CardTitle>
-          <TrendingDown className="h-4 w-4 text-amber-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-1">
-            <h3 className={`${geistMono.className} text-xl font-extrabold tracking-tight text-foreground truncate`}>
-              {formatCurrency(data.totalPurchases, currency)}
-            </h3>
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              {labels.purchasesSub}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Produtos Cadastrados */}
-      <Card className="border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 border-l-sky-500/80 group">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors">
-            {labels.productsTitle}
-          </CardTitle>
-          <Package className="h-4 w-4 text-sky-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-1">
-            <h3 className={`${geistMono.className} text-3xl font-extrabold tracking-tight text-foreground`}>
-              {data.totalProducts}
-            </h3>
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              {labels.productsSub}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Clientes Ativos */}
-      <Card className="border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 border-l-indigo-500/80 group">
-        <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
-            {labels.customersTitle}
-          </CardTitle>
-          <Users className="h-4 w-4 text-indigo-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-1">
-            <h3 className={`${geistMono.className} text-3xl font-extrabold tracking-tight text-foreground`}>
-              {data.totalCustomers}
-            </h3>
-            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              {labels.customersSub}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Linha 2 — indicadores operacionais (acionáveis) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard accent="emerald" icon={Wallet} title={labels.receivablesTitle} sub={labels.receivablesSub} value={formatCurrency(data.receivables, 'PYG')} />
+        <KpiCard
+          accent={data.lowStockCount > 0 ? 'amber' : 'emerald'}
+          icon={AlertTriangle}
+          title={labels.lowStockTitle}
+          sub={labels.lowStockSub}
+          value={data.lowStockCount}
+          big
+          attention={data.lowStockCount > 0}
+        />
+        <KpiCard
+          accent={data.pendingSifenCount > 0 ? 'amber' : 'emerald'}
+          icon={Clock}
+          title={labels.sifenPendingTitle}
+          sub={labels.sifenPendingSub}
+          value={data.pendingSifenCount}
+          big
+          attention={data.pendingSifenCount > 0}
+        />
+        <KpiCard
+          accent={data.pendingInvoicesCount > 0 ? 'amber' : 'emerald'}
+          icon={FileText}
+          title={labels.pendingInvoicesTitle}
+          sub={labels.pendingInvoicesSub}
+          value={data.pendingInvoicesCount}
+          big
+          attention={data.pendingInvoicesCount > 0}
+        />
+      </div>
     </div>
   );
 }

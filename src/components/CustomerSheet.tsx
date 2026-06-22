@@ -75,6 +75,7 @@ export function CustomerSheet({
           documentType: (documentType || undefined) as "RUC" | "CI" | "CPF" | "CNPJ" | "OTHER" | undefined,
           email, phone, address, city, country,
           category: category as "fisica" | "juridica",
+          isActive,
         });
         toast.success("Cliente cadastrado com sucesso.");
       }

@@ -88,6 +88,7 @@ export function SupplierSheet({
           country,
           category: category as "fisica" | "juridica",
           paymentTerms,
+          isActive,
         });
       }
       toast.success(isEdit ? "Fornecedor atualizado com sucesso." : "Fornecedor cadastrado com sucesso.");

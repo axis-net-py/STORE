@@ -9,7 +9,7 @@
   --card-foreground: #1e293b;
   --popover: #ffffff;
   --popover-foreground: #1e293b;
-  --primary: #1d2d3e;
+  --primary: #1a4d38;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
@@ -21,9 +21,14 @@
   --destructive-foreground: #fafafa;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #1d2d3e;
-  --badge-posted-bg: #e8ebf0;
-  --badge-posted-text: #1d2d3e;
+  --ring: #1a4d38;
+  /* AXIS brand accents */
+  --gold: #c9a84c;
+  --gold-light: #e2c97e;
+  --gold-dim: #8a6e2f;
+  --emerald-bright: #2d7a57;
+  --badge-posted-bg: #e6efe9;
+  --badge-posted-text: #1a4d38;
 }
 
 .dark {
@@ -33,7 +38,7 @@
   --card-foreground: #f8fafc;
   --popover: #1e293b;
   --popover-foreground: #f8fafc;
-  --primary: #3b82f6;
+  --primary: #2d7a57;
   --primary-foreground: #ffffff;
   --secondary: #0f172a;
   --secondary-foreground: #f8fafc;
@@ -45,9 +50,14 @@
   --destructive-foreground: #fafafa;
   --border: #334155;
   --input: #334155;
-  --ring: #3b82f6;
-  --badge-posted-bg: rgba(59, 130, 246, 0.15);
-  --badge-posted-text: #60a5fa;
+  --ring: #2d7a57;
+  /* AXIS brand accents */
+  --gold: #c9a84c;
+  --gold-light: #e2c97e;
+  --gold-dim: #8a6e2f;
+  --emerald-bright: #3daa78;
+  --badge-posted-bg: rgba(45, 122, 87, 0.18);
+  --badge-posted-text: #3daa78;
 }
 
 @theme {
@@ -70,10 +80,14 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dim: var(--gold-dim);
+  --color-emerald-bright: var(--emerald-bright);
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
 }
 
 @layer base {
@@ -91,6 +105,20 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Typography hierarchy — clearer headings across the app */
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+  h2 {
+    font-weight: 600;
+    letter-spacing: -0.018em;
+  }
+  h3 {
+    font-weight: 600;
+    letter-spacing: -0.012em;
   }
 }
 

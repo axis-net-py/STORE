@@ -129,9 +129,9 @@ export function AIInvoiceImporter() {
       <button
         type="button"
         onClick={triggerFileSelect}
-        className="bg-blue-600 hover:bg-blue-700 text-white min-h-[44px] md:h-[32px] px-6 md:px-4 text-[14px] md:text-[13px] flex items-center justify-center font-bold shadow-md cursor-pointer rounded-lg gap-2 active:scale-98 transition-all"
+        className="bg-gradient-to-br from-[#e2c97e] to-[#c9a84c] hover:from-[#e8d290] hover:to-[#d4b257] text-[#05080a] min-h-[44px] md:h-[32px] px-6 md:px-4 text-[14px] md:text-[13px] flex items-center justify-center font-bold shadow-md cursor-pointer rounded-lg gap-2 active:scale-98 transition-all"
       >
-        <Sparkles className="w-4 h-4 text-blue-200 animate-pulse shrink-0" />
+        <Sparkles className="w-4 h-4 text-[#7a6420] animate-pulse shrink-0" />
         Importar Fatura com IA
       </button>
 
@@ -150,7 +150,7 @@ export function AIInvoiceImporter() {
               )}
               {status === "success" && (
                 <>
-                  <CheckCircle2 className="w-5 h-5 text-blue-500 animate-bounce" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 animate-bounce" />
                   Importação Concluída
                 </>
               )}
@@ -171,7 +171,7 @@ export function AIInvoiceImporter() {
             {status === "processing" && (
               <div className="relative w-12 h-12 flex items-center justify-center mb-3">
                 <FileText className="w-8 h-8 text-primary animate-pulse" />
-                <Sparkles className="w-4 h-4 text-blue-500 absolute top-0 right-0 animate-bounce" />
+                <Sparkles className="w-4 h-4 text-[#c9a84c] absolute top-0 right-0 animate-bounce" />
               </div>
             )}
             

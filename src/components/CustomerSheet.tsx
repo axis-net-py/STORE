@@ -25,7 +25,7 @@ export function CustomerSheet({
 
   const [name, setName] = useState(customer?.name ?? "");
   const [document, setDocument] = useState(customer?.document ?? "");
-  const [documentType, setDocumentType] = useState<"RUC" | "CI" | "CPF" | "CNPJ" | "OTHER" | "">(customer?.documentType ?? "");
+  const [documentType, setDocumentType] = useState(customer?.documentType ?? "");
   const [email, setEmail] = useState(customer?.email ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
   const [address, setAddress] = useState(customer?.address ?? "");
@@ -60,12 +60,21 @@ export function CustomerSheet({
     try {
       if (isEdit && customer) {
         await updateCustomer(customer.id, {
-          name, document, documentType: documentType || undefined, email, phone, address, city, country, category, isActive,
+          name,
+          document,
+          documentType: (documentType || undefined) as "RUC" | "CI" | "CPF" | "CNPJ" | "OTHER" | undefined,
+          email, phone, address, city, country,
+          category: category as "fisica" | "juridica",
+          isActive,
         });
         toast.success("Cliente atualizado com sucesso.");
       } else {
         await createCustomer({
-          name, document, documentType: documentType || undefined, email, phone, address, city, country, category,
+          name,
+          document,
+          documentType: (documentType || undefined) as "RUC" | "CI" | "CPF" | "CNPJ" | "OTHER" | undefined,
+          email, phone, address, city, country,
+          category: category as "fisica" | "juridica",
         });
         toast.success("Cliente cadastrado com sucesso.");
       }

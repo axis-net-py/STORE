@@ -30,7 +30,7 @@ export class NotFoundError extends AppError {
 }
 
 export function formatZodError(error: ZodError): string {
-  return error.errors.map(e => e.message).join('; ')
+  return error.issues.map(e => e.message).join('; ')
 }
 
 export function handleActionError(error: unknown): never {

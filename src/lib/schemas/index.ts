@@ -56,6 +56,8 @@ export const SupplierSchema = z.object({
   isActive: z.boolean().default(true),
 })
 
-export type CustomerFormData = z.infer<typeof CustomerSchema>
-export type ProductFormData = z.infer<typeof ProductSchema>
-export type SupplierFormData = z.infer<typeof SupplierSchema>
+// Use z.input: the form supplies pre-parse data, where .default() fields are optional.
+// (z.infer/z.output would mark defaulted fields as required, breaking the form callers.)
+export type CustomerFormData = z.input<typeof CustomerSchema>
+export type ProductFormData = z.input<typeof ProductSchema>
+export type SupplierFormData = z.input<typeof SupplierSchema>

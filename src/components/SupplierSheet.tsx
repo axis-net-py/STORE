@@ -26,7 +26,7 @@ export function SupplierSheet({
   const [name, setName] = useState(supplier?.name ?? "");
   const [businessName, setBusinessName] = useState(supplier?.businessName ?? "");
   const [document, setDocument] = useState(supplier?.document ?? "");
-  const [documentType, setDocumentType] = useState(supplier?.documentType ?? "");
+  const [documentType, setDocumentType] = useState<"RUC" | "CI" | "CPF" | "CNPJ" | "OTHER" | "">(supplier?.documentType ?? "");
   const [email, setEmail] = useState(supplier?.email ?? "");
   const [phone, setPhone] = useState(supplier?.phone ?? "");
   const [address, setAddress] = useState(supplier?.address ?? "");
@@ -65,7 +65,7 @@ export function SupplierSheet({
           name: businessName,
           businessName,
           document,
-          documentType,
+          documentType: documentType || undefined,
           email,
           phone,
           address,
@@ -80,7 +80,7 @@ export function SupplierSheet({
           name: businessName,
           businessName,
           document,
-          documentType,
+          documentType: documentType || undefined,
           email,
           phone,
           address,

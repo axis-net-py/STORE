@@ -85,6 +85,7 @@ model Tenant {
   permissions       Permission[]
   journalEntries    JournalEntry[]
   auditLogs         AuditLog[]
+  advisorThreads    AdvisorThread[]
 }
 
 // ─── User ───────────────────────────────────────────────────
@@ -381,6 +382,34 @@ model AuditLog {
 
   @@index([tenantId])
   @@index([entity, entityId])
+}
+
+// ─── Conselheiro AXIS (advisor) ─────────────────────────────
+
+model AdvisorThread {
+  id        String           @id @default(cuid())
+  tenantId  String
+  tenant    Tenant           @relation(fields: [tenantId], references: [id])
+  userId    String?
+  title     String           @default("Nova consulta")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  messages  AdvisorMessage[]
+
+  @@index([tenantId])
+}
+
+model AdvisorMessage {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    AdvisorThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role      String        // "user" | "assistant"
+  content   String        @db.Text
+  mentors   String[]      @default([])
+  sources   Json?
+  createdAt DateTime      @default(now())
+
+  @@index([threadId])
 }
 
 

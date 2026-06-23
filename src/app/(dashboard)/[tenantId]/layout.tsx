@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { DashboardShell } from "@/components/DashboardShell";
-import { AIAssistant } from "@/components/AIAssistant";
+import { Conselheiro } from "@/components/Conselheiro/Conselheiro";
 
 export default async function DashboardLayout({
   children,
@@ -25,7 +25,7 @@ export default async function DashboardLayout({
   return (
     <>
       <DashboardShell tenantId={tenantId}>{children}</DashboardShell>
-      <AIAssistant tenantId={tenantId} />
+      <Conselheiro tenantId={tenantId} />
     </>
   );
 }

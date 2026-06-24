@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, generateId, type UIMessage } from 'ai'
-import { MessageSquare, X, Mic, MicOff, Send, Loader2, Sparkles, Bot, User } from 'lucide-react'
+import { MessageSquare, X, Mic, MicOff, Send, Loader2, Sparkles, Bot, User, AlertCircle } from 'lucide-react'
 import { loadLatestThread } from '@/app/actions/advisor'
 
 function messageText(msg: UIMessage): string {
@@ -83,7 +83,7 @@ function ConselheiroChat({
     () => new DefaultChatTransport({ api: '/api/advisor', body: { threadId } }),
     [threadId],
   )
-  const { messages, sendMessage, status } = useChat({ id: threadId, messages: initialMessages, transport })
+  const { messages, sendMessage, status, error } = useChat({ id: threadId, messages: initialMessages, transport })
 
   const [input, setInput] = useState('')
   const [isRecording, setIsRecording] = useState(false)
@@ -194,6 +194,17 @@ function ConselheiroChat({
             <div className="bg-muted/40 border border-border rounded-xl px-4 py-3 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
               <span className="text-xs text-muted-foreground font-medium">Consultando a mesa...</span>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex gap-2.5 items-start">
+            <div className="w-7 h-7 rounded-full bg-rose-950/30 border border-rose-800/40 flex items-center justify-center text-rose-400 shrink-0">
+              <AlertCircle className="w-3.5 h-3.5" />
+            </div>
+            <div className="max-w-[80%] bg-rose-950/20 border border-rose-800/40 rounded-xl px-3.5 py-2.5 text-[12.5px] text-rose-300">
+              {error.message || 'Erro ao consultar o Conselheiro. Tente novamente.'}
             </div>
           </div>
         )}

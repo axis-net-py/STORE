@@ -1,5 +1,5 @@
 import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
+import { google } from '@ai-sdk/google'
 import { auth } from '@/auth'
 import { advisorModel } from '@/lib/advisor/model'
 import { buildSystemPrompt } from '@/lib/advisor/system-prompt'
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     system: buildSystemPrompt(),
     messages: await convertToModelMessages(messages),
     tools: {
-      web_search: anthropic.tools.webSearch_20250305({ maxUses: 5 }),
+      google_search: google.tools.googleSearch({}),
     },
     stopWhen: stepCountIs(5),
   })
@@ -50,6 +50,11 @@ export async function POST(req: Request) {
 
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
+    onError: (error) => {
+      const msg = error instanceof Error ? error.message : String(error)
+      console.error('[advisor] stream error:', msg)
+      return msg || 'Erro ao consultar o Conselheiro. Tente novamente.'
+    },
     onFinish: async ({ messages: finalMessages }) => {
       const assistantText = lastText(finalMessages as UIMessage[], 'assistant')
       if (assistantText) {

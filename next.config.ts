@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   experimental: {
     cpus: 1,
   },
+  async redirects() {
+    return [
+      // Navegadores pedem /favicon.ico por padrão; servimos o ícone SVG do app
+      { source: "/favicon.ico", destination: "/icon.svg", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

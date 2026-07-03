@@ -23,12 +23,19 @@ export default async function DashboardLayout({
     redirect(`/${session.user.tenantId}/dashboard`);
   }
 
-  // Primeiro acesso com senha temporária: forçar troca antes de usar o sistema
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id as string },
-    select: { mustChangePassword: true },
-  });
-  if (dbUser?.mustChangePassword) {
+  // Primeiro acesso com senha temporária: forçar troca antes de usar o sistema.
+  // Tolerante a banco ainda não migrado (coluna ausente) para não derrubar o app inteiro.
+  let mustChange = false;
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id as string },
+      select: { mustChangePassword: true },
+    });
+    mustChange = !!dbUser?.mustChangePassword;
+  } catch (err) {
+    console.error("[layout] Falha ao verificar mustChangePassword (migração pendente?):", err);
+  }
+  if (mustChange) {
     redirect("/change-password");
   }
 

@@ -5,6 +5,7 @@ import type { Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { hash } from "bcryptjs";
+import { randomBytes } from "crypto";
 
 // ─── Helper: Check permission inline ──────────────────────
 
@@ -163,8 +164,9 @@ export async function createUserAction(data: { name: string; email: string; role
   const hasPerm = await checkPermission(session.user.id, "users:manage", tenantId);
   if (!hasPerm) throw new Error("Forbidden");
 
-  // Default password for new members: "Cooper123!" so they can log in and change it
-  const hashedPassword = await hash("Cooper123!", 10);
+  // Senha temporária aleatória por usuário (nunca uma senha padrão compartilhada)
+  const tempPassword = `Cx-${randomBytes(9).toString("base64url")}`;
+  const hashedPassword = await hash(tempPassword, 10);
 
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
@@ -178,12 +180,14 @@ export async function createUserAction(data: { name: string; email: string; role
       password: hashedPassword,
       role: data.role,
       tenantId,
+      mustChangePassword: true,
     },
+    select: { id: true, name: true, email: true, role: true },
   });
 
   await logAudit(session.user.id, tenantId, "CREATE_USER", { userId: newUser.id, email: newUser.email, role: newUser.role });
   revalidatePath(`/${tenantId}/settings/team`);
-  return { success: true, user: newUser };
+  return { success: true, user: newUser, tempPassword };
 }
 
 export async function deleteUserAction(userId: string) {

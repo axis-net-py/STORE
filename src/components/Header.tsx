@@ -1,5 +1,6 @@
 import { signOut, useSession } from "next-auth/react";
-import { Bell, LogOut, User, Menu, Sun, Moon, Globe } from "lucide-react";
+import { Bell, LogOut, User, Menu, Sun, Moon, Globe, KeyRound } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/components/language-provider";
@@ -91,6 +92,12 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href="/change-password">
+                <KeyRound className="mr-2 h-4 w-4" />
+                {language === "pt" ? "Alterar senha" : "Cambiar contraseña"}
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive cursor-pointer"
               onClick={() => signOut({ callbackUrl: "/login" })}

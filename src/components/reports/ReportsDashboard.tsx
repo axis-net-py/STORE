@@ -154,8 +154,8 @@ export default function ReportsDashboard() {
 
       {/* Filters Card */}
       <Card className="rounded-xl border border-border bg-card shadow-sm no-print">
-        <CardContent className="p-4 flex flex-wrap gap-4 items-end">
-          <div className="flex flex-col gap-2">
+        <CardContent className="p-4 flex flex-wrap gap-3 sm:gap-4 items-end">
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
               {t("type")}
             </span>
@@ -163,7 +163,7 @@ export default function ReportsDashboard() {
               value={reportType}
               onValueChange={(val: any) => setReportType(val)}
             >
-              <SelectTrigger className="w-[220px] rounded-lg border-border bg-card h-9 text-[13px] font-medium shadow-sm">
+              <SelectTrigger className="w-full sm:w-[220px] rounded-lg border-border bg-card h-10 sm:h-9 text-[13px] font-medium shadow-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-lg border-border bg-card">
@@ -174,7 +174,7 @@ export default function ReportsDashboard() {
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 flex-1 min-w-[45%] sm:min-w-0 sm:flex-none">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
               {t("startDate")}
             </span>
@@ -182,11 +182,11 @@ export default function ReportsDashboard() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="h-9 px-3 rounded-lg border border-border bg-card text-[13px] font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-10 sm:h-9 px-3 rounded-lg border border-border bg-card text-[13px] font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 flex-1 min-w-[45%] sm:min-w-0 sm:flex-none">
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
               {t("endDate")}
             </span>
@@ -194,7 +194,7 @@ export default function ReportsDashboard() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="h-9 px-3 rounded-lg border border-border bg-card text-[13px] font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-10 sm:h-9 px-3 rounded-lg border border-border bg-card text-[13px] font-medium shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 

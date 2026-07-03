@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/components/language-provider";
-import { LayoutDashboard, FileText, Package, BookOpen, Menu } from "lucide-react";
+import { LayoutDashboard, FileText, Package, Wallet, Menu } from "lucide-react";
 
 interface DashboardShellProps {
   tenantId: string;
@@ -38,14 +38,14 @@ export function DashboardShell({ tenantId, children }: DashboardShellProps) {
       dashboard: "Início",
       invoices: "Faturas",
       products: "Produtos",
-      accounting: "Contabilidade",
+      finance: "Financeiro",
       menu: "Mais"
     },
     es: {
       dashboard: "Inicio",
       invoices: "Facturas",
       products: "Productos",
-      accounting: "Contabilidad",
+      finance: "Finanzas",
       menu: "Más"
     }
   };
@@ -140,16 +140,16 @@ export function DashboardShell({ tenantId, children }: DashboardShellProps) {
         </Link>
 
         <Link
-          href={`/${tenantId}/accounting`}
+          href={`/${tenantId}/finance`}
           className={cn(
             "flex flex-col items-center justify-center flex-1 h-full py-1 text-center transition-all",
-            isTabActive("accounting")
+            isTabActive("finance")
               ? "text-primary scale-105 font-semibold"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          <BookOpen className="h-5 w-5 mb-0.5" />
-          <span className="text-[10px] tracking-wide">{getMobileLabel("accounting")}</span>
+          <Wallet className="h-5 w-5 mb-0.5" />
+          <span className="text-[10px] tracking-wide">{getMobileLabel("finance")}</span>
         </Link>
 
         <button

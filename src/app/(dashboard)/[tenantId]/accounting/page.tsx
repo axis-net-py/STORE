@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import LedgerTable from "@/components/accounting/LedgerTable";
+import PeriodsManager from "@/components/accounting/PeriodsManager";
 
 export default async function AccountingPage({
   params,
@@ -15,7 +16,7 @@ export default async function AccountingPage({
   const resolvedTenantId = paramTenantId || tenantId;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Contabilidade
@@ -26,6 +27,8 @@ export default async function AccountingPage({
       </div>
 
       <LedgerTable tenantId={resolvedTenantId} />
+
+      <PeriodsManager />
     </div>
   );
 }

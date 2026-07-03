@@ -379,11 +379,11 @@ export default function LedgerTable({ tenantId }: { tenantId: string }) {
     <div className="space-y-6">
       {/* Filters Bar */}
       <Card className="rounded-xl border border-border bg-card shadow-sm">
-        <CardContent className="p-4 flex flex-wrap gap-4 items-end">
-          <div className="flex flex-col gap-2">
+        <CardContent className="p-4 flex flex-wrap gap-3 sm:gap-4 items-end">
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{getLabel('status')}</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px] rounded-lg border-border bg-card h-9 text-[13px] font-medium shadow-sm">
+              <SelectTrigger className="w-full sm:w-[160px] rounded-lg border-border bg-card h-10 sm:h-9 text-[13px] font-medium shadow-sm">
                 <SelectValue placeholder={getLabel('allStatus')} />
               </SelectTrigger>
               <SelectContent className="rounded-lg border-border bg-card">
@@ -395,11 +395,11 @@ export default function LedgerTable({ tenantId }: { tenantId: string }) {
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 flex-1 min-w-[45%] sm:min-w-0 sm:flex-none">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{getLabel('startDate')}</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[160px] rounded-lg border-border bg-card h-9 text-[13px] justify-start text-left font-medium">
+                <Button variant="outline" className="w-full sm:w-[160px] rounded-lg border-border bg-card h-10 sm:h-9 text-[13px] justify-start text-left font-medium">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {startDate ? format(startDate, 'PPP', { locale }) : getLabel('pickDate')}
                 </Button>
@@ -410,11 +410,11 @@ export default function LedgerTable({ tenantId }: { tenantId: string }) {
             </Popover>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 flex-1 min-w-[45%] sm:min-w-0 sm:flex-none">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">{getLabel('endDate')}</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[160px] rounded-lg border-border bg-card h-9 text-[13px] justify-start text-left font-medium">
+                <Button variant="outline" className="w-full sm:w-[160px] rounded-lg border-border bg-card h-10 sm:h-9 text-[13px] justify-start text-left font-medium">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {endDate ? format(endDate, 'PPP', { locale }) : getLabel('pickDate')}
                 </Button>
@@ -585,7 +585,7 @@ export default function LedgerTable({ tenantId }: { tenantId: string }) {
           </DialogHeader>
           {selectedEntry && (
             <div className="p-6 space-y-6 overflow-y-auto max-h-[64vh]">
-              <div className="grid grid-cols-2 gap-4 text-[13px] bg-muted/20 p-5 rounded-2xl border border-border/50">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px] bg-muted/20 p-5 rounded-2xl border border-border/50">
                 <div>
                   <span className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">{getLabel('date')}</span>
                   <p className="font-mono font-bold text-foreground/75 mt-1">

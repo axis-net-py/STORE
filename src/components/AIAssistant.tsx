@@ -32,7 +32,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "bot",
-      text: "Olá! Sou o Assistente COOPER IA. Posso ajudar você a gerenciar o ERP comercial. Diga comandos como:\n• 'cadastrar produto Teclado Mecânico com preço 150000 e custo 100000'\n• 'cadastrar cliente Roberto Silva'\n• 'cadastrar fornecedor distribuidora Asunción'\n• 'lançar transação de receita de 500000'\n\nOu envie imagens/PDFs de faturas de compra para cadastrá-las automaticamente no sistema.",
+      text: "Olá! Sou o Assistente COOPER IA. Posso executar ações em todos os módulos por texto ou voz:\n• 'cadastrar produto Teclado com preço 150000 e custo 100000'\n• 'cadastrar cliente Roberto Silva' / 'fornecedor Distribuidora Asunción'\n• 'venda de 10 sacas de soja para o cliente Cooperativa a 300000 cada'\n• 'pedido de compra de 50 kg de adubo do fornecedor AgroSur'\n• 'recebi 500000 do cliente Roberto' (baixa no financeiro)\n• 'ajustar estoque do produto Soja, entrada de 100 sacas'\n• 'transferir 20 sacas de soja do depósito Principal para a Filial'\n\nOu envie foto/PDF de fatura de compra que eu cadastro tudo automaticamente — fornecedor, produtos, estoque e contabilidade, sem duplicar registros.",
     },
   ]);
   const [inputText, setInputText] = useState("");
@@ -245,7 +245,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
               <Sparkles className="w-5 h-5 text-primary animate-pulse" />
               <div>
                 <h3 className="text-sm font-bold text-foreground">COOPER IA</h3>
-                <span className="text-[9px] font-semibold text-emerald-600 uppercase tracking-widest">Online</span>
+                <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-widest">Online</span>
               </div>
             </div>
             <button
@@ -279,7 +279,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
                     msg.sender === "user"
                       ? "bg-primary/10 border border-primary/20 text-foreground font-medium"
                       : msg.isDiagnostic
-                      ? "bg-emerald-950/20 border border-emerald-800/30 text-foreground"
+                      ? "bg-blue-950/20 border border-blue-800/30 text-foreground"
                       : "bg-muted/40 border border-border text-foreground/90"
                   }`}
                 >
@@ -376,8 +376,8 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
         onClick={() => setIsOpen(!isOpen)}
         className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 active:scale-95 text-white ${
           isOpen
-            ? "bg-zinc-800 hover:bg-zinc-700 hover:rotate-90"
-            : "bg-gradient-to-tr from-[#1a4d38] to-[#2d7a57] hover:shadow-emerald-950/20 hover:scale-105"
+            ? "bg-slate-800 hover:bg-slate-700 hover:rotate-90"
+            : "bg-gradient-to-tr from-blue-600 to-sky-500 hover:shadow-blue-950/20 hover:scale-105"
         }`}
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageSquare className="w-5.5 h-5.5 animate-pulse" />}

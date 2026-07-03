@@ -3,6 +3,104 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { Decimal } from "decimal.js";
 import { createPurchaseInvoice, createSalesInvoice } from "@/app/actions/invoice";
+import { createOrder } from "@/app/actions/orders";
+import { registerPayment } from "@/app/actions/payments";
+import { adjustStock } from "@/app/actions/inventory";
+import { transferStock } from "@/app/actions/warehouse";
+import { requirePermission } from "@/lib/authz";
+
+// RBAC: permissão exigida para cada ação executável pela IA
+const actionPermissions: Record<string, string> = {
+  create_product: "products:write",
+  create_customer: "customers:write",
+  create_supplier: "suppliers:write",
+  create_finance_transaction: "accounting:write",
+  create_purchase_invoice: "invoices:write",
+  create_sales_invoice: "invoices:write",
+  create_order: "invoices:write",
+  register_payment: "accounting:write",
+  adjust_stock: "inventory:write",
+  transfer_stock: "inventory:write",
+};
+
+// Dedupe: localiza cliente por documento ou nome (case-insensitive); cria se não existir
+async function findOrCreateCustomer(tenantId: string, data: any) {
+  let customer: any = null;
+  if (data.document) {
+    customer = await prisma.customer.findFirst({ where: { tenantId, document: data.document } });
+  }
+  if (!customer && data.name) {
+    customer = await prisma.customer.findFirst({
+      where: { tenantId, name: { equals: data.name, mode: "insensitive" } },
+    });
+  }
+  if (customer) return { customer, created: false };
+  customer = await prisma.customer.create({
+    data: {
+      tenantId,
+      name: data.name,
+      document: data.document || null,
+      documentType: data.documentType || "RUC",
+      email: data.email || null,
+      phone: data.phone || null,
+      address: data.address || null,
+      city: data.city || null,
+      country: "PY",
+      isActive: true,
+    },
+  });
+  return { customer, created: true };
+}
+
+// Dedupe: localiza fornecedor por documento ou nome; cria se não existir
+async function findOrCreateSupplier(tenantId: string, data: any) {
+  let supplier: any = null;
+  if (data.document) {
+    supplier = await prisma.supplier.findFirst({ where: { tenantId, document: data.document } });
+  }
+  if (!supplier && data.name) {
+    supplier = await prisma.supplier.findFirst({
+      where: { tenantId, name: { equals: data.name, mode: "insensitive" } },
+    });
+  }
+  if (supplier) return { supplier, created: false };
+  supplier = await prisma.supplier.create({
+    data: {
+      tenantId,
+      name: data.name,
+      businessName: data.businessName || data.name,
+      document: data.document || null,
+      documentType: data.documentType || "RUC",
+      email: data.email || null,
+      phone: data.phone || null,
+      address: data.address || null,
+      city: data.city || null,
+      country: "PY",
+      category: "retail",
+      isActive: true,
+    },
+  });
+  return { supplier, created: true };
+}
+
+// Dedupe: localiza produto por SKU ou nome
+async function findProductByRef(tenantId: string, ref: { sku?: string; name?: string }) {
+  let product: any = null;
+  if (ref.sku) {
+    product = await prisma.product.findFirst({ where: { tenantId, sku: ref.sku } });
+  }
+  if (!product && ref.name) {
+    product = await prisma.product.findFirst({
+      where: { tenantId, name: { equals: ref.name, mode: "insensitive" } },
+    });
+    if (!product) {
+      product = await prisma.product.findFirst({
+        where: { tenantId, name: { contains: ref.name, mode: "insensitive" } },
+      });
+    }
+  }
+  return product;
+}
 
 // Normalizes numbers (integer for PYG, float for quantity) and cleans LatAm separators
 function parseExtractedNumber(val: any, isPyg: boolean = false): number {
@@ -126,9 +224,106 @@ async function callGemini(prompt: string, imageBase64?: string, mimeType?: strin
   }
 }
 
+// Converte números em formato latino ("500.000", "33,75") para number
+function parseLatamNumber(s: string): number {
+  let v = s.trim();
+  if (v.includes(".") && v.includes(",")) {
+    v = v.replace(/\./g, "").replace(/,/g, ".");
+  } else if (/\.\d{3}(\D|$)/.test(v)) {
+    v = v.replace(/\./g, "");
+  } else if (v.includes(",")) {
+    v = v.replace(/,/g, ".");
+  }
+  return parseFloat(v) || 0;
+}
+
 // Local NLP Fallback Engine for Core ERP
 function localNlpProcessor(text: string) {
   const cleanText = text.toLowerCase().trim();
+
+  // 0.1 TRANSFER STOCK — "transferir 20 sacas de soja do depósito Principal para Filial"
+  if (/transferir|transfer[êe]ncia|trasladar/.test(cleanText) && /dep[óo]sito/.test(cleanText)) {
+    const qtyMatch = cleanText.match(/(\d+(?:[.,]\d+)?)/);
+    const prodMatch = text.match(/(?:\d+(?:[.,]\d+)?)\s*(?:un|kg|sacas?|sc|l|litros?|ton|unidades?)?\s*(?:de\s+)?(.+?)\s+(?:do|del|de o?)\s+dep[óo]sito/i);
+    const whMatch = text.match(/dep[óo]sito\s+(.+?)\s+(?:para|al|a)\s+(?:o\s+dep[óo]sito\s+|dep[óo]sito\s+)?(.+)$/i);
+    if (qtyMatch && whMatch) {
+      return {
+        action: "transfer_stock",
+        data: {
+          productName: prodMatch ? prodMatch[1].trim() : "",
+          quantity: parseLatamNumber(qtyMatch[1]),
+          fromWarehouse: whMatch[1].trim(),
+          toWarehouse: whMatch[2].trim().replace(/\.$/, ""),
+        },
+        message: "Transferência de estoque processada.",
+      };
+    }
+  }
+
+  // 0.2 ADJUST STOCK — "ajustar estoque", "entrada de 100 sacas", "perda de 5 unidades de X"
+  if (/ajust(ar|e) (o )?estoque|entrada de estoque|sa[íi]da de estoque|perda|quebra|invent[áa]rio/.test(cleanText)) {
+    const isOut = /sa[íi]da|perda|quebra|baixa/.test(cleanText);
+    const qtyMatch = cleanText.match(/(\d+(?:[.,]\d+)?)/);
+    const prodMatch = text.match(/(?:produto|de|do)\s+([a-zA-ZÀ-ÿ0-9\s-]+?)(?:,|\s+(?:entrada|sa[íi]da|com|em)|$)/i);
+    if (qtyMatch) {
+      return {
+        action: "adjust_stock",
+        data: {
+          productName: prodMatch ? prodMatch[1].trim() : "",
+          type: isOut ? "SAIDA" : "ENTRADA",
+          quantity: parseLatamNumber(qtyMatch[1]),
+          reason: "Ajuste via IA (offline)",
+        },
+        message: "Ajuste de estoque processado.",
+      };
+    }
+  }
+
+  // 0.3 REGISTER PAYMENT — "recebi 500.000 do cliente X", "paguei 200.000 ao fornecedor Y"
+  if (/receb(i|imento|er)|baixa(r)? (a |na )?fatura|quit(ei|ar)|paguei|pagamento (de|da|ao|a)/.test(cleanText)) {
+    const isPayable = /paguei|pagamento a|ao fornecedor|pagar fornecedor|del proveedor|al proveedor/.test(cleanText);
+    const amountMatch = cleanText.match(/(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)/);
+    const entityMatch = text.match(/(?:do cliente|da cliente|de cliente|ao fornecedor|do fornecedor|de fornecedor|del cliente|al proveedor)\s+([a-zA-ZÀ-ÿ\s]+?)(?:,|\.|$)/i);
+    const invMatch = text.match(/fatura\s+(?:n[°º.]?\s*)?([\d-]+)/i);
+    if (amountMatch) {
+      return {
+        action: "register_payment",
+        data: {
+          direction: isPayable ? "PAYABLE" : "RECEIVABLE",
+          amount: parseLatamNumber(amountMatch[1]),
+          entityName: entityMatch ? entityMatch[1].trim() : undefined,
+          invoiceNumber: invMatch ? invMatch[1] : undefined,
+          method: "CASH",
+        },
+        message: "Baixa processada.",
+      };
+    }
+  }
+
+  // 0.4 CREATE ORDER — "pedido de compra de 50 kg de adubo do fornecedor AgroSur"
+  if (/pedido|or[çc]amento|encomend(a|ar)|reservar/.test(cleanText)) {
+    const isPurchase = /compra|fornecedor|proveedor/.test(cleanText);
+    const entityMatch = text.match(/(?:cliente|fornecedor|proveedor|para|del?)\s+([a-zA-ZÀ-ÿ\s]+?)(?:,|\.|$)/i);
+    const itemMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(?:un|kg|sacas?|sc|l|litros?|ton|unidades?)?\s*(?:de\s+)?([a-zA-ZÀ-ÿ0-9\s-]+?)(?:\s+(?:do|da|de o|para|del)\s+|,|$)/i);
+    const priceMatch = cleanText.match(/(?:a|por|pre[çc]o)\s+(\d{1,3}(?:\.\d{3})+|\d+(?:[.,]\d+)?)\s*(?:cada|guaranis|gs|pyg)?/);
+    if (entityMatch && itemMatch) {
+      return {
+        action: "create_order",
+        data: {
+          type: isPurchase ? "PURCHASE" : "SALES",
+          entityName: entityMatch[1].trim(),
+          items: [
+            {
+              name: itemMatch[2].trim(),
+              quantity: parseLatamNumber(itemMatch[1]),
+              unitPrice: priceMatch ? parseLatamNumber(priceMatch[1]) : undefined,
+            },
+          ],
+        },
+        message: "Pedido processado.",
+      };
+    }
+  }
 
   // 1. PRODUCT
   if (cleanText.includes("produto") || cleanText.includes("artigo") || cleanText.includes("item")) {
@@ -137,11 +332,11 @@ function localNlpProcessor(text: string) {
     let cost = 0;
     let currency = "PYG";
 
-    const priceMatch = cleanText.match(/(?:preço|preco|valor|venda)\s*(\d+(?:[.,]\d+)?)/i);
-    if (priceMatch) price = parseFloat(priceMatch[1].replace(",", "."));
+    const priceMatch = cleanText.match(/(?:preço|preco|valor|venda)\s*(?:de\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)/i);
+    if (priceMatch) price = parseLatamNumber(priceMatch[1]);
 
-    const costMatch = cleanText.match(/(?:custo|compra)\s*(\d+(?:[.,]\d+)?)/i);
-    if (costMatch) cost = parseFloat(costMatch[1].replace(",", "."));
+    const costMatch = cleanText.match(/(?:custo|compra)\s*(?:de\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)/i);
+    if (costMatch) cost = parseLatamNumber(costMatch[1]);
 
     const nameMatch = text.match(/(?:produto|artigo|item)\s+([a-zA-Z0-9\s-]+)/i);
     if (nameMatch) {
@@ -206,8 +401,8 @@ function localNlpProcessor(text: string) {
       type = "RECEIVABLE";
     }
 
-    const amountMatch = cleanText.match(/(?:de|valor|quantia)\s*(\d+(?:[.,]\d+)?)/i) || cleanText.match(/(\d+(?:[.,]\d+)?)\s*(?:guaranis|usd|pyg|reais)/i);
-    if (amountMatch) amount = parseFloat(amountMatch[1].replace(",", "."));
+    const amountMatch = cleanText.match(/(?:de|valor|quantia)\s*(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)/i) || cleanText.match(/(\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)\s*(?:guaranis|usd|pyg|reais)/i);
+    if (amountMatch) amount = parseLatamNumber(amountMatch[1]);
 
     return {
       action: "create_finance_transaction",
@@ -237,12 +432,6 @@ export async function POST(req: NextRequest) {
   const tenantId = session.user.tenantId;
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "A chave GEMINI_API_KEY não está configurada no servidor. A IA integrada precisa da chave para processar comandos reais." },
-      { status: 500 }
-    );
-  }
 
   try {
     const body = await req.json();
@@ -253,6 +442,13 @@ export async function POST(req: NextRequest) {
 
     // 1. Invoice PDF/Image processing request
     if (activePurpose === "invoice" && fileBase64) {
+      await requirePermission("invoices:write");
+      if (!apiKey) {
+        return NextResponse.json(
+          { error: "A leitura de faturas por foto/PDF exige a chave GEMINI_API_KEY configurada no servidor. Comandos de texto continuam funcionando." },
+          { status: 400 }
+        );
+      }
       let extracted: any = null;
 
       if (process.env.GEMINI_API_KEY) {
@@ -493,17 +689,25 @@ Retorne APENAS um objeto JSON puro no seguinte formato, sem formatação markdow
       let result: any = null;
 
       const prompt = `Analise a intenção do usuário: "${text}".
-Temos as seguintes ações possíveis de cadastro no ERP comercial:
+Temos as seguintes ações possíveis no ERP comercial:
 1. "create_product" (Produto): campos { name: string, sku?: string, price: number, cost: number, currency: "PYG"|"USD"|"BRL", unit?: string, currentStock?: number }
 2. "create_customer" (Cliente): campos { name: string, document?: string, documentType?: "RUC"|"CI"|"CPF"|"CNPJ", email?: string, phone?: string, address?: string, city?: string }
 3. "create_supplier" (Fornecedor): campos { name: string, document?: string, documentType?: "RUC"|"CI"|"CPF"|"CNPJ", email?: string, phone?: string, address?: string, city?: string }
-4. "create_finance_transaction" (Transação Financeira/Caixa): campos { type: "RECEIVABLE"|"PAYABLE"|"TRANSFER", entityId?: string, currency: "PYG"|"USD"|"BRL", amount: number, exchangeRate: number, category?: string }
+4. "create_finance_transaction" (Transação Financeira/Caixa avulsa): campos { type: "RECEIVABLE"|"PAYABLE"|"TRANSFER", entityId?: string, currency: "PYG"|"USD"|"BRL", amount: number, exchangeRate: number, category?: string }
 5. "create_purchase_invoice" (Fatura de Compra): campos { supplierName: string, documentNumber?: string, currency: "PYG"|"USD"|"BRL", exchangeRate: number, paymentMethod: "A_VISTA"|"A_PRAZO", items: [{ name: string, sku?: string, quantity: number, unitPrice: number, taxType?: "IVA_10"|"IVA_5"|"EXENTO" }] }
 6. "create_sales_invoice" (Fatura de Venda): campos { customerName: string, documentNumber?: string, currency: "PYG"|"USD"|"BRL", exchangeRate: number, paymentMethod: "A_VISTA"|"A_PRAZO", items: [{ name: string, sku?: string, quantity: number, unitPrice: number, taxType?: "IVA_10"|"IVA_5"|"EXENTO" }] }
+7. "create_order" (Pedido de Venda ou Compra — pré-faturamento, NÃO movimenta estoque): campos { type: "SALES"|"PURCHASE", entityName: string, items: [{ name: string, quantity: number, unitPrice?: number }] }
+   - Use quando o usuário disser "pedido", "orçamento", "reservar", "encomendar".
+8. "register_payment" (Baixa de título — recebimento de cliente ou pagamento a fornecedor): campos { direction: "RECEIVABLE"|"PAYABLE", entityName?: string, invoiceNumber?: string, amount: number, method?: "CASH"|"BANK_TRANSFER"|"CHECK"|"CARD" }
+   - Use quando o usuário disser "recebi", "recebimento", "baixar fatura", "paguei o fornecedor", "quitar". "direction" = RECEIVABLE se recebeu de cliente, PAYABLE se pagou fornecedor.
+9. "adjust_stock" (Ajuste manual de estoque): campos { productName: string, type: "ENTRADA"|"SAIDA", quantity: number, reason?: string }
+   - Use para "ajustar estoque", "entrada de estoque", "perda", "quebra", "inventário".
+10. "transfer_stock" (Transferência entre depósitos): campos { productName: string, fromWarehouse: string, toWarehouse: string, quantity: number }
 
 Atenção especial para Condição de Pagamento (paymentMethod):
 - Se o usuário citar termos de condição de pagamento como "contado", "a vista", "à vista", "cash", mapeie "paymentMethod" para "A_VISTA".
 - Se o usuário citar "credito", "crédito", "a prazo", "prazo", mapeie "paymentMethod" para "A_PRAZO".
+Para valores em Guaranis (PYG), lembre que ponto é separador de milhar: "500.000" = 500000.
 
 Se a intenção do usuário corresponder a um cadastro, retorne um objeto JSON puro (sem markdown \`\`\`) contendo:
 {
@@ -534,55 +738,59 @@ Se for apenas conversa ou dúvida, retorne:
         result = localNlpProcessor(text);
       }
 
+      // RBAC: valida a permissão do usuário antes de executar qualquer ação
+      if (result.action && result.action !== "chat") {
+        const requiredPerm = actionPermissions[result.action];
+        if (requiredPerm) {
+          await requirePermission(requiredPerm);
+        }
+      }
+
       // Execute database actions if detected
       if (result.action === "create_product") {
-        const sku = result.data.sku || `PROD-${result.data.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
         const isPyg = (result.data.currency || "PYG") === "PYG";
         const price = parseExtractedNumber(result.data.price, isPyg);
         const cost = parseExtractedNumber(result.data.cost, isPyg);
         const currentStock = parseExtractedNumber(result.data.currentStock, false);
-        await prisma.product.create({
-          data: {
-            tenantId,
-            sku,
-            name: result.data.name,
-            price: new Decimal(price || 0),
-            cost: new Decimal(cost || 0),
-            currency: result.data.currency || "PYG",
-            unit: result.data.unit || "un",
-            currentStock: new Decimal(currentStock || 0),
-            isActive: true
+
+        // Dedupe: não duplicar produto existente (por SKU ou nome)
+        const existing = await findProductByRef(tenantId, { sku: result.data.sku, name: result.data.name });
+        if (existing) {
+          const updateData: any = {};
+          if (price > 0) updateData.price = new Decimal(price);
+          if (cost > 0) updateData.cost = new Decimal(cost);
+          if (Object.keys(updateData).length > 0) {
+            await prisma.product.update({ where: { id: existing.id }, data: updateData });
+            result.message = `Produto "${existing.name}" já existia — preço/custo atualizados sem duplicar o cadastro.`;
+          } else {
+            result.message = `Produto "${existing.name}" já está cadastrado (SKU ${existing.sku}). Nenhuma duplicata criada.`;
           }
-        });
+        } else {
+          const sku = result.data.sku || `PROD-${result.data.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+          await prisma.product.create({
+            data: {
+              tenantId,
+              sku,
+              name: result.data.name,
+              price: new Decimal(price || 0),
+              cost: new Decimal(cost || 0),
+              currency: result.data.currency || "PYG",
+              unit: result.data.unit || "un",
+              currentStock: new Decimal(currentStock || 0),
+              isActive: true
+            }
+          });
+        }
       } else if (result.action === "create_customer") {
-        await prisma.customer.create({
-          data: {
-            tenantId,
-            name: result.data.name,
-            document: result.data.document || null,
-            documentType: result.data.documentType || "RUC",
-            email: result.data.email || null,
-            phone: result.data.phone || null,
-            address: result.data.address || null,
-            city: result.data.city || null,
-            isActive: true
-          }
-        });
+        const { customer, created } = await findOrCreateCustomer(tenantId, result.data);
+        if (!created) {
+          result.message = `Cliente "${customer.name}" já está cadastrado. Nenhuma duplicata criada.`;
+        }
       } else if (result.action === "create_supplier") {
-        await prisma.supplier.create({
-          data: {
-            tenantId,
-            name: result.data.name,
-            businessName: result.data.businessName || result.data.name,
-            document: result.data.document || null,
-            documentType: result.data.documentType || "RUC",
-            email: result.data.email || null,
-            phone: result.data.phone || null,
-            address: result.data.address || null,
-            city: result.data.city || null,
-            isActive: true
-          }
-        });
+        const { supplier, created } = await findOrCreateSupplier(tenantId, result.data);
+        if (!created) {
+          result.message = `Fornecedor "${supplier.name}" já está cadastrado. Nenhuma duplicata criada.`;
+        }
       } else if (result.action === "create_finance_transaction") {
         const amount = Number(result.data.amount || 0);
         const exchangeRate = Number(result.data.exchangeRate || 1);
@@ -726,11 +934,9 @@ Se for apenas conversa ou dúvida, retorne:
               }
             });
           } else if (Number(product.currentStock) < qty) {
+            // Completa o estoque via ajuste oficial (sincroniza depósito e gera movimentação auditável)
             const needed = qty - Number(product.currentStock);
-            await prisma.product.update({
-              where: { id: product.id },
-              data: { currentStock: { increment: needed } }
-            });
+            await adjustStock(product.id, "ENTRADA", needed, "Ajuste automático via IA para atender venda");
           }
 
           resolvedItems.push({
@@ -769,6 +975,139 @@ Se for apenas conversa ou dúvida, retorne:
         };
 
         await createSalesInvoice(invoicePayload);
+      } else if (result.action === "create_order") {
+        // Pedido de venda/compra (pré-faturamento) — cria entidade e produtos se faltarem, sem duplicar
+        const isSales = result.data.type !== "PURCHASE";
+        const entityName = result.data.entityName;
+        if (!entityName) throw new Error("Informe o cliente/fornecedor do pedido.");
+
+        const entity = isSales
+          ? (await findOrCreateCustomer(tenantId, { name: entityName })).customer
+          : (await findOrCreateSupplier(tenantId, { name: entityName })).supplier;
+
+        const orderItems: any[] = [];
+        for (const item of result.data.items || []) {
+          let product = await findProductByRef(tenantId, { sku: item.sku, name: item.name });
+          const qty = parseExtractedNumber(item.quantity, false) || 1;
+          let unitPrice = parseExtractedNumber(item.unitPrice, true);
+          if (!product && item.name) {
+            const cleanSku = `PROD-${item.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+            product = await prisma.product.create({
+              data: {
+                tenantId,
+                sku: cleanSku,
+                name: item.name,
+                price: new Decimal(unitPrice || 0),
+                cost: new Decimal(unitPrice || 0),
+                currency: "PYG",
+                unit: normalizeUnit(item.name, item.unit),
+                currentStock: new Decimal(0),
+                isActive: true
+              }
+            });
+          }
+          if (!product) continue;
+          if (!unitPrice || unitPrice <= 0) {
+            unitPrice = isSales ? Number(product.price) : Number(product.cost);
+          }
+          orderItems.push({ productId: product.id, quantity: qty, unitPrice });
+        }
+        if (orderItems.length === 0) throw new Error("Nenhum item válido para o pedido.");
+
+        const orderRes = await createOrder({
+          type: isSales ? "SALES" : "PURCHASE",
+          entityId: entity.id,
+          notes: "Criado via IA",
+          items: orderItems,
+        });
+        result.message = `Pedido ${orderRes.orderNumber} (${isSales ? "venda" : "compra"}) criado para "${entity.name}" com ${orderItems.length} item(ns). Use a tela de Pedidos para faturá-lo.`;
+      } else if (result.action === "register_payment") {
+        // Baixa de títulos (caixa/financeiro): aplica FIFO nas faturas em aberto
+        const isReceivable = result.data.direction !== "PAYABLE";
+        const invType = isReceivable ? "SALES" : "PURCHASE";
+        const amount = parseExtractedNumber(result.data.amount, true);
+        if (!amount || amount <= 0) throw new Error("Valor da baixa inválido.");
+
+        const entityName = result.data.entityName;
+        const invoices = await prisma.commercialInvoice.findMany({
+          where: {
+            tenantId,
+            type: invType,
+            status: "APPROVED",
+            ...(result.data.invoiceNumber ? { documentNumber: { contains: result.data.invoiceNumber } } : {}),
+            ...(entityName
+              ? isReceivable
+                ? { customer: { name: { contains: entityName, mode: "insensitive" } } }
+                : { supplier: { name: { contains: entityName, mode: "insensitive" } } }
+              : {}),
+          },
+          include: { payments: { select: { amount: true } } },
+          orderBy: [{ dueDate: "asc" }, { issuedAt: "asc" }],
+        });
+
+        const open = invoices
+          .map((inv) => ({
+            inv,
+            balance: Number(inv.totalAmount) - inv.payments.reduce((s, p) => s + Number(p.amount), 0),
+          }))
+          .filter((x) => x.balance > 0.009);
+
+        if (open.length === 0) {
+          throw new Error(
+            `Nenhuma fatura em aberto encontrada${entityName ? ` para "${entityName}"` : ""}. Verifique o nome ou o número da fatura.`
+          );
+        }
+
+        let remaining = amount;
+        let applied = 0;
+        let count = 0;
+        for (const { inv, balance } of open) {
+          if (remaining <= 0.009) break;
+          const pay = Math.min(remaining, balance);
+          await registerPayment({
+            invoiceId: inv.id,
+            amount: pay,
+            method: (result.data.method as any) || "CASH",
+            notes: "Baixa registrada via IA",
+          });
+          remaining -= pay;
+          applied += pay;
+          count++;
+        }
+
+        result.message = `${isReceivable ? "Recebimento" : "Pagamento"} de ${new Intl.NumberFormat("es-PY").format(applied)} Gs. baixado em ${count} fatura(s)${entityName ? ` de "${entityName}"` : ""}.${remaining > 0.009 ? ` Sobrou ${new Intl.NumberFormat("es-PY").format(remaining)} Gs. sem título em aberto para aplicar.` : ""}`;
+      } else if (result.action === "adjust_stock") {
+        const product = await findProductByRef(tenantId, { sku: result.data.sku, name: result.data.productName });
+        if (!product) throw new Error(`Produto "${result.data.productName}" não encontrado.`);
+        const qty = parseExtractedNumber(result.data.quantity, false);
+        if (!qty || qty <= 0) throw new Error("Quantidade inválida.");
+        const type = result.data.type === "SAIDA" ? "SAIDA" : "ENTRADA";
+        await adjustStock(product.id, type, qty, result.data.reason || "Ajuste via IA");
+        result.message = `Estoque de "${product.name}" ajustado: ${type === "ENTRADA" ? "+" : "-"}${qty} ${product.unit}.`;
+      } else if (result.action === "transfer_stock") {
+        const product = await findProductByRef(tenantId, { name: result.data.productName });
+        if (!product) throw new Error(`Produto "${result.data.productName}" não encontrado.`);
+        const qty = parseExtractedNumber(result.data.quantity, false);
+        if (!qty || qty <= 0) throw new Error("Quantidade inválida.");
+
+        const findWarehouse = async (ref: string) =>
+          prisma.warehouse.findFirst({
+            where: {
+              tenantId,
+              isActive: true,
+              OR: [
+                { code: { equals: ref, mode: "insensitive" } },
+                { name: { contains: ref, mode: "insensitive" } },
+              ],
+            },
+          });
+
+        const from = await findWarehouse(result.data.fromWarehouse || "");
+        const to = await findWarehouse(result.data.toWarehouse || "");
+        if (!from || !to) throw new Error("Depósito de origem ou destino não encontrado. Verifique os nomes na tela de Estoque.");
+
+        await transferStock({ productId: product.id, fromWarehouseId: from.id, toWarehouseId: to.id, quantity: qty });
+        result.message = `Transferidos ${qty} ${product.unit} de "${product.name}" do depósito ${from.name} para ${to.name}.`;
       }
 
       return NextResponse.json({

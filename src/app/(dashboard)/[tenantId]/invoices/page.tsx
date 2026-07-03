@@ -19,7 +19,7 @@ export default async function InvoicesPage({
   const invoices = await getInvoices();
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Faturas</h1>

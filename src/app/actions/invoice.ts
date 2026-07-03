@@ -2,6 +2,9 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
+import { ensureDefaultWarehouse, bumpWarehouseStock } from '@/lib/warehouse'
+import { assertPeriodOpen } from '@/lib/accounting-period'
 import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import type { CommercialInvoice, InvoiceItem } from '@prisma/client'
@@ -33,6 +36,34 @@ export type InvoiceWithDetails = CommercialInvoice & {
   customer: { id: string; name: string; document?: string | null }
   items: (InvoiceItem & { product: { id: string; sku: string; name: string } })[]
   movements: { id: string; type: string; quantity: number; product: { name: string } }[]
+}
+
+// Validação de entrada (Etapa 2 — Zod): impede quantidades/preços negativos
+// que "fabricariam" estoque ou distorceriam o razão
+import { z } from 'zod'
+
+const InvoiceItemSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.number().positive('Quantidade deve ser maior que zero').finite(),
+  unitPrice: z.number().nonnegative('Preço unitário não pode ser negativo').finite(),
+  taxType: z.enum(['IVA_10', 'IVA_5', 'EXENTO']).optional(),
+  cost: z.number().nonnegative().finite().optional(),
+})
+
+const InvoiceSchema = z.object({
+  type: z.enum(['PURCHASE', 'SALES']),
+  customerId: z.string().min(1, 'Cliente/Fornecedor é obrigatório'),
+  exchangeRate: z.number().positive().finite().optional(),
+  currency: z.enum(['PYG', 'USD', 'BRL']).optional(),
+  items: z.array(InvoiceItemSchema).min(1, 'A fatura precisa de ao menos um item'),
+})
+
+function validateInvoiceData(data: InvoiceFormData) {
+  const result = InvoiceSchema.safeParse(data)
+  if (!result.success) {
+    const first = result.error.issues[0]
+    throw new Error(`Dados inválidos: ${first.message}`)
+  }
 }
 
 // Helper para cálculo de impostos paraguaios
@@ -91,9 +122,9 @@ export async function getInvoiceById(id: string) {
 
 // Criar Fatura de Compra (incrementa estoque) — transação atômica
 export async function createPurchaseInvoice(data: InvoiceFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('invoices:write')
+  validateInvoiceData(data)
+  await assertPeriodOpen(prisma, tenantId, data.issuedAt ?? new Date())
 
   const result = await prisma.$transaction(async (tx: any) => {
     // 1. Criar a fatura
@@ -153,6 +184,8 @@ export async function createPurchaseInvoice(data: InvoiceFormData) {
       })
 
       if (!product.isService) {
+        const warehouse = await ensureDefaultWarehouse(tx, tenantId)
+
         // Criar movimentação de estoque (ENTRADA)
         await tx.inventoryMovement.create({
           data: {
@@ -164,14 +197,16 @@ export async function createPurchaseInvoice(data: InvoiceFormData) {
             totalCost: cost.mul(quantity),
             reason: `Fatura de Compra #${invoice.id.slice(-6)}`,
             commercialInvoiceId: invoice.id,
+            warehouseId: warehouse.id,
           },
         })
 
-        // Atualizar estoque do produto (incrementar)
+        // Atualizar estoque do produto (incrementar) + saldo do depósito
         await tx.product.updateMany({
           where: { id: item.productId, tenantId },
           data: { currentStock: { increment: quantity } },
         })
+        await bumpWarehouseStock(tx, warehouse.id, item.productId, quantity)
       }
 
       totalAmount = totalAmount.add(totalPrice)
@@ -209,9 +244,9 @@ export async function createPurchaseInvoice(data: InvoiceFormData) {
 
 // Criar Fatura de Venda (valida estoque, decrementa) — transação atômica
 export async function createSalesInvoice(data: InvoiceFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('invoices:write')
+  validateInvoiceData(data)
+  await assertPeriodOpen(prisma, tenantId, data.issuedAt ?? new Date())
 
   const result = await prisma.$transaction(async (tx: any) => {
     // 1. Validar estoque para todos os itens antes de qualquer operação
@@ -221,7 +256,7 @@ export async function createSalesInvoice(data: InvoiceFormData) {
         select: { id: true, currentStock: true, name: true, isService: true },
       })
       if (!product) throw new Error(`Produto ${item.productId} não encontrado`)
-      if (!product.isService && product.currentStock < item.quantity) {
+      if (!product.isService && new Prisma.Decimal(product.currentStock).lessThan(item.quantity)) {
         throw new Error(`Estoque insuficiente para o produto: ${product.name}. Disponível: ${product.currentStock}, Solicitado: ${item.quantity}`)
       }
     }
@@ -286,6 +321,8 @@ export async function createSalesInvoice(data: InvoiceFormData) {
       })
 
       if (!product.isService) {
+        const warehouse = await ensureDefaultWarehouse(tx, tenantId)
+
         // Criar movimentação de estoque (SAIDA)
         await tx.inventoryMovement.create({
           data: {
@@ -297,14 +334,19 @@ export async function createSalesInvoice(data: InvoiceFormData) {
             totalCost: cost.mul(quantity),
             reason: `Fatura de Venda #${invoice.id.slice(-6)}`,
             commercialInvoiceId: invoice.id,
+            warehouseId: warehouse.id,
           },
         })
 
-        // Atualizar estoque do produto (decrementar)
-        await tx.product.updateMany({
-          where: { id: item.productId, tenantId },
+        // Atualizar estoque do produto (decremento condicional evita venda concorrente estourar o estoque)
+        const updated = await tx.product.updateMany({
+          where: { id: item.productId, tenantId, currentStock: { gte: quantity } },
           data: { currentStock: { decrement: quantity } },
         })
+        if (updated.count === 0) {
+          throw new Error(`Estoque insuficiente para o produto: ${product.name} (alterado por outra operação simultânea)`)
+        }
+        await bumpWarehouseStock(tx, warehouse.id, item.productId, -quantity)
       }
 
       totalAmount = totalAmount.add(totalPrice)
@@ -320,7 +362,7 @@ export async function createSalesInvoice(data: InvoiceFormData) {
 
     await tx.commercialInvoice.update({
       where: { id: invoice.id },
-      data: { 
+      data: {
         totalAmount,
         totalUSD,
         totalIva10,
@@ -352,9 +394,7 @@ export async function createSalesInvoice(data: InvoiceFormData) {
 
 // Cancelar fatura (reverte estoque)
 export async function cancelInvoice(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId, userId } = await requirePermission('invoices:delete')
 
   const invoice = await prisma.commercialInvoice.findFirst({
     where: { id, tenantId },
@@ -362,8 +402,11 @@ export async function cancelInvoice(id: string) {
   })
   if (!invoice) throw new Error('Fatura não encontrada')
   if (invoice.status === 'CANCELLED') throw new Error('Fatura já cancelada')
+  await assertPeriodOpen(prisma, tenantId, invoice.issuedAt)
 
   await prisma.$transaction(async (tx: any) => {
+    const defaultWarehouse = await ensureDefaultWarehouse(tx, tenantId)
+
     // Reverter movimentações de estoque
     for (const movement of invoice.movements) {
       const reverseType = movement.type === 'ENTRADA' ? 'SAIDA' : 'ENTRADA'
@@ -375,12 +418,34 @@ export async function cancelInvoice(id: string) {
           },
         },
       })
+      await bumpWarehouseStock(
+        tx,
+        (movement as any).warehouseId ?? defaultWarehouse.id,
+        movement.productId,
+        reverseType === 'ENTRADA' ? movement.quantity : new Prisma.Decimal(movement.quantity).neg()
+      )
     }
 
     // Marcar fatura como cancelada
     await tx.commercialInvoice.update({
       where: { id },
       data: { status: 'CANCELLED' },
+    })
+
+    // Anular o lançamento contábil vinculado para manter o razão consistente
+    await tx.journalEntry.updateMany({
+      where: { tenantId, referenceType: 'invoice', referenceId: id },
+      data: { status: 'VOIDED' },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        tenantId,
+        userId,
+        action: 'CANCEL_INVOICE',
+        entity: 'CommercialInvoice',
+        entityId: id,
+      },
     })
   })
 
@@ -418,7 +483,8 @@ export async function getNextSalesInvoiceNumber(tenantId: string, tx?: any) {
       type: 'SALES',
       documentNumber: { startsWith: '001-001-' }
     },
-    orderBy: { createdAt: 'desc' }
+    // Ordenar pelo próprio número (zero-padded) evita pular/duplicar sequência quando createdAt empata
+    orderBy: { documentNumber: 'desc' }
   })
 
   if (!lastInvoice || !lastInvoice.documentNumber) {
@@ -437,9 +503,8 @@ export async function getNextSalesInvoiceNumber(tenantId: string, tx?: any) {
 
 // Atualizar Fatura (Compra/Venda) com recálculo de estoque e ledger
 export async function updateInvoice(id: string, data: InvoiceFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('invoices:write')
+  validateInvoiceData(data)
 
   // Obter fatura original com itens e movimentações para reverter
   const originalInvoice = await prisma.commercialInvoice.findFirst({
@@ -448,8 +513,13 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
   })
   if (!originalInvoice) throw new Error('Fatura não encontrada')
   if (originalInvoice.status === 'CANCELLED') throw new Error('Fatura cancelada não pode ser editada')
+  // Bloqueia edição se a data original OU a nova data caírem em período fechado
+  await assertPeriodOpen(prisma, tenantId, originalInvoice.issuedAt)
+  await assertPeriodOpen(prisma, tenantId, data.issuedAt ?? originalInvoice.issuedAt)
 
   const result = await prisma.$transaction(async (tx: any) => {
+    const defaultWarehouse = await ensureDefaultWarehouse(tx, tenantId)
+
     // 1. Reverter estoque antigo
     for (const movement of originalInvoice.movements) {
       const reverseType = movement.type === 'ENTRADA' ? 'SAIDA' : 'ENTRADA'
@@ -461,6 +531,12 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
           },
         },
       })
+      await bumpWarehouseStock(
+        tx,
+        (movement as any).warehouseId ?? defaultWarehouse.id,
+        movement.productId,
+        reverseType === 'ENTRADA' ? movement.quantity : new Prisma.Decimal(movement.quantity).neg()
+      )
     }
 
     // 2. Deletar itens e movimentações anteriores
@@ -475,7 +551,7 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
           select: { id: true, currentStock: true, name: true, isService: true },
         })
         if (!product) throw new Error(`Produto ${item.productId} não encontrado`)
-        if (!product.isService && product.currentStock < item.quantity) {
+        if (!product.isService && new Prisma.Decimal(product.currentStock).lessThan(item.quantity)) {
           throw new Error(`Estoque insuficiente para o produto: ${product.name}. Disponível: ${product.currentStock}, Solicitado: ${item.quantity}`)
         }
       }
@@ -550,17 +626,26 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
             totalCost: cost.mul(quantity),
             reason: `Fatura de ${data.type === 'PURCHASE' ? 'Compra' : 'Venda'} (Editada) #${id.slice(-6)}`,
             commercialInvoiceId: id,
+            warehouseId: defaultWarehouse.id,
           }
         })
 
-        await tx.product.updateMany({
-          where: { id: item.productId, tenantId },
+        const stockUpdate = await tx.product.updateMany({
+          where: {
+            id: item.productId,
+            tenantId,
+            ...(mvType === 'SAIDA' ? { currentStock: { gte: quantity } } : {}),
+          },
           data: {
             currentStock: {
               [mvType === 'ENTRADA' ? 'increment' : 'decrement']: quantity
             }
           }
         })
+        if (stockUpdate.count === 0) {
+          throw new Error(`Estoque insuficiente para o produto ${item.productId} (alterado por outra operação simultânea)`)
+        }
+        await bumpWarehouseStock(tx, defaultWarehouse.id, item.productId, mvType === 'ENTRADA' ? quantity : -quantity)
       }
 
       totalAmount = totalAmount.add(totalPrice)

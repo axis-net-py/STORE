@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrFetchExchangeRate } from "@/lib/exchange";
+import { auth } from "@/auth";
 
 /**
  * POST /api/exchange-rates/fetch
@@ -9,14 +10,16 @@ import { getOrFetchExchangeRate } from "@/lib/exchange";
  */
 export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const tenantId = searchParams.get("tenantId");
+    const session = await auth();
+    if (!session?.user?.tenantId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: "tenantId is required" },
-        { status: 400 }
-      );
+    const { searchParams } = new URL(request.url);
+    const tenantId = searchParams.get("tenantId") || session.user.tenantId;
+
+    if (tenantId !== session.user.tenantId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const savedRate = await getOrFetchExchangeRate(tenantId);

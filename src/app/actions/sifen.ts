@@ -1,7 +1,6 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import type { SifenInvoice, SifenConfig } from "@axis/sifen";
 import { SifenClient } from "@axis/sifen";
@@ -139,32 +138,6 @@ export async function submitInvoiceToSifen(
       message: error instanceof Error ? error.message : "Unknown error",
     };
   }
-}
-
-/**
- * Interactive resubmit triggered from the UI.
- * Derives tenantId from the session (never trust a client-supplied tenantId)
- * and re-runs the SIFEN submission for a single invoice.
- */
-export async function resubmitInvoiceToSifen(
-  invoiceId: string,
-  locale: string = "pt-BR"
-): Promise<{ success: boolean; message: string; cdc?: string }> {
-  const session = await auth();
-  if (!session?.user?.tenantId) {
-    return { success: false, message: "Sessão inválida. Faça login novamente." };
-  }
-
-  // Flip a REJECTED invoice back to PENDING before retrying so the badge
-  // reflects an in-progress attempt even if SIFEN times out again.
-  await prisma.commercialInvoice.updateMany({
-    where: { id: invoiceId, tenantId: session.user.tenantId, sifenStatus: "REJECTED" },
-    data: { sifenStatus: "PENDING" },
-  });
-
-  const result = await submitInvoiceToSifen(session.user.tenantId, invoiceId, locale);
-  revalidatePath(`/${session.user.tenantId}/invoices`);
-  return result;
 }
 
 /**

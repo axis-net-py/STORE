@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { createSupplier, updateSupplier, deleteSupplier } from "@/app/actions/supplier";
 import type { Supplier } from "@prisma/client";
-import { toast } from "sonner";
 
 export function SupplierSheet({
   tenantId,
@@ -44,11 +43,10 @@ export function SupplierSheet({
     setLoading(true);
     try {
       await deleteSupplier(supplier.id);
-      toast.success("Fornecedor excluído com sucesso.");
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao excluir fornecedor.");
+      alert(err.message || "Erro ao excluir fornecedor");
     } finally {
       setLoading(false);
     }
@@ -65,13 +63,13 @@ export function SupplierSheet({
           name: businessName,
           businessName,
           document,
-          documentType: (documentType || undefined) as "RUC" | "CI" | "CPF" | "CNPJ" | "OTHER" | undefined,
+          documentType,
           email,
           phone,
           address,
           city,
           country,
-          category: category as "fisica" | "juridica",
+          category,
           paymentTerms,
           isActive,
         });
@@ -80,22 +78,20 @@ export function SupplierSheet({
           name: businessName,
           businessName,
           document,
-          documentType: (documentType || undefined) as "RUC" | "CI" | "CPF" | "CNPJ" | "OTHER" | undefined,
+          documentType,
           email,
           phone,
           address,
           city,
           country,
-          category: category as "fisica" | "juridica",
+          category,
           paymentTerms,
-          isActive,
         });
       }
-      toast.success(isEdit ? "Fornecedor atualizado com sucesso." : "Fornecedor cadastrado com sucesso.");
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar fornecedor.");
+      alert(err.message || "Erro ao salvar fornecedor");
     } finally {
       setLoading(false);
     }

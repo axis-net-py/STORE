@@ -2,6 +2,7 @@ import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import prisma from "@/lib/prisma";
+import { isRateLimited, recordFailedAttempt, clearAttempts } from "@/lib/rate-limit";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -22,12 +23,18 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        const rateKey = `login:${credentials.email.toLowerCase()}`;
+        if (isRateLimited(rateKey)) {
+          throw new Error("Muitas tentativas de login. Aguarde 15 minutos e tente novamente.");
+        }
+
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: { tenant: { select: { name: true } } },
         });
 
         if (!user || !user.password) {
+          recordFailedAttempt(rateKey);
           return null;
         }
 
@@ -37,8 +44,11 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isValidPassword) {
+          recordFailedAttempt(rateKey);
           return null;
         }
+
+        clearAttempts(rateKey);
 
         return {
           id: user.id,
@@ -71,7 +81,11 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
+  // Em produção o segredo DEVE vir do ambiente; um segredo hardcoded permitiria forjar sessões JWT
+  secret:
+    process.env.NEXTAUTH_SECRET ||
+    process.env.AUTH_SECRET ||
+    (process.env.NODE_ENV !== "production" ? "cooper-erp-dev-only-secret" : undefined),
 };
 
 const handler = NextAuth(authOptions);

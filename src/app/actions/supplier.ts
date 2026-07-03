@@ -2,69 +2,105 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import type { Supplier } from '@prisma/client'
-import { SupplierSchema, type SupplierFormData } from '@/lib/schemas'
-import { AuthError, handleActionError } from '@/lib/errors'
 
-function requireTenant(session: Awaited<ReturnType<typeof auth>>) {
-  if (!session?.user?.tenantId) throw new AuthError()
-  return session.user.tenantId
+export type SupplierFormData = {
+  name: string
+  businessName?: string
+  document?: string
+  documentType?: string
+  email?: string
+  phone?: string
+  address?: string
+  city?: string
+  country?: string
+  category?: string
+  paymentTerms?: string
+  isActive?: boolean
 }
 
+// Listar fornecedores do tenant
 export async function getSuppliers(): Promise<Supplier[]> {
   const session = await auth()
-  const tenantId = requireTenant(session)
-  return prisma.supplier.findMany({ where: { tenantId }, orderBy: { name: 'asc' } })
+  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
+  const tenantId = session.user.tenantId
+
+  return prisma.supplier.findMany({
+    where: { tenantId },
+    orderBy: { name: 'asc' },
+  })
 }
 
+// Buscar fornecedor por ID
 export async function getSupplierById(id: string): Promise<Supplier | null> {
   const session = await auth()
-  const tenantId = requireTenant(session)
-  return prisma.supplier.findFirst({ where: { id, tenantId } })
+  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
+  const tenantId = session.user.tenantId
+
+  return prisma.supplier.findFirst({
+    where: { id, tenantId },
+  })
 }
 
+// Criar fornecedor
 export async function createSupplier(data: SupplierFormData) {
-  try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
-    const parsed = SupplierSchema.parse(data)
+  const { tenantId } = await requirePermission('suppliers:write')
 
-    await prisma.supplier.create({
-      data: { tenantId, ...parsed },
-    })
+  await prisma.supplier.create({
+    data: {
+      tenantId,
+      name: data.name,
+      businessName: data.businessName,
+      document: data.document,
+      documentType: data.documentType,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      city: data.city,
+      country: data.country ?? 'PY',
+      category: data.category ?? 'fisica',
+      paymentTerms: data.paymentTerms,
+      isActive: true,
+    },
+  })
 
-    revalidatePath(`/${tenantId}/suppliers`)
-  } catch (error) {
-    handleActionError(error)
-  }
+  revalidatePath(`/${tenantId}/suppliers`)
 }
 
+// Atualizar fornecedor
 export async function updateSupplier(id: string, data: Partial<SupplierFormData>) {
-  try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
-    const parsed = SupplierSchema.partial().parse(data)
+  const { tenantId } = await requirePermission('suppliers:write')
 
-    await prisma.supplier.updateMany({
-      where: { id, tenantId },
-      data: parsed,
-    })
+  await prisma.supplier.updateMany({
+    where: { id, tenantId },
+    data: {
+      name: data.name,
+      businessName: data.businessName,
+      document: data.document,
+      documentType: data.documentType,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      city: data.city,
+      country: data.country,
+      category: data.category,
+      paymentTerms: data.paymentTerms,
+      isActive: data.isActive,
+    },
+  })
 
-    revalidatePath(`/${tenantId}/suppliers`)
-  } catch (error) {
-    handleActionError(error)
-  }
+  revalidatePath(`/${tenantId}/suppliers`)
 }
 
+// Excluir fornecedor
 export async function deleteSupplier(id: string) {
-  try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+  const { tenantId } = await requirePermission('suppliers:delete')
 
-    await prisma.supplier.deleteMany({ where: { id, tenantId } })
-    revalidatePath(`/${tenantId}/suppliers`)
-  } catch (error) {
-    handleActionError(error)
-  }
+  await prisma.supplier.deleteMany({
+    where: { id, tenantId },
+  })
+
+  revalidatePath(`/${tenantId}/suppliers`)
 }

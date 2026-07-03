@@ -2,38 +2,30 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 
+// Diagnóstico restrito: exige sessão SOVEREIGN e não expõe detalhes de ambiente
 export async function GET() {
+  const session = await auth()
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if ((session.user as any).role !== 'SOVEREIGN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const diagnostics: any = {
     timestamp: new Date().toISOString(),
     env: {
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'not set',
-      VERCEL_URL: process.env.VERCEL_URL || 'not set',
-      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? 'configured' : 'not set',
-      AUTH_SECRET: process.env.AUTH_SECRET ? 'configured' : 'not set',
-      DATABASE_URL_SET: process.env.DATABASE_URL ? 'configured' : 'not set',
-    }
+      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET ? 'configured' : 'not set',
+      DATABASE_URL: process.env.DATABASE_URL ? 'configured' : 'not set',
+    },
+    session: { authenticated: true, email: session.user.email },
   }
 
   try {
-    const session = await auth()
-    diagnostics.session = session ? {
-      authenticated: true,
-      user: session.user,
-    } : {
-      authenticated: false,
-    }
+    await prisma.$queryRaw`SELECT 1`
+    diagnostics.database = { connected: true }
   } catch (err: any) {
-    diagnostics.sessionError = err.message || err
-  }
-
-  try {
-    const tenantsCount = await prisma.tenant.count()
-    diagnostics.database = {
-      connected: true,
-      tenantsCount,
-    }
-  } catch (err: any) {
-    diagnostics.databaseError = err.message || err
+    diagnostics.database = { connected: false, error: err.message || String(err) }
   }
 
   return NextResponse.json(diagnostics)

@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { createProduct, updateProduct, deleteProduct } from "@/app/actions/product";
 import type { Product } from "@prisma/client";
-import { toast } from "sonner";
 
 export function ProductSheet({
   tenantId,
@@ -49,11 +48,10 @@ export function ProductSheet({
     setLoading(true);
     try {
       await deleteProduct(product.id);
-      toast.success("Produto excluído com sucesso.");
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao excluir produto.");
+      alert(err.message || "Erro ao excluir produto");
     } finally {
       setLoading(false);
     }
@@ -78,7 +76,6 @@ export function ProductSheet({
           isService,
           currency,
         });
-        toast.success("Produto atualizado com sucesso.");
       } else {
         await createProduct({
           sku,
@@ -91,12 +88,11 @@ export function ProductSheet({
           isService,
           currency,
         });
-        toast.success("Produto cadastrado com sucesso.");
       }
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar produto.");
+      alert(err.message || "Erro ao salvar produto");
     } finally {
       setLoading(false);
     }

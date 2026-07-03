@@ -6,22 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { SupplierSheet } from "@/components/SupplierSheet";
 import type { Supplier } from "@prisma/client";
 import { Input } from "@/components/ui/input";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Truck, ChevronUp, ChevronDown } from "lucide-react";
-
-type SupplierSortField = "phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 
 export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; tenantId: string }) {
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<SupplierSortField | null>(null);
+  const [sortField, setSortField] = useState<"phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive" | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const SortIcon = ({ field }: { field: SupplierSortField }) =>
-    sortField !== field ? null : sortOrder === "asc"
-      ? <ChevronUp className="inline w-3 h-3 ml-1 text-primary" />
-      : <ChevronDown className="inline w-3 h-3 ml-1 text-primary" />;
-
-  const handleSort = (field: SupplierSortField) => {
+  const handleSort = (field: "phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive") => {
     if (sortField === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -58,55 +50,94 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
     return 0;
   });
 
+  const renderSortIndicator = (field: typeof sortField) => {
+    if (sortField !== field) return null;
+    return sortOrder === "asc" ? " ▴" : " ▾";
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <Input
-          placeholder="Buscar por Telefone, Razão Social, Documento..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md h-[38px] rounded-lg border-border bg-card"
-        />
+      {/* Barra de filtros padrão */}
+      <FilterBar>
+        <FilterField label="Buscar" grow>
+          <Input
+            placeholder="Buscar por razão social, documento, telefone ou e-mail..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
+          />
+        </FilterField>
+      </FilterBar>
+
+      {/* Mobile: cards */}
+      <div className="md:hidden space-y-2.5">
+        {sortedSuppliers.length === 0 ? (
+          <div className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground">
+            Nenhum fornecedor cadastrado ou encontrado.
+          </div>
+        ) : (
+          sortedSuppliers.map((supplier) => (
+            <div key={supplier.id} className="rounded-lg border border-border bg-card p-3.5 active:scale-[0.99] transition-transform">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{supplier.businessName || supplier.name}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {supplier.document ? `${supplier.documentType ?? "DOC"}: ${supplier.document}` : "Sem documento"}
+                    {supplier.phone ? ` · ${supplier.phone}` : ""}
+                  </p>
+                </div>
+                <Badge variant={supplier.isActive ? "default" : "secondary"} className="shrink-0">
+                  {supplier.isActive ? "Ativo" : "Inativo"}
+                </Badge>
+              </div>
+              <div className="mt-2.5 flex items-center justify-between gap-2">
+                <Badge variant="outline" className="text-[10px]">{supplier.paymentTerms ?? "Contado"}</Badge>
+                <SupplierSheet tenantId={tenantId} supplier={supplier} />
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
-      <div className="rounded-lg border border-border bg-card">
-        {sortedSuppliers.length === 0 ? (
-          <EmptyState
-            icon={Truck}
-            title={search ? "Nenhum fornecedor encontrado" : "Nenhum fornecedor cadastrado"}
-            description={search ? `Nenhum resultado para "${search}".` : "Adicione o primeiro fornecedor para começar."}
-          />
-        ) : (
-          <Table>
-            <TableHeader>
+      {/* Desktop: tabela */}
+      <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead onClick={() => handleSort("businessName")} className="cursor-pointer hover:bg-muted/50 select-none">
+                Razão Social{renderSortIndicator("businessName")}
+              </TableHead>
+              <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
+                Documento{renderSortIndicator("document")}
+              </TableHead>
+              <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-muted/50 select-none">
+                Telefone{renderSortIndicator("phone")}
+              </TableHead>
+              <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
+                E-mail{renderSortIndicator("email")}
+              </TableHead>
+              <TableHead onClick={() => handleSort("paymentTerms")} className="cursor-pointer hover:bg-muted/50 select-none">
+                Condição Pagto{renderSortIndicator("paymentTerms")}
+              </TableHead>
+              <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
+                Status{renderSortIndicator("isActive")}
+              </TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedSuppliers.length === 0 ? (
               <TableRow>
-                <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-muted/50 select-none">
-                  Telefone<SortIcon field="phone" />
-                </TableHead>
-                <TableHead onClick={() => handleSort("businessName")} className="cursor-pointer hover:bg-muted/50 select-none">
-                  Razão Social<SortIcon field="businessName" />
-                </TableHead>
-                <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
-                  Documento<SortIcon field="document" />
-                </TableHead>
-                <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
-                  E-mail<SortIcon field="email" />
-                </TableHead>
-                <TableHead onClick={() => handleSort("paymentTerms")} className="cursor-pointer hover:bg-muted/50 select-none">
-                  Condição Pagto<SortIcon field="paymentTerms" />
-                </TableHead>
-                <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
-                  Status<SortIcon field="isActive" />
-                </TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  Nenhum fornecedor cadastrado ou encontrado.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedSuppliers.map((supplier) => (
+            ) : (
+              sortedSuppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
-                  <TableCell className="font-medium">{supplier.phone ?? "-"}</TableCell>
-                  <TableCell>{supplier.businessName ?? "-"}</TableCell>
+                  <TableCell className="font-medium">{supplier.businessName || supplier.name}</TableCell>
                   <TableCell>{supplier.document ? `${supplier.documentType ?? "DOC"}: ${supplier.document}` : "-"}</TableCell>
+                  <TableCell>{supplier.phone ?? "-"}</TableCell>
                   <TableCell>{supplier.email ?? "-"}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{supplier.paymentTerms ?? "Contado"}</Badge>
@@ -117,13 +148,16 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <SupplierSheet tenantId={tenantId} supplier={supplier} />
+                    <SupplierSheet
+                      tenantId={tenantId}
+                      supplier={supplier}
+                    />
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

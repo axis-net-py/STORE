@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import LedgerTable from "@/components/accounting/LedgerTable";
+import PeriodsManager from "@/components/accounting/PeriodsManager";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function AccountingPage({
   params,
@@ -15,17 +17,12 @@ export default async function AccountingPage({
   const resolvedTenantId = paramTenantId || tenantId;
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Contabilidade
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Livro Razão e Partidas Dobradas
-        </p>
-      </div>
+    <div className="space-y-4 md:space-y-6">
+      <PageHeader title="Contabilidade" subtitle="Livro razão e partidas dobradas" />
 
       <LedgerTable tenantId={resolvedTenantId} />
+
+      <PeriodsManager />
     </div>
   );
 }

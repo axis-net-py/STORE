@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import type { InventoryMovement, Product } from '@prisma/client'
+import { ensureDefaultWarehouse, bumpWarehouseStock } from '@/lib/warehouse'
 
 export type MovementWithDetails = InventoryMovement & {
   product: { id: string; sku: string; name: string }
@@ -71,6 +72,8 @@ export async function adjustStock(
   }
 
   await prisma.$transaction(async (tx: any) => {
+    const warehouse = await ensureDefaultWarehouse(tx, tenantId)
+
     // Criar movimentação
     await tx.inventoryMovement.create({
       data: {
@@ -81,10 +84,11 @@ export async function adjustStock(
         unitCost: product.cost,
         totalCost: product.cost.mul(quantity),
         reason: reason ?? `Ajuste manual de estoque (${type})`,
+        warehouseId: warehouse.id,
       },
     })
 
-    // Atualizar estoque
+    // Atualizar estoque total + saldo do depósito
     await tx.product.updateMany({
       where: { id: productId, tenantId },
       data: {
@@ -93,6 +97,7 @@ export async function adjustStock(
         },
       },
     })
+    await bumpWarehouseStock(tx, warehouse.id, productId, type === 'ENTRADA' ? quantity : -quantity)
   })
 
   const path = `/dashboard/inventory`

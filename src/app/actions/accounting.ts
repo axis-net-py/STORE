@@ -2,6 +2,8 @@
 
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
+import { requirePermission } from "@/lib/authz";
+import { assertPeriodOpen } from "@/lib/accounting-period";
 import { CurrencyEngine } from "@axis/currency";
 import { Prisma } from "@prisma/client";
 
@@ -266,9 +268,14 @@ async function getNextJournalEntryNumber(tenantId: string, type: "SALES" | "PURC
 }
 
 export async function voidJournalEntry(entryId: string, reason: string) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId, userId } = await requirePermission("accounting:write");
+
+  const existing = await prisma.journalEntry.findFirst({
+    where: { id: entryId, tenantId },
+    select: { date: true },
+  });
+  if (!existing) throw new Error("Lançamento não encontrado");
+  await assertPeriodOpen(prisma, tenantId, existing.date);
 
   const entry = await prisma.journalEntry.update({
     where: { id: entryId, tenantId },
@@ -278,7 +285,7 @@ export async function voidJournalEntry(entryId: string, reason: string) {
   await prisma.auditLog.create({
     data: {
       tenantId,
-      userId: session.user.id,
+      userId,
       action: "VOID_JOURNAL_ENTRY",
       entity: "JournalEntry",
       entityId: entryId,

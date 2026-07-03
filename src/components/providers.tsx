@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { LanguageProvider } from "./language-provider";
 import { useState } from "react";
-import { Toaster } from "sonner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -25,7 +24,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <LanguageProvider>
             <TooltipProvider delayDuration={200}>
               {children}
-              <Toaster position="top-right" richColors closeButton />
             </TooltipProvider>
           </LanguageProvider>
         </ThemeProvider>

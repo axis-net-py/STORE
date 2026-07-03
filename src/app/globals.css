@@ -9,7 +9,7 @@
   --card-foreground: #1e293b;
   --popover: #ffffff;
   --popover-foreground: #1e293b;
-  --primary: #1a4d38;
+  --primary: #1d2d3e;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
@@ -21,43 +21,33 @@
   --destructive-foreground: #fafafa;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #1a4d38;
-  /* AXIS brand accents */
-  --gold: #c9a84c;
-  --gold-light: #e2c97e;
-  --gold-dim: #8a6e2f;
-  --emerald-bright: #2d7a57;
-  --badge-posted-bg: #e6efe9;
-  --badge-posted-text: #1a4d38;
+  --ring: #1d2d3e;
+  --badge-posted-bg: #e8ebf0;
+  --badge-posted-text: #1d2d3e;
 }
 
 .dark {
-  --background: #0a0f0d;
-  --foreground: #f1f0ea;
-  --card: #111714;
-  --card-foreground: #f1f0ea;
-  --popover: #111714;
-  --popover-foreground: #f1f0ea;
-  --primary: #2d7a57;
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  --secondary: #161d19;
-  --secondary-foreground: #f1f0ea;
-  --muted: #161d19;
-  --muted-foreground: #9ca59d;
-  --accent: #1a221e;
-  --accent-foreground: #f1f0ea;
+  --secondary: #0f172a;
+  --secondary-foreground: #f8fafc;
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
+  --accent: #0f172a;
+  --accent-foreground: #f8fafc;
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
-  --border: #28302b;
-  --input: #28302b;
-  --ring: #2d7a57;
-  /* AXIS brand accents */
-  --gold: #c9a84c;
-  --gold-light: #e2c97e;
-  --gold-dim: #8a6e2f;
-  --emerald-bright: #3daa78;
-  --badge-posted-bg: rgba(45, 122, 87, 0.18);
-  --badge-posted-text: #3daa78;
+  --border: #334155;
+  --input: #334155;
+  --ring: #3b82f6;
+  --badge-posted-bg: rgba(59, 130, 246, 0.15);
+  --badge-posted-text: #60a5fa;
 }
 
 @theme {
@@ -80,14 +70,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-gold: var(--gold);
-  --color-gold-light: var(--gold-light);
-  --color-gold-dim: var(--gold-dim);
-  --color-emerald-bright: var(--emerald-bright);
-  --radius-sm: 5px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 14px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
 }
 
 @layer base {
@@ -99,26 +85,26 @@
     max-width: 100vw;
     overflow-x: hidden;
     width: 100%;
+    /* Comportamento de app: sem deslize/bounce horizontal e sem pull-to-refresh acidental */
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: contain;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Permite apenas rolagem vertical e zoom por gesto; bloqueia pan horizontal da página */
+    touch-action: pan-y pinch-zoom;
+    /* Remove o flash azul de toque no Android para aspecto nativo */
+    -webkit-tap-highlight-color: transparent;
   }
 
-  /* Typography hierarchy — clearer headings across the app */
-  h1 {
-    font-weight: 700;
-    letter-spacing: -0.025em;
-  }
-  h2 {
-    font-weight: 600;
-    letter-spacing: -0.018em;
-  }
-  h3 {
-    font-weight: 600;
-    letter-spacing: -0.012em;
+  @media (max-width: 767px) {
+    /* Evita que iOS dê zoom automático ao focar inputs (fonte < 16px) */
+    input, select, textarea {
+      font-size: 16px;
+    }
   }
 }
 

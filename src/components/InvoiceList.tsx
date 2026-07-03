@@ -6,10 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { InvoiceActions } from "@/components/InvoiceActions";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Paperclip, FileText, ChevronUp, ChevronDown } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
-
-type InvoiceSortField = "type" | "customer" | "documentNumber" | "issuedAt" | "status" | "sifenStatus" | "totalAmount";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
+import { Paperclip } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -27,15 +25,10 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedSifenStatus, setSelectedSifenStatus] = useState("all");
 
-  const [sortField, setSortField] = useState<InvoiceSortField | null>(null);
+  const [sortField, setSortField] = useState<"type" | "customer" | "documentNumber" | "issuedAt" | "status" | "sifenStatus" | "totalAmount" | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const SortIcon = ({ field }: { field: InvoiceSortField }) =>
-    sortField !== field ? null : sortOrder === "asc"
-      ? <ChevronUp className="inline w-3 h-3 ml-1 text-primary" />
-      : <ChevronDown className="inline w-3 h-3 ml-1 text-primary" />;
-
-  const handleSort = (field: InvoiceSortField) => {
+  const handleSort = (field: "type" | "customer" | "documentNumber" | "issuedAt" | "status" | "sifenStatus" | "totalAmount") => {
     if (sortField === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -97,44 +90,55 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
     return 0;
   });
 
+  const renderSortIndicator = (field: typeof sortField) => {
+    if (sortField !== field) return null;
+    return sortOrder === "asc" ? " ▴" : " ▾";
+  };
+
   return (
     <div className="space-y-4">
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+      {/* Barra de filtros padrão */}
+      <FilterBar>
+        <FilterField label="Buscar" grow>
           <Input
-            placeholder="Buscar por cliente ou número..."
+            placeholder="Buscar por cliente, fornecedor ou número da fatura..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="max-w-xs h-[38px] rounded-lg border-border bg-card"
+            className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
+        </FilterField>
+        <FilterField label="Tipo">
           <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger className="w-[140px] h-[38px] rounded-lg bg-card">
-              <SelectValue placeholder="Tipo" />
+            <SelectTrigger className="w-full sm:w-[160px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos os Tipos</SelectItem>
+              <SelectItem value="all">Todos os tipos</SelectItem>
               <SelectItem value="SALES">Venda</SelectItem>
               <SelectItem value="PURCHASE">Compra</SelectItem>
             </SelectContent>
           </Select>
+        </FilterField>
+        <FilterField label="Status">
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-[140px] h-[38px] rounded-lg bg-card">
-              <SelectValue placeholder="Status" />
+            <SelectTrigger className="w-full sm:w-[160px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos Status</SelectItem>
+              <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="PENDING">Pendente</SelectItem>
               <SelectItem value="APPROVED">Aprovada</SelectItem>
               <SelectItem value="CANCELLED">Cancelada</SelectItem>
             </SelectContent>
           </Select>
+        </FilterField>
+        <FilterField label="Status SET (Sifen)">
           <Select value={selectedSifenStatus} onValueChange={setSelectedSifenStatus}>
-            <SelectTrigger className="w-[160px] h-[38px] rounded-lg bg-card">
-              <SelectValue placeholder="Status SET (Sifen)" />
+            <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos Sifen</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="none">Não enviado</SelectItem>
               <SelectItem value="RECIBO_COMUN">Recibo Comum</SelectItem>
               <SelectItem value="PENDING">Pendente Sifen</SelectItem>
@@ -142,46 +146,111 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
               <SelectItem value="REJECTED">Rejeitado Sifen</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </FilterField>
+      </FilterBar>
+
+      {/* Mobile: cards */}
+      <div className="md:hidden space-y-2.5">
+        {sortedInvoices.length === 0 ? (
+          <div className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground">
+            Nenhuma fatura encontrada.
+          </div>
+        ) : (
+          sortedInvoices.map((inv: any) => (
+            <div key={inv.id} className="rounded-lg border border-border bg-card p-3.5 active:scale-[0.99] transition-transform">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">
+                    {inv.customer?.name || inv.supplier?.name || "N/A"}
+                  </p>
+                  <p className="text-[11px] font-mono text-muted-foreground flex items-center gap-1.5">
+                    {inv.documentNumber || inv.id.slice(-8)}
+                    {inv.attachmentUrl && (
+                      <a href={inv.attachmentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex">
+                        <Paperclip className="h-3 w-3" />
+                      </a>
+                    )}
+                  </p>
+                </div>
+                <Badge variant={inv.type === "PURCHASE" ? "default" : "secondary"} className="shrink-0">
+                  {inv.type === "PURCHASE" ? "Compra" : "Venda"}
+                </Badge>
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Badge
+                  variant={inv.status === "APPROVED" ? "default" : inv.status === "CANCELLED" ? "destructive" : "outline"}
+                  className="text-[10px]"
+                >
+                  {inv.status === "APPROVED" ? "Aprovada" : inv.status === "CANCELLED" ? "Cancelada" : "Pendente"}
+                </Badge>
+                <Badge
+                  variant={inv.sifenStatus === "APPROVED" ? "default" : inv.sifenStatus === "REJECTED" ? "destructive" : "outline"}
+                  className="text-[10px]"
+                >
+                  {sifenStatusLabels[inv.sifenStatus] || inv.sifenStatus || "Não enviado"}
+                </Badge>
+              </div>
+
+              <div className="mt-2.5 flex items-end justify-between gap-2">
+                <div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {format(new Date(inv.issuedAt), "dd/MM/yyyy", { locale: ptBR })}
+                  </p>
+                  <p className="text-base font-bold tabular-nums">
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: inv.currency || "PYG",
+                      minimumFractionDigits: inv.currency === "PYG" ? 0 : 2,
+                      maximumFractionDigits: inv.currency === "PYG" ? 0 : 2,
+                    }).format(Number(inv.totalAmount))}
+                  </p>
+                </div>
+                <InvoiceActions invoice={inv} tenantId={tenantId} />
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
-      <div className="rounded-lg border border-border bg-card">
-        {sortedInvoices.length === 0 ? (
-          <EmptyState
-            icon={FileText}
-            title={search ? "Nenhuma fatura encontrada" : "Nenhuma fatura cadastrada"}
-            description={search ? `Nenhum resultado para "${search}".` : "Crie a primeira fatura de venda ou compra."}
-          />
-        ) : (
+      {/* Desktop: tabela */}
+      <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead onClick={() => handleSort("type")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Tipo<SortIcon field="type" />
+                Tipo{renderSortIndicator("type")}
               </TableHead>
               <TableHead onClick={() => handleSort("customer")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Cliente<SortIcon field="customer" />
+                Cliente{renderSortIndicator("customer")}
               </TableHead>
               <TableHead onClick={() => handleSort("documentNumber")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Fatura<SortIcon field="documentNumber" />
+                Fatura{renderSortIndicator("documentNumber")}
               </TableHead>
               <TableHead onClick={() => handleSort("issuedAt")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Data<SortIcon field="issuedAt" />
+                Data{renderSortIndicator("issuedAt")}
               </TableHead>
               <TableHead onClick={() => handleSort("status")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status<SortIcon field="status" />
+                Status{renderSortIndicator("status")}
               </TableHead>
               <TableHead onClick={() => handleSort("sifenStatus")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status SET<SortIcon field="sifenStatus" />
+                Status SET{renderSortIndicator("sifenStatus")}
               </TableHead>
               <TableHead onClick={() => handleSort("totalAmount")} className="text-right cursor-pointer hover:bg-muted/50 select-none">
-                Total<SortIcon field="totalAmount" />
+                Total{renderSortIndicator("totalAmount")}
               </TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedInvoices.map((inv: any) => (
+            {sortedInvoices.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                  Nenhuma fatura encontrada.
+                </TableCell>
+              </TableRow>
+            ) : (
+              sortedInvoices.map((inv: any) => (
                 <TableRow key={inv.id}>
                   <TableCell>
                     <Badge variant={inv.type === "PURCHASE" ? "default" : "secondary"}>
@@ -254,10 +323,10 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                     <InvoiceActions invoice={inv} tenantId={tenantId} />
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+            )}
           </TableBody>
         </Table>
-        )}
       </div>
     </div>
   );

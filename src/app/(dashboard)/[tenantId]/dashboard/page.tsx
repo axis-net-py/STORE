@@ -27,13 +27,9 @@ export default function DashboardPage() {
       {/* Stats Cards */}
       <Suspense
         fallback={
-          <div className="space-y-6">
-            {[0, 1].map((row) => (
-              <div key={row} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-32 w-full" />
-                ))}
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-32 w-full" />
             ))}
           </div>
         }

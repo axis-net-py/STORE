@@ -1,0 +1,19 @@
+{
+  "name": "COOPER ERP",
+  "short_name": "COOPER",
+  "description": "Sistema de gestão empresarial para comércio paraguaio",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#1d2d3e",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

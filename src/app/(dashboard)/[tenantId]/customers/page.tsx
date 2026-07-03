@@ -1,6 +1,7 @@
 import { getCustomers } from "@/app/actions/customer";
 import { CustomerSheet } from "@/components/CustomerSheet";
 import { CustomerList } from "@/components/CustomerList";
+import { PageHeader } from "@/components/ui/page-header";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
@@ -12,16 +13,12 @@ export default async function CustomersPage() {
   const customers = await getCustomers();
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Clientes</h1>
-          <p className="text-muted-foreground text-sm">Gerencie os clientes do sistema</p>
-        </div>
-        <div className="self-start sm:self-auto">
-          <CustomerSheet tenantId={tenantId} />
-        </div>
-      </div>
+    <div className="space-y-4 md:space-y-6">
+      <PageHeader
+        title="Clientes"
+        subtitle="Gerencie os clientes do sistema"
+        actions={<CustomerSheet tenantId={tenantId} />}
+      />
 
       <CustomerList customers={customers} tenantId={tenantId} />
     </div>

@@ -40,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import { useLanguage } from "@/components/language-provider";
 import { toast } from "sonner";
 import {
@@ -263,11 +264,7 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl md:text-2xl font-bold text-foreground">{t.title}</h1>
-        <p className="text-sm text-muted-foreground">{t.subtitle}</p>
-      </div>
+      <PageHeader title={t.title} subtitle={t.subtitle} />
 
       {/* KPI cards — 2 colunas no mobile, 4 no desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">

@@ -40,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import { useLanguage } from "@/components/language-provider";
 import { toast } from "sonner";
 import { Plus, Trash2, FileCheck2, XCircle, ClipboardList } from "lucide-react";
@@ -287,17 +288,16 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground">{t.title}</h1>
-          <p className="text-sm text-muted-foreground">{t.subtitle}</p>
-        </div>
-        <Button className="h-11 sm:h-10 w-full sm:w-auto" onClick={openNew}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          {t.newOrder}
-        </Button>
-      </div>
+      <PageHeader
+        title={t.title}
+        subtitle={t.subtitle}
+        actions={
+          <Button className="h-11 sm:h-10 w-full sm:w-auto" onClick={openNew}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            {t.newOrder}
+          </Button>
+        }
+      />
 
       {/* Filtro por tipo */}
       <div className="flex rounded-lg border border-border bg-card p-1 gap-1 w-full md:w-fit">

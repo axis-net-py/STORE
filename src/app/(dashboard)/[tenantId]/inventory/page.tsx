@@ -38,6 +38,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { useLanguage } from "@/components/language-provider";
 import { toast } from "sonner";
 import { Plus, ArrowLeftRight, Boxes, Star } from "lucide-react";
@@ -66,7 +68,8 @@ const texts = {
     created: "Depósito criado",
     transferred: "Transferência realizada",
     default: "Padrão",
-    search: "Buscar produto...",
+    search: "Buscar por SKU ou nome do produto...",
+    searchLabel: "Buscar",
   },
   es: {
     title: "Inventario",
@@ -89,7 +92,8 @@ const texts = {
     created: "Depósito creado",
     transferred: "Transferencia realizada",
     default: "Predeterminado",
-    search: "Buscar producto...",
+    search: "Buscar por SKU o nombre del producto...",
+    searchLabel: "Buscar",
   },
 };
 
@@ -207,49 +211,52 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-full overflow-x-hidden">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground">{t.title}</h1>
-          <p className="text-sm text-muted-foreground">{t.subtitle}</p>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button variant="outline" className="h-11 sm:h-10 flex-1 sm:flex-none" onClick={() => setOpenNew(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            {t.newWarehouse}
-          </Button>
-          <Button
-            className="h-11 sm:h-10 flex-1 sm:flex-none"
-            onClick={openTransferDialog}
-            disabled={warehouses.length < 2}
-          >
-            <ArrowLeftRight className="h-4 w-4 mr-1.5" />
-            {t.transfer}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={t.title}
+        subtitle={t.subtitle}
+        actions={
+          <>
+            <Button variant="outline" className="h-11 sm:h-10 flex-1 sm:flex-none" onClick={() => setOpenNew(true)}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              {t.newWarehouse}
+            </Button>
+            <Button
+              className="h-11 sm:h-10 flex-1 sm:flex-none"
+              onClick={openTransferDialog}
+              disabled={warehouses.length < 2}
+            >
+              <ArrowLeftRight className="h-4 w-4 mr-1.5" />
+              {t.transfer}
+            </Button>
+          </>
+        }
+      />
 
-      {/* Seletor de depósito + busca */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-        <Select value={activeId} onValueChange={setActiveId}>
-          <SelectTrigger className="w-full sm:w-[260px] h-11 sm:h-10">
-            <SelectValue placeholder={t.warehouse} />
-          </SelectTrigger>
-          <SelectContent>
-            {warehouses.map((w) => (
-              <SelectItem key={w.id} value={w.id}>
-                {w.name} ({w.code}){w.isDefault ? " ★" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          placeholder={t.search}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:max-w-xs h-11 sm:h-10"
-        />
-      </div>
+      {/* Barra de filtros padrão */}
+      <FilterBar>
+        <FilterField label={t.warehouse}>
+          <Select value={activeId} onValueChange={setActiveId}>
+            <SelectTrigger className="w-full sm:w-[260px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue placeholder={t.warehouse} />
+            </SelectTrigger>
+            <SelectContent>
+              {warehouses.map((w) => (
+                <SelectItem key={w.id} value={w.id}>
+                  {w.name} ({w.code}){w.isDefault ? " ★" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterField>
+        <FilterField label={t.searchLabel} grow>
+          <Input
+            placeholder={t.search}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
+          />
+        </FilterField>
+      </FilterBar>
 
       {loading ? (
         <div className="space-y-2">

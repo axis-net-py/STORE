@@ -7,6 +7,7 @@ import { ProductSheet } from "@/components/ProductSheet";
 import type { Product } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Tag } from "lucide-react";
 
 export function ProductList({ products, tenantId }: { products: Product[]; tenantId: string }) {
@@ -84,21 +85,23 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
 
   return (
     <div className="space-y-4">
-      {/* Filters Bar — empilha e usa largura total no mobile */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+      {/* Barra de filtros padrão */}
+      <FilterBar>
+        <FilterField label="Buscar" grow>
           <Input
-            placeholder="Buscar por SKU ou Nome..."
+            placeholder="Buscar por SKU ou nome do produto..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:max-w-xs h-10 sm:h-[38px] rounded-lg border-border bg-card"
+            className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
+        </FilterField>
+        <FilterField label="Tag">
           <Select value={selectedTag} onValueChange={setSelectedTag}>
-            <SelectTrigger className="flex-1 sm:flex-none sm:w-[180px] h-10 sm:h-[38px] rounded-lg bg-card">
-              <SelectValue placeholder="Filtrar por Tag" />
+            <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todas as Tags</SelectItem>
+              <SelectItem value="all">Todas as tags</SelectItem>
               {allTags.map((tag) => (
                 <SelectItem key={tag} value={tag} className="capitalize">
                   {tag}
@@ -106,18 +109,20 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
               ))}
             </SelectContent>
           </Select>
+        </FilterField>
+        <FilterField label="Tipo">
           <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger className="flex-1 sm:flex-none sm:w-[180px] h-10 sm:h-[38px] rounded-lg bg-card">
-              <SelectValue placeholder="Filtrar por Tipo" />
+            <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos os Tipos</SelectItem>
+              <SelectItem value="all">Todos os tipos</SelectItem>
               <SelectItem value="product">Produtos</SelectItem>
               <SelectItem value="service">Serviços</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        </FilterField>
+      </FilterBar>
 
       {/* Mobile: cards */}
       <div className="md:hidden space-y-2.5">
@@ -180,7 +185,7 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
       </div>
 
       {/* Desktop: tabela */}
-      <div className="hidden md:block rounded-lg border border-border bg-card">
+      <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CustomerSheet } from "@/components/CustomerSheet";
 import type { Customer } from "@prisma/client";
 import { Input } from "@/components/ui/input";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 
 export function CustomerList({ customers, tenantId }: { customers: Customer[]; tenantId: string }) {
   const [search, setSearch] = useState("");
@@ -55,15 +56,17 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
 
   return (
     <div className="space-y-4">
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <Input
-          placeholder="Buscar por Nome, Documento ou E-mail..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:max-w-md h-10 sm:h-[38px] rounded-lg border-border bg-card"
-        />
-      </div>
+      {/* Barra de filtros padrão */}
+      <FilterBar>
+        <FilterField label="Buscar" grow>
+          <Input
+            placeholder="Buscar por nome, documento ou e-mail do cliente..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
+          />
+        </FilterField>
+      </FilterBar>
 
       {/* Mobile: cards */}
       <div className="md:hidden space-y-2.5">
@@ -98,7 +101,7 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
       </div>
 
       {/* Desktop: tabela */}
-      <div className="hidden md:block rounded-lg border border-border bg-card">
+      <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

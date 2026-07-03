@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { InvoiceActions } from "@/components/InvoiceActions";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Paperclip } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -96,42 +97,48 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
 
   return (
     <div className="space-y-4">
-      {/* Filters Bar — empilha e usa largura total no mobile */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+      {/* Barra de filtros padrão */}
+      <FilterBar>
+        <FilterField label="Buscar" grow>
           <Input
-            placeholder="Buscar por cliente ou número..."
+            placeholder="Buscar por cliente, fornecedor ou número da fatura..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:max-w-xs h-10 sm:h-[38px] rounded-lg border-border bg-card"
+            className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
+        </FilterField>
+        <FilterField label="Tipo">
           <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger className="flex-1 sm:flex-none sm:w-[140px] h-10 sm:h-[38px] rounded-lg bg-card">
-              <SelectValue placeholder="Tipo" />
+            <SelectTrigger className="w-full sm:w-[160px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos os Tipos</SelectItem>
+              <SelectItem value="all">Todos os tipos</SelectItem>
               <SelectItem value="SALES">Venda</SelectItem>
               <SelectItem value="PURCHASE">Compra</SelectItem>
             </SelectContent>
           </Select>
+        </FilterField>
+        <FilterField label="Status">
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="flex-1 sm:flex-none sm:w-[140px] h-10 sm:h-[38px] rounded-lg bg-card">
-              <SelectValue placeholder="Status" />
+            <SelectTrigger className="w-full sm:w-[160px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos Status</SelectItem>
+              <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="PENDING">Pendente</SelectItem>
               <SelectItem value="APPROVED">Aprovada</SelectItem>
               <SelectItem value="CANCELLED">Cancelada</SelectItem>
             </SelectContent>
           </Select>
+        </FilterField>
+        <FilterField label="Status SET (Sifen)">
           <Select value={selectedSifenStatus} onValueChange={setSelectedSifenStatus}>
-            <SelectTrigger className="flex-1 sm:flex-none sm:w-[160px] h-10 sm:h-[38px] rounded-lg bg-card">
-              <SelectValue placeholder="Status SET (Sifen)" />
+            <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos Sifen</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="none">Não enviado</SelectItem>
               <SelectItem value="RECIBO_COMUN">Recibo Comum</SelectItem>
               <SelectItem value="PENDING">Pendente Sifen</SelectItem>
@@ -139,8 +146,8 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
               <SelectItem value="REJECTED">Rejeitado Sifen</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        </FilterField>
+      </FilterBar>
 
       {/* Mobile: cards */}
       <div className="md:hidden space-y-2.5">
@@ -207,7 +214,7 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
       </div>
 
       {/* Desktop: tabela */}
-      <div className="hidden md:block rounded-lg border border-border bg-card">
+      <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

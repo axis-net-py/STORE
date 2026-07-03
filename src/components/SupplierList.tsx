@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { SupplierSheet } from "@/components/SupplierSheet";
 import type { Supplier } from "@prisma/client";
 import { Input } from "@/components/ui/input";
+import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 
 export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; tenantId: string }) {
   const [search, setSearch] = useState("");
@@ -56,15 +57,17 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
 
   return (
     <div className="space-y-4">
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <Input
-          placeholder="Buscar por Telefone, Razão Social, Documento..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:max-w-md h-10 sm:h-[38px] rounded-lg border-border bg-card"
-        />
-      </div>
+      {/* Barra de filtros padrão */}
+      <FilterBar>
+        <FilterField label="Buscar" grow>
+          <Input
+            placeholder="Buscar por razão social, documento, telefone ou e-mail..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
+          />
+        </FilterField>
+      </FilterBar>
 
       {/* Mobile: cards */}
       <div className="md:hidden space-y-2.5">
@@ -97,18 +100,18 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
       </div>
 
       {/* Desktop: tabela */}
-      <div className="hidden md:block rounded-lg border border-border bg-card">
+      <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Telefone{renderSortIndicator("phone")}
-              </TableHead>
               <TableHead onClick={() => handleSort("businessName")} className="cursor-pointer hover:bg-muted/50 select-none">
                 Razão Social{renderSortIndicator("businessName")}
               </TableHead>
               <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
                 Documento{renderSortIndicator("document")}
+              </TableHead>
+              <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-muted/50 select-none">
+                Telefone{renderSortIndicator("phone")}
               </TableHead>
               <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
                 E-mail{renderSortIndicator("email")}
@@ -132,9 +135,9 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
             ) : (
               sortedSuppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
-                  <TableCell className="font-medium">{supplier.phone ?? "-"}</TableCell>
-                  <TableCell>{supplier.businessName ?? "-"}</TableCell>
+                  <TableCell className="font-medium">{supplier.businessName || supplier.name}</TableCell>
                   <TableCell>{supplier.document ? `${supplier.documentType ?? "DOC"}: ${supplier.document}` : "-"}</TableCell>
+                  <TableCell>{supplier.phone ?? "-"}</TableCell>
                   <TableCell>{supplier.email ?? "-"}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{supplier.paymentTerms ?? "Contado"}</Badge>

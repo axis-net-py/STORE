@@ -21,6 +21,9 @@ const actionPermissions: Record<string, string> = {
   register_payment: "accounting:write",
   adjust_stock: "inventory:write",
   transfer_stock: "inventory:write",
+  query_stock: "inventory:read",
+  query_sales: "reports:read",
+  query_balances: "accounting:read",
 };
 
 // Dedupe: localiza cliente por documento ou nome (case-insensitive); cria se não existir
@@ -240,6 +243,28 @@ function parseLatamNumber(s: string): number {
 // Local NLP Fallback Engine for Core ERP
 function localNlpProcessor(text: string) {
   const cleanText = text.toLowerCase().trim();
+
+  // 0.01 QUERY STOCK — "quanto tem de estoque de X", "estoque baixo"
+  if (/quanto (tem|há|ha) (de )?estoque|estoque (do|de|da)|estoque baixo|consultar estoque|cu[áa]nto stock|stock de/.test(cleanText)) {
+    const prodMatch = text.match(/estoque\s+(?:do|de|da)\s+([a-zA-ZÀ-ÿ0-9\s-]+?)(?:\?|$)/i) || text.match(/stock de\s+([a-zA-ZÀ-ÿ0-9\s-]+?)(?:\?|$)/i);
+    return {
+      action: "query_stock",
+      data: { productName: prodMatch ? prodMatch[1].trim() : undefined },
+      message: "",
+    };
+  }
+
+  // 0.02 QUERY SALES — "quanto vendi hoje/semana/mês"
+  if (/quanto vendi|vendas (de )?(hoje|da semana|do m[êe]s)|faturamento|cu[áa]nto vend[íi]/.test(cleanText)) {
+    const days = /semana/.test(cleanText) ? 7 : /m[êe]s|mes/.test(cleanText) ? 30 : 1;
+    return { action: "query_sales", data: { days }, message: "" };
+  }
+
+  // 0.03 QUERY BALANCES — "quanto tenho a receber", "contas a pagar", "quem me deve"
+  if (/a receber|quem me deve|contas a pagar|quanto devo|por cobrar|por pagar/.test(cleanText)) {
+    const direction = /pagar|devo/.test(cleanText) ? "PAYABLE" : "RECEIVABLE";
+    return { action: "query_balances", data: { direction }, message: "" };
+  }
 
   // 0.1 TRANSFER STOCK — "transferir 20 sacas de soja do depósito Principal para Filial"
   if (/transferir|transfer[êe]ncia|trasladar/.test(cleanText) && /dep[óo]sito/.test(cleanText)) {
@@ -703,6 +728,12 @@ Temos as seguintes ações possíveis no ERP comercial:
 9. "adjust_stock" (Ajuste manual de estoque): campos { productName: string, type: "ENTRADA"|"SAIDA", quantity: number, reason?: string }
    - Use para "ajustar estoque", "entrada de estoque", "perda", "quebra", "inventário".
 10. "transfer_stock" (Transferência entre depósitos): campos { productName: string, fromWarehouse: string, toWarehouse: string, quantity: number }
+11. "query_stock" (Consulta de estoque — somente leitura): campos { productName?: string }
+   - Use para "quanto tem de estoque", "estoque do produto X", "produtos com estoque baixo".
+12. "query_sales" (Consulta de vendas — somente leitura): campos { days?: number }
+   - Use para "quanto vendi hoje" (days=1), "vendas da semana" (days=7), "vendas do mês" (days=30).
+13. "query_balances" (Consulta de contas a receber/pagar — somente leitura): campos { direction?: "RECEIVABLE"|"PAYABLE" }
+   - Use para "quanto tenho a receber", "contas a pagar", "quem me deve".
 
 Atenção especial para Condição de Pagamento (paymentMethod):
 - Se o usuário citar termos de condição de pagamento como "contado", "a vista", "à vista", "cash", mapeie "paymentMethod" para "A_VISTA".
@@ -1108,6 +1139,56 @@ Se for apenas conversa ou dúvida, retorne:
 
         await transferStock({ productId: product.id, fromWarehouseId: from.id, toWarehouseId: to.id, quantity: qty });
         result.message = `Transferidos ${qty} ${product.unit} de "${product.name}" do depósito ${from.name} para ${to.name}.`;
+      } else if (result.action === "query_stock") {
+        const fmt = new Intl.NumberFormat("es-PY");
+        if (result.data?.productName) {
+          const product = await findProductByRef(tenantId, { name: result.data.productName });
+          if (!product) throw new Error(`Produto "${result.data.productName}" não encontrado.`);
+          result.message = `Estoque de "${product.name}" (${product.sku}): ${fmt.format(Number(product.currentStock))} ${product.unit}.`;
+        } else {
+          const low = await prisma.product.findMany({
+            where: { tenantId, isActive: true, currentStock: { lte: 5 } },
+            orderBy: { currentStock: "asc" },
+            take: 10,
+            select: { name: true, sku: true, currentStock: true, unit: true },
+          });
+          const count = await prisma.product.count({ where: { tenantId, isActive: true } });
+          result.message = low.length === 0
+            ? `Você tem ${count} produtos ativos e nenhum com estoque baixo (≤5).`
+            : `${count} produtos ativos. Estoque baixo (≤5): ${low.map((p) => `${p.name} (${fmt.format(Number(p.currentStock))} ${p.unit})`).join(", ")}.`;
+        }
+      } else if (result.action === "query_sales") {
+        const days = Number(result.data?.days) || 1;
+        const since = new Date(Date.now() - days * 86400000);
+        const invoices = await prisma.commercialInvoice.findMany({
+          where: { tenantId, type: "SALES", status: "APPROVED", issuedAt: { gte: since } },
+          select: { totalAmount: true },
+        });
+        const total = invoices.reduce((s, i) => s + Number(i.totalAmount), 0);
+        const fmt = new Intl.NumberFormat("es-PY");
+        const period = days === 1 ? "hoje" : days === 7 ? "nos últimos 7 dias" : `nos últimos ${days} dias`;
+        result.message = `Vendas ${period}: ${invoices.length} fatura(s), total ${fmt.format(total)} Gs.`;
+      } else if (result.action === "query_balances") {
+        const isReceivable = result.data?.direction !== "PAYABLE";
+        const invoices = await prisma.commercialInvoice.findMany({
+          where: { tenantId, type: isReceivable ? "SALES" : "PURCHASE", status: "APPROVED" },
+          include: { payments: { select: { amount: true } }, customer: { select: { name: true } }, supplier: { select: { name: true } } },
+        });
+        const open = invoices
+          .map((inv) => ({
+            name: (isReceivable ? inv.customer?.name : inv.supplier?.name) || "—",
+            balance: Number(inv.totalAmount) - inv.payments.reduce((s, p) => s + Number(p.amount), 0),
+          }))
+          .filter((x) => x.balance > 0.009);
+        const total = open.reduce((s, x) => s + x.balance, 0);
+        const fmt = new Intl.NumberFormat("es-PY");
+        const byEntity = new Map<string, number>();
+        for (const x of open) byEntity.set(x.name, (byEntity.get(x.name) || 0) + x.balance);
+        const top = [...byEntity.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
+          .map(([n, v]) => `${n}: ${fmt.format(v)} Gs.`).join("; ");
+        result.message = open.length === 0
+          ? `Nenhum título em aberto ${isReceivable ? "a receber" : "a pagar"}.`
+          : `Total ${isReceivable ? "a receber" : "a pagar"}: ${fmt.format(total)} Gs. em ${open.length} fatura(s). Maiores: ${top}`;
       }
 
       return NextResponse.json({

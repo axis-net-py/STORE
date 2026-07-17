@@ -122,7 +122,7 @@ export default function ReportsDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Print-Only Premium Document Header */}
       <div className="print-only mb-8">
         <div className="flex justify-between items-end border-b-2 border-primary pb-4">

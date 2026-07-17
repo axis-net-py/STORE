@@ -20,6 +20,7 @@ import {
   Wallet,
   ClipboardList,
   Boxes,
+  ShoppingCart,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BrazilFlag, ParaguayFlag } from "@/components/icons/Flags";
@@ -31,6 +32,7 @@ interface SidebarProps {
 
 const navItems = [
   { icon: LayoutDashboard, key: "dashboard",  defaultLabel: "Dashboard",   href: "dashboard" },
+  { icon: ShoppingCart,    key: "pos",        defaultLabel: "PDV",          href: "pos" },
   { icon: ClipboardList,   key: "orders",     defaultLabel: "Pedidos",      href: "orders" },
   { icon: FileText,        key: "invoices",   defaultLabel: "Faturas",      href: "invoices" },
   { icon: Package,         key: "products",   defaultLabel: "Produtos",     href: "products" },
@@ -55,6 +57,7 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
   const labelsMap: Record<string, Record<string, string>> = {
     pt: {
       dashboard: "Dashboard",
+      pos: "PDV",
       orders: "Pedidos",
       invoices: "Faturas",
       products: "Produtos",
@@ -69,6 +72,7 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
     },
     es: {
       dashboard: "Tablero",
+      pos: "POS",
       orders: "Pedidos",
       invoices: "Facturas",
       products: "Productos",

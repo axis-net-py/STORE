@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { format } from "date-fns";
 import { es, pt } from "date-fns/locale";
 import { getOrFetchExchangeRate } from "@/lib/exchange";
@@ -86,32 +87,24 @@ export default async function ExchangeRatesPage({
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {t("title")}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {t("description")}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href={`/${tenantId}/settings`}>
-            <Button variant="outline" size="sm">
-              {tCommon("back")}
-            </Button>
-          </Link>
-          <form action={handleFetch}>
-            <Button
-              type="submit"
-              className="axis-btn-gold"
-            >
-              {t("fetchOfficial")}
-            </Button>
-          </form>
-        </div>
-      </div>
+      <PageHeader
+        title={t("title")}
+        subtitle={t("description")}
+        actions={
+          <>
+            <Link href={`/${tenantId}/settings`}>
+              <Button variant="outline" size="sm">
+                {tCommon("back")}
+              </Button>
+            </Link>
+            <form action={handleFetch}>
+              <Button type="submit" className="axis-btn-gold">
+                {t("fetchOfficial")}
+              </Button>
+            </form>
+          </>
+        }
+      />
 
 
       {/* Current Rates Card */}

@@ -3,6 +3,7 @@ import { StatsCards } from '@/components/dashboard/StatsCards';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { TopProducts } from '@/components/dashboard/TopProducts';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/ui/page-header';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,12 +18,8 @@ const defaultCurrency = 'PYG' as const;
 
 export default function DashboardPage() {
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold uppercase tracking-widest text-foreground">
-          Dashboard
-        </h1>
-      </div>
+    <div className="space-y-4 md:space-y-6">
+      <PageHeader title="Dashboard" subtitle="Visão geral do seu negócio" />
 
       {/* Stats Cards */}
       <Suspense

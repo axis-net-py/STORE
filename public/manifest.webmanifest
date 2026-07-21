@@ -1,7 +1,7 @@
 {
-  "name": "COOPER ERP",
-  "short_name": "COOPER",
-  "description": "Sistema de gestão empresarial para comércio paraguaio",
+  "name": "AXIS STORE",
+  "short_name": "AXIS STORE",
+  "description": "Sistema de gestão empresarial para comércio geral",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

@@ -135,10 +135,10 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
       {/* Logo */}
       <div className={cn("flex h-14 items-center border-b border-[#2e3f53] px-3", collapsed ? "justify-center" : "gap-2")}>
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#0a6ed1] text-white text-xs font-bold shadow-sm">
-          C
+          A
         </div>
         {!collapsed && (
-          <span className="text-sm font-bold tracking-wider text-white">COOPER</span>
+          <span className="text-sm font-bold tracking-wider text-white">AXIS STORE</span>
         )}
       </div>
 

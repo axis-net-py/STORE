@@ -85,7 +85,7 @@ export const authOptions: NextAuthOptions = {
   secret:
     process.env.NEXTAUTH_SECRET ||
     process.env.AUTH_SECRET ||
-    (process.env.NODE_ENV !== "production" ? "cooper-erp-dev-only-secret" : undefined),
+    (process.env.NODE_ENV !== "production" ? "axis-store-dev-only-secret" : undefined),
 };
 
 const handler = NextAuth(authOptions);

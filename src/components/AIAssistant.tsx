@@ -32,7 +32,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "bot",
-      text: "Olá! Sou o Assistente COOPER IA. Posso executar ações em todos os módulos por texto ou voz:\n• 'cadastrar produto Teclado com preço 150000 e custo 100000'\n• 'cadastrar cliente Roberto Silva' / 'fornecedor Distribuidora Asunción'\n• 'venda de 10 sacas de soja para o cliente Cooperativa a 300000 cada'\n• 'pedido de compra de 50 kg de adubo do fornecedor AgroSur'\n• 'recebi 500000 do cliente Roberto' (baixa no financeiro)\n• 'ajustar estoque do produto Soja, entrada de 100 sacas'\n• 'transferir 20 sacas de soja do depósito Principal para a Filial'\n\nOu envie foto/PDF de fatura de compra que eu cadastro tudo automaticamente — fornecedor, produtos, estoque e contabilidade, sem duplicar registros.",
+      text: "Olá! Sou o Assistente AXIS IA. Posso executar ações em todos os módulos por texto ou voz:\n• 'cadastrar produto Teclado com preço 150000 e custo 100000'\n• 'cadastrar cliente Roberto Silva' / 'fornecedor Distribuidora Asunción'\n• 'venda de 10 sacas de soja para o cliente Cooperativa a 300000 cada'\n• 'pedido de compra de 50 kg de adubo do fornecedor AgroSur'\n• 'recebi 500000 do cliente Roberto' (baixa no financeiro)\n• 'ajustar estoque do produto Soja, entrada de 100 sacas'\n• 'transferir 20 sacas de soja do depósito Principal para a Filial'\n\nOu envie foto/PDF de fatura de compra que eu cadastro tudo automaticamente — fornecedor, produtos, estoque e contabilidade, sem duplicar registros.",
     },
   ]);
   const [inputText, setInputText] = useState("");
@@ -244,7 +244,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary animate-pulse" />
               <div>
-                <h3 className="text-sm font-bold text-foreground">COOPER IA</h3>
+                <h3 className="text-sm font-bold text-foreground">AXIS IA</h3>
                 <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-widest">Online</span>
               </div>
             </div>

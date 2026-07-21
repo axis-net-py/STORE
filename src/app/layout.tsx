@@ -18,13 +18,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "COOPER ERP",
-  description: "Sistema de gestão empresarial para comércio paraguaio",
+  title: "AXIS STORE",
+  description: "Sistema de gestão empresarial para comércio geral",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "COOPER",
+    title: "AXIS STORE",
   },
 };
 

@@ -33,7 +33,7 @@ export default function ThermalTestPage() {
           }}
         >
           <div style={{ textAlign: 'center', marginBottom: '6pt', borderBottom: '1pt solid #000', paddingBottom: '4pt' }}>
-            <div style={{ fontFamily: 'Helvetica-Bold', fontSize: '9pt' }}>COOPER</div>
+            <div style={{ fontFamily: 'Helvetica-Bold', fontSize: '9pt' }}>AXIS STORE</div>
             <div style={{ fontSize: '5pt' }}>ETIQUETA DE PRODUTO</div>
           </div>
 
@@ -64,7 +64,7 @@ export default function ThermalTestPage() {
           </div>
 
           <div style={{ textAlign: 'center', fontSize: '5pt', marginTop: '6pt', borderTop: '1pt solid #000', paddingTop: '4pt' }}>
-            COOPER ERP
+            AXIS STORE
           </div>
         </div>
       </div>

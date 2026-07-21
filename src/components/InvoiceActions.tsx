@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CommercialInvoiceSheet } from "@/components/CommercialInvoiceSheet";
-import { cancelInvoice } from "@/app/actions/invoice";
+import { deletePurchaseInvoice } from "@/app/actions/invoice";
 
 interface InvoiceActionsProps {
   invoice: any;
@@ -18,14 +18,16 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
   const [cancelling, setCancelling] = useState(false);
   const router = useRouter();
 
-  const isCancelled = invoice.status === "CANCELLED";
+  // Exclusão definitiva só para faturas de COMPRA.
+  // Faturas de venda são documentos fiscais de saída — não se apagam.
+  const canDelete = invoice.type === "PURCHASE";
 
-  const handleCancel = async () => {
-    if (isCancelled || cancelling) return;
-    if (!window.confirm(`Excluir a fatura ${invoice.documentNumber || ""}? O estoque e os lançamentos contábeis serão revertidos. Esta ação não pode ser desfeita.`)) return;
+  const handleDelete = async () => {
+    if (!canDelete || cancelling) return;
+    if (!window.confirm(`Excluir definitivamente a fatura de compra ${invoice.documentNumber || ""}? O estoque e os lançamentos contábeis serão revertidos. Esta ação não pode ser desfeita.`)) return;
     setCancelling(true);
     try {
-      await cancelInvoice(invoice.id);
+      await deletePurchaseInvoice(invoice.id);
       router.refresh();
     } catch (err: any) {
       alert(err.message || "Erro ao excluir a fatura.");
@@ -123,12 +125,12 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
         </>
       )}
 
-      {!isCancelled && (
+      {canDelete && (
         <Button
           variant="outline"
           size="sm"
           disabled={cancelling}
-          onClick={handleCancel}
+          onClick={handleDelete}
           className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-card hover:bg-destructive/10 hover:text-destructive border-border"
         >
           {cancelling ? (

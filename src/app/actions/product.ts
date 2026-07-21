@@ -118,15 +118,49 @@ export async function updateProduct(id: string, data: Partial<ProductFormData>) 
   revalidatePath(`/${tenantId}/products`)
 }
 
-// Excluir produto
-export async function deleteProduct(id: string) {
+/**
+ * Excluir produto.
+ *
+ * Produto com histórico (faturas, movimentações de estoque ou pedidos) NÃO pode
+ * ser apagado — isso destruiria documentos fiscais já emitidos. Nesse caso ele é
+ * arquivado (isActive = false) e some das listagens.
+ * Sem histórico, é apagado de vez.
+ */
+export async function deleteProduct(id: string): Promise<{ archived: boolean }> {
   const { tenantId } = await requirePermission('products:delete')
 
-  await prisma.product.deleteMany({
+  const product = await prisma.product.findFirst({
     where: { id, tenantId },
+    select: { id: true },
+  })
+  if (!product) throw new Error('Produto não encontrado')
+
+  const [invoiceItems, movements, orderItems] = await Promise.all([
+    prisma.invoiceItem.count({ where: { productId: id } }),
+    prisma.inventoryMovement.count({ where: { productId: id } }),
+    prisma.orderItem.count({ where: { productId: id } }),
+  ])
+
+  if (invoiceItems > 0 || movements > 0 || orderItems > 0) {
+    // Tem histórico fiscal — arquiva em vez de apagar
+    await prisma.product.update({
+      where: { id },
+      data: { isActive: false, currentStock: 0 },
+    })
+    revalidatePath(`/${tenantId}/products`)
+    revalidatePath(`/${tenantId}/inventory`)
+    return { archived: true }
+  }
+
+  // Sem histórico — apaga de vez (limpa os saldos por depósito antes, FK RESTRICT)
+  await prisma.$transaction(async (tx: any) => {
+    await tx.warehouseStock.deleteMany({ where: { productId: id } })
+    await tx.product.delete({ where: { id } })
   })
 
   revalidatePath(`/${tenantId}/products`)
+  revalidatePath(`/${tenantId}/inventory`)
+  return { archived: false }
 }
 
 // Buscar produto por SKU (para validação)

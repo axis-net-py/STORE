@@ -42,12 +42,15 @@ export function ProductSheet({
 
   async function handleDelete() {
     if (!product) return;
-    const confirmDelete = window.confirm("Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita se houver movimentações ou faturas vinculadas.");
+    const confirmDelete = window.confirm("Tem certeza que deseja excluir este produto? Se ele já tiver faturas ou movimentações de estoque, será arquivado em vez de apagado (o histórico fiscal é preservado).");
     if (!confirmDelete) return;
 
     setLoading(true);
     try {
-      await deleteProduct(product.id);
+      const res = await deleteProduct(product.id);
+      if (res?.archived) {
+        alert("Produto arquivado: ele tem faturas ou movimentações vinculadas, então o cadastro foi desativado para preservar o histórico fiscal.");
+      }
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {

@@ -140,24 +140,30 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
     setLoading(true);
 
     try {
-      // 1. Upload to Supabase Storage
-      const fileExt = file.name.split(".").pop();
-      const fileNameUnique = `${Date.now()}_original_invoice.${fileExt}`;
-      const filePath = `purchases/${fileNameUnique}`;
+      // 1. Upload to Supabase Storage (best-effort — anexo é só referência).
+      // Se o Supabase não estiver configurado, seguimos sem attachmentUrl:
+      // a IA processa o arquivo via base64 de qualquer forma.
+      let attachmentUrl: string | undefined = undefined;
+      try {
+        const fileExt = file.name.split(".").pop();
+        const fileNameUnique = `${Date.now()}_original_invoice.${fileExt}`;
+        const filePath = `purchases/${fileNameUnique}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("attachments")
-        .upload(filePath, file);
+        const { error: uploadError } = await supabase.storage
+          .from("attachments")
+          .upload(filePath, file);
 
-      if (uploadError) {
-        throw new Error("Erro no upload do anexo: " + uploadError.message);
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from("attachments")
+            .getPublicUrl(filePath);
+          attachmentUrl = publicUrlData?.publicUrl || undefined;
+        } else {
+          console.warn("Upload do anexo ignorado:", uploadError.message);
+        }
+      } catch (upErr) {
+        console.warn("Upload do anexo falhou, seguindo sem anexo:", upErr);
       }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("attachments")
-        .getPublicUrl(filePath);
-
-      const attachmentUrl = publicUrlData?.publicUrl || undefined;
 
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -320,7 +326,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
             {/* Hidden File Input */}
             <input
               type="file"
-              accept="image/*,application/pdf"
+              accept="application/pdf,.pdf,image/*,.jpg,.jpeg,.png"
               className="hidden"
               ref={fileInputRef}
               onChange={handleFileUpload}

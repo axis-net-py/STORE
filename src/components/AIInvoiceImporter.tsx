@@ -34,24 +34,29 @@ export function AIInvoiceImporter() {
     setMessage("Preparando arquivo e enviando para o armazenamento...");
 
     try {
-      // 1. Upload to Supabase Storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}_original_invoice.${fileExt}`;
-      const filePath = `purchases/${fileName}`;
+      // 1. Upload to Supabase Storage (best-effort — anexo é só referência).
+      // Sem Supabase configurado, seguimos sem attachmentUrl; a IA processa via base64.
+      let attachmentUrl: string | undefined = undefined;
+      try {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}_original_invoice.${fileExt}`;
+        const filePath = `purchases/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("attachments")
-        .upload(filePath, file);
+        const { error: uploadError } = await supabase.storage
+          .from("attachments")
+          .upload(filePath, file);
 
-      if (uploadError) {
-        throw new Error("Erro no upload do anexo: " + uploadError.message);
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from("attachments")
+            .getPublicUrl(filePath);
+          attachmentUrl = publicUrlData?.publicUrl || undefined;
+        } else {
+          console.warn("Upload do anexo ignorado:", uploadError.message);
+        }
+      } catch (upErr) {
+        console.warn("Upload do anexo falhou, seguindo sem anexo:", upErr);
       }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("attachments")
-        .getPublicUrl(filePath);
-
-      const attachmentUrl = publicUrlData?.publicUrl || undefined;
 
       const reader = new FileReader();
       reader.readAsDataURL(file);

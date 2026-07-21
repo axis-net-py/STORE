@@ -18,13 +18,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "AXIS STORE",
+  title: "AXIS Store",
   description: "Sistema de gestão empresarial para comércio geral",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "AXIS STORE",
+    title: "AXIS Store",
   },
 };
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { Printer, Receipt, Pencil } from "lucide-react";
+import { Printer, Receipt, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CommercialInvoiceSheet } from "@/components/CommercialInvoiceSheet";
+import { cancelInvoice } from "@/app/actions/invoice";
 
 interface InvoiceActionsProps {
   invoice: any;
@@ -13,6 +15,24 @@ interface InvoiceActionsProps {
 export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
   const [printingA4, setPrintingA4] = useState(false);
   const [printingReceipt, setPrintingReceipt] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const router = useRouter();
+
+  const isCancelled = invoice.status === "CANCELLED";
+
+  const handleCancel = async () => {
+    if (isCancelled || cancelling) return;
+    if (!window.confirm(`Excluir a fatura ${invoice.documentNumber || ""}? O estoque e os lançamentos contábeis serão revertidos. Esta ação não pode ser desfeita.`)) return;
+    setCancelling(true);
+    try {
+      await cancelInvoice(invoice.id);
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message || "Erro ao excluir a fatura.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const isSifen = !!invoice.sifenStatus;
   const a4Url = isSifen 
@@ -101,6 +121,23 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
             <span>80mm</span>
           </Button>
         </>
+      )}
+
+      {!isCancelled && (
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={cancelling}
+          onClick={handleCancel}
+          className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-card hover:bg-destructive/10 hover:text-destructive border-border"
+        >
+          {cancelling ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
+          )}
+          <span>Excluir</span>
+        </Button>
       )}
     </div>
   );

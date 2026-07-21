@@ -16,9 +16,12 @@
   <!-- Base rounded background -->
   <rect width="32" height="32" rx="7" fill="url(#bgGrad)" />
 
-  <!-- Stylized geometric 'A' -->
-  <path d="M16 6 L24 26 H19.5 L18 21.5 H14 L12.5 26 H8 Z M15 17.5 H17 L16 14 Z" fill="url(#goldGrad)" />
-
-  <!-- Sleek neon blue node/accent -->
-  <circle cx="16" cy="10" r="1.8" fill="#60a5fa" opacity="0.9" />
+  <!-- Shopping cart (retail) -->
+  <g fill="none" stroke="url(#goldGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- handle + basket -->
+    <path d="M7 8 H10 L12 19 H23 L25 11 H11" />
+  </g>
+  <!-- wheels -->
+  <circle cx="13" cy="24" r="1.8" fill="#60a5fa" />
+  <circle cx="22" cy="24" r="1.8" fill="#60a5fa" />
 </svg>

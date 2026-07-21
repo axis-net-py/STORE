@@ -16,7 +16,6 @@ import { getProducts } from "@/app/actions/product";
 import type { Customer, Supplier, Product } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format";
-import { supabase } from "@/lib/supabase";
 
 const geistMono = Geist_Mono({ subsets: ["latin"] });
 
@@ -305,23 +304,13 @@ export function CommercialInvoiceSheet({
 
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}_original_invoice.${fileExt}`;
-      const filePath = `purchases/${fileName}`;
-
-      const { error } = await supabase.storage
-        .from("attachments")
-        .upload(filePath, file);
-
-      if (error) {
-        throw new Error(error.message);
+      const fd = new FormData();
+      fd.append("file", file);
+      const up = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!up.ok) {
+        throw new Error((await up.json()).error || "Falha no upload");
       }
-
-      const { data } = supabase.storage
-        .from("attachments")
-        .getPublicUrl(filePath);
-
-      setAttachmentUrl(data.publicUrl);
+      setAttachmentUrl((await up.json()).url);
     } catch (err: any) {
       alert("Erro ao fazer upload do anexo: " + err.message);
     } finally {

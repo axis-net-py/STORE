@@ -15,7 +15,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 
 interface Message {
   sender: "user" | "bot";
@@ -145,21 +144,13 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
       // a IA processa o arquivo via base64 de qualquer forma.
       let attachmentUrl: string | undefined = undefined;
       try {
-        const fileExt = file.name.split(".").pop();
-        const fileNameUnique = `${Date.now()}_original_invoice.${fileExt}`;
-        const filePath = `purchases/${fileNameUnique}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("attachments")
-          .upload(filePath, file);
-
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from("attachments")
-            .getPublicUrl(filePath);
-          attachmentUrl = publicUrlData?.publicUrl || undefined;
+        const fd = new FormData();
+        fd.append("file", file);
+        const up = await fetch("/api/upload", { method: "POST", body: fd });
+        if (up.ok) {
+          attachmentUrl = (await up.json()).url || undefined;
         } else {
-          console.warn("Upload do anexo ignorado:", uploadError.message);
+          console.warn("Upload do anexo ignorado:", (await up.json()).error);
         }
       } catch (upErr) {
         console.warn("Upload do anexo falhou, seguindo sem anexo:", upErr);

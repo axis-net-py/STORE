@@ -138,7 +138,7 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
           A
         </div>
         {!collapsed && (
-          <span className="text-sm font-bold tracking-wider text-white">AXIS STORE</span>
+          <span className="font-serif text-sm font-semibold tracking-tight text-white">AXIS Store</span>
         )}
       </div>
 

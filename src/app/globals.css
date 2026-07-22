@@ -106,6 +106,21 @@
       font-size: 16px;
     }
   }
+
+  h1 {
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  h3 {
+    font-weight: 600;
+    letter-spacing: -0.012em;
+  }
 }
 
 /* Page enter animation — conteúdo sobe suavemente ao trocar de módulo */

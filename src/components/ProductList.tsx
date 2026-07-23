@@ -5,7 +5,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { ProductSheet } from "@/components/ProductSheet";
 import { ProductDeleteButton } from "@/components/ProductDeleteButton";
-import { PrintRecordButton } from "@/components/ui/print-record-button";
 import type { Product } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -84,22 +83,6 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
     if (sortField !== field) return null;
     return sortOrder === "asc" ? " ▴" : " ▾";
   };
-
-  const printFields = (product: Product) => [
-    { label: "SKU", value: product.sku || "-" },
-    {
-      label: "Preço",
-      value: new Intl.NumberFormat((product as any).currency === "PYG" ? "pt-BR" : "en-US", {
-        style: "currency",
-        currency: (product as any).currency || "PYG",
-        minimumFractionDigits: (product as any).currency === "PYG" ? 0 : 2,
-        maximumFractionDigits: (product as any).currency === "PYG" ? 0 : 2,
-      }).format(Number(product.price)),
-    },
-    { label: "Estoque", value: product.isService ? "Serviço" : `${Number(product.currentStock)} ${product.unit}` },
-    { label: "Tags", value: product.tags || "-" },
-    { label: "Status", value: product.isActive ? "Ativo" : "Inativo" },
-  ];
 
   return (
     <div className="space-y-4">
@@ -197,7 +180,6 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <ProductSheet tenantId={tenantId} product={product} />
-                  <PrintRecordButton title={product.name} subtitle="Ficha do Produto" fields={printFields(product)} />
                   <ProductDeleteButton product={product} />
                 </div>
               </div>
@@ -284,7 +266,6 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
                         tenantId={tenantId}
                         product={product}
                       />
-                      <PrintRecordButton title={product.name} subtitle="Ficha do Produto" fields={printFields(product)} />
                       <ProductDeleteButton product={product} />
                     </div>
                   </TableCell>

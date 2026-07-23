@@ -5,7 +5,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { CustomerSheet } from "@/components/CustomerSheet";
 import { CustomerDeleteButton } from "@/components/CustomerDeleteButton";
-import { PrintRecordButton } from "@/components/ui/print-record-button";
 import type { Customer } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
@@ -56,16 +55,6 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
     return sortOrder === "asc" ? " ▴" : " ▾";
   };
 
-  const printFields = (customer: Customer) => [
-    { label: "Documento", value: customer.document || "-" },
-    { label: "E-mail", value: customer.email || "-" },
-    { label: "Telefone", value: customer.phone || "-" },
-    { label: "Endereço", value: customer.address || "-" },
-    { label: "Cidade", value: customer.city || "-" },
-    { label: "Categoria", value: customer.category === "fisica" ? "Física" : customer.category === "juridica" ? "Jurídica" : customer.category || "-" },
-    { label: "Status", value: customer.isActive ? "Ativo" : "Inativo" },
-  ];
-
   return (
     <div className="space-y-4">
       {/* Barra de filtros padrão */}
@@ -107,7 +96,6 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
                 </Badge>
                 <div className="flex items-center gap-1.5">
                   <CustomerSheet tenantId={tenantId} customer={customer} />
-                  <PrintRecordButton title={customer.name} subtitle="Ficha do Cliente" fields={printFields(customer)} />
                   <CustomerDeleteButton customer={customer} />
                 </div>
               </div>
@@ -165,8 +153,7 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <CustomerSheet tenantId={tenantId} customer={customer} />
-                      <PrintRecordButton title={customer.name} subtitle="Ficha do Cliente" fields={printFields(customer)} />
-                      <CustomerDeleteButton customer={customer} />
+                          <CustomerDeleteButton customer={customer} />
                     </div>
                   </TableCell>
                 </TableRow>

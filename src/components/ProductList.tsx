@@ -9,12 +9,14 @@ import type { Product } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
+import { Switch } from "@/components/ui/switch";
 import { Tag } from "lucide-react";
 
 export function ProductList({ products, tenantId }: { products: Product[]; tenantId: string }) {
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const [showInactive, setShowInactive] = useState(false);
   const [sortField, setSortField] = useState<"sku" | "name" | "price" | "currentStock" | "isActive" | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -55,7 +57,9 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
       (selectedType === "service" && p.isService) ||
       (selectedType === "product" && !p.isService);
 
-    return matchesSearch && matchesTag && matchesType;
+    const matchesActive = showInactive || p.isActive;
+
+    return matchesSearch && matchesTag && matchesType && matchesActive;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -122,6 +126,12 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
               <SelectItem value="service">Serviços</SelectItem>
             </SelectContent>
           </Select>
+        </FilterField>
+        <FilterField label="Inativos">
+          <div className="h-10 sm:h-9 flex items-center gap-2">
+            <Switch checked={showInactive} onCheckedChange={setShowInactive} />
+            <span className="text-[13px] text-muted-foreground">Mostrar</span>
+          </div>
         </FilterField>
       </FilterBar>
 

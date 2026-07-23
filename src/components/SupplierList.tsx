@@ -8,9 +8,11 @@ import { SupplierDeleteButton } from "@/components/SupplierDeleteButton";
 import type { Supplier } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
+import { Switch } from "@/components/ui/switch";
 
 export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; tenantId: string }) {
   const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const [sortField, setSortField] = useState<"phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive" | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -25,12 +27,12 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
 
   const filteredSuppliers = suppliers.filter((s) => {
     const term = search.toLowerCase();
-    return (
+    const matchesSearch =
       (s.phone && s.phone.toLowerCase().includes(term)) ||
       (s.businessName && s.businessName.toLowerCase().includes(term)) ||
       (s.document && s.document.toLowerCase().includes(term)) ||
-      (s.email && s.email.toLowerCase().includes(term))
-    );
+      (s.email && s.email.toLowerCase().includes(term));
+    return matchesSearch && (showInactive || s.isActive);
   });
 
   const sortedSuppliers = [...filteredSuppliers].sort((a, b) => {
@@ -67,6 +69,12 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
+        </FilterField>
+        <FilterField label="Inativos">
+          <div className="h-10 sm:h-9 flex items-center gap-2">
+            <Switch checked={showInactive} onCheckedChange={setShowInactive} />
+            <span className="text-[13px] text-muted-foreground">Mostrar</span>
+          </div>
         </FilterField>
       </FilterBar>
 

@@ -8,9 +8,11 @@ import { CustomerDeleteButton } from "@/components/CustomerDeleteButton";
 import type { Customer } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
+import { Switch } from "@/components/ui/switch";
 
 export function CustomerList({ customers, tenantId }: { customers: Customer[]; tenantId: string }) {
   const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const [sortField, setSortField] = useState<"name" | "document" | "email" | "category" | "isActive" | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -25,11 +27,11 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
 
   const filteredCustomers = customers.filter((c) => {
     const term = search.toLowerCase();
-    return (
+    const matchesSearch =
       c.name.toLowerCase().includes(term) ||
       (c.document && c.document.toLowerCase().includes(term)) ||
-      (c.email && c.email.toLowerCase().includes(term))
-    );
+      (c.email && c.email.toLowerCase().includes(term));
+    return matchesSearch && (showInactive || c.isActive);
   });
 
   const sortedCustomers = [...filteredCustomers].sort((a, b) => {
@@ -66,6 +68,12 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
+        </FilterField>
+        <FilterField label="Inativos">
+          <div className="h-10 sm:h-9 flex items-center gap-2">
+            <Switch checked={showInactive} onCheckedChange={setShowInactive} />
+            <span className="text-[13px] text-muted-foreground">Mostrar</span>
+          </div>
         </FilterField>
       </FilterBar>
 

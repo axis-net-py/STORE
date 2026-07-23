@@ -94,13 +94,28 @@ export async function updateSupplier(id: string, data: Partial<SupplierFormData>
   revalidatePath(`/${tenantId}/suppliers`)
 }
 
-// Excluir fornecedor
-export async function deleteSupplier(id: string) {
+// Excluir fornecedor — arquiva se tiver faturas/pedidos vinculados (preserva histórico fiscal)
+export async function deleteSupplier(id: string): Promise<{ archived: boolean }> {
   const { tenantId } = await requirePermission('suppliers:delete')
 
-  await prisma.supplier.deleteMany({
+  const supplier = await prisma.supplier.findFirst({
     where: { id, tenantId },
+    select: { id: true },
   })
+  if (!supplier) throw new Error('Fornecedor não encontrado')
 
+  const [invoices, orders] = await Promise.all([
+    prisma.commercialInvoice.count({ where: { supplierId: id } }),
+    prisma.order.count({ where: { supplierId: id } }),
+  ])
+
+  if (invoices > 0 || orders > 0) {
+    await prisma.supplier.update({ where: { id }, data: { isActive: false } })
+    revalidatePath(`/${tenantId}/suppliers`)
+    return { archived: true }
+  }
+
+  await prisma.supplier.deleteMany({ where: { id, tenantId } })
   revalidatePath(`/${tenantId}/suppliers`)
+  return { archived: false }
 }

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { SupplierSheet } from "@/components/SupplierSheet";
+import { SupplierDeleteButton } from "@/components/SupplierDeleteButton";
+import { PrintRecordButton } from "@/components/ui/print-record-button";
 import type { Supplier } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
@@ -55,6 +57,16 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
     return sortOrder === "asc" ? " ▴" : " ▾";
   };
 
+  const printFields = (supplier: Supplier) => [
+    { label: "Documento", value: supplier.document ? `${supplier.documentType ?? "DOC"}: ${supplier.document}` : "-" },
+    { label: "E-mail", value: supplier.email || "-" },
+    { label: "Telefone", value: supplier.phone || "-" },
+    { label: "Endereço", value: supplier.address || "-" },
+    { label: "Cidade", value: supplier.city || "-" },
+    { label: "Condição de Pagamento", value: supplier.paymentTerms || "-" },
+    { label: "Status", value: supplier.isActive ? "Ativo" : "Inativo" },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Barra de filtros padrão */}
@@ -92,7 +104,11 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
               </div>
               <div className="mt-2.5 flex items-center justify-between gap-2">
                 <Badge variant="outline" className="text-[10px]">{supplier.paymentTerms ?? "Contado"}</Badge>
-                <SupplierSheet tenantId={tenantId} supplier={supplier} />
+                <div className="flex items-center gap-1.5">
+                  <SupplierSheet tenantId={tenantId} supplier={supplier} />
+                  <PrintRecordButton title={supplier.businessName || supplier.name} subtitle="Ficha do Fornecedor" fields={printFields(supplier)} />
+                  <SupplierDeleteButton supplier={{ id: supplier.id, name: supplier.businessName || supplier.name }} />
+                </div>
               </div>
             </div>
           ))
@@ -148,10 +164,11 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <SupplierSheet
-                      tenantId={tenantId}
-                      supplier={supplier}
-                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <SupplierSheet tenantId={tenantId} supplier={supplier} />
+                      <PrintRecordButton title={supplier.businessName || supplier.name} subtitle="Ficha do Fornecedor" fields={printFields(supplier)} />
+                      <SupplierDeleteButton supplier={{ id: supplier.id, name: supplier.businessName || supplier.name }} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

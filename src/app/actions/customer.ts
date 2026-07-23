@@ -88,13 +88,28 @@ export async function updateCustomer(id: string, data: Partial<CustomerFormData>
   revalidatePath(`/${tenantId}/customers`)
 }
 
-// Excluir cliente (soft delete ou hard delete)
-export async function deleteCustomer(id: string) {
+// Excluir cliente — arquiva se tiver faturas/pedidos vinculados (preserva histórico fiscal)
+export async function deleteCustomer(id: string): Promise<{ archived: boolean }> {
   const { tenantId } = await requirePermission('customers:delete')
 
-  await prisma.customer.deleteMany({
+  const customer = await prisma.customer.findFirst({
     where: { id, tenantId },
+    select: { id: true },
   })
+  if (!customer) throw new Error('Cliente não encontrado')
 
+  const [invoices, orders] = await Promise.all([
+    prisma.commercialInvoice.count({ where: { customerId: id } }),
+    prisma.order.count({ where: { customerId: id } }),
+  ])
+
+  if (invoices > 0 || orders > 0) {
+    await prisma.customer.update({ where: { id }, data: { isActive: false } })
+    revalidatePath(`/${tenantId}/customers`)
+    return { archived: true }
+  }
+
+  await prisma.customer.deleteMany({ where: { id, tenantId } })
   revalidatePath(`/${tenantId}/customers`)
+  return { archived: false }
 }

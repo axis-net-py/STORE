@@ -454,10 +454,12 @@ export async function cancelInvoice(id: string) {
 }
 
 /**
- * Exclusão definitiva (hard delete) — SOMENTE faturas de COMPRA.
+ * Exclusão definitiva (hard delete) — faturas de COMPRA sempre, e faturas de
+ * VENDA somente quando NÃO forem documento fiscal real (sem CDC e sem
+ * status de envio ao SIFEN — "Recibo Comum" não conta como SIFEN).
  *
- * Faturas de VENDA nunca são apagadas: são documentos fiscais de saída
- * (e podem estar no SIFEN). Para essas, use cancelInvoice.
+ * Uma venda já registrada no SIFEN (CDC emitido, ou status PENDING/
+ * APPROVED/REJECTED) nunca é apagada — use cancelInvoice para essas.
  */
 export async function deletePurchaseInvoice(id: string) {
   const { tenantId, userId } = await requirePermission('invoices:delete')
@@ -468,10 +470,8 @@ export async function deletePurchaseInvoice(id: string) {
   })
   if (!invoice) throw new Error('Fatura não encontrada')
 
-  if (invoice.type !== 'PURCHASE') {
-    throw new Error('Somente faturas de compra podem ser excluídas. Faturas de venda devem ser canceladas.')
-  }
-  if (invoice.sifenCdc || invoice.sifenStatus) {
+  const isRealSifenDoc = !!invoice.sifenCdc || (!!invoice.sifenStatus && invoice.sifenStatus !== 'RECIBO_COMUN')
+  if (isRealSifenDoc) {
     throw new Error('Fatura com registro no SIFEN não pode ser excluída.')
   }
   await assertPeriodOpen(prisma, tenantId, invoice.issuedAt)

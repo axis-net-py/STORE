@@ -9,17 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Paperclip } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useTranslations } from "next-intl";
+import { useDateLocale } from "@/lib/i18n/date-locale";
 
-const sifenStatusLabels: Record<string, string> = {
-  PENDING: "Pendente Sifen",
-  APPROVED: "Aprovado Sifen",
-  REJECTED: "Rejeitado Sifen",
-  CANCELLED: "Cancelado Sifen",
-  RECIBO_COMUN: "Recibo Comum",
+const sifenStatusKeys: Record<string, string> = {
+  PENDING: "sifenPending",
+  APPROVED: "sifenApproved",
+  REJECTED: "sifenRejected",
+  CANCELLED: "sifenCancelled",
+  RECIBO_COMUN: "sifenReceipt",
 };
 
 export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId: string }) {
+  const t = useTranslations("invoices");
+  const tc = useTranslations("common");
+  const dateLocale = useDateLocale();
+  const sifenLabel = (s: string) =>
+    sifenStatusKeys[s] ? t(sifenStatusKeys[s]) : s || t("sifenNotSent");
   const [search, setSearch] = useState("");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -99,51 +105,51 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
     <div className="space-y-4">
       {/* Barra de filtros padrão */}
       <FilterBar>
-        <FilterField label="Buscar" grow>
+        <FilterField label={tc("search")} grow>
           <Input
-            placeholder="Buscar por cliente, fornecedor ou número da fatura..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
         </FilterField>
-        <FilterField label="Tipo">
+        <FilterField label={t("type")}>
           <Select value={selectedType} onValueChange={setSelectedType}>
             <SelectTrigger className="w-full sm:w-[160px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos os tipos</SelectItem>
-              <SelectItem value="SALES">Venda</SelectItem>
-              <SelectItem value="PURCHASE">Compra</SelectItem>
+              <SelectItem value="all">{t("allTypes")}</SelectItem>
+              <SelectItem value="SALES">{t("sale")}</SelectItem>
+              <SelectItem value="PURCHASE">{t("purchase")}</SelectItem>
             </SelectContent>
           </Select>
         </FilterField>
-        <FilterField label="Status">
+        <FilterField label={t("status")}>
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-full sm:w-[160px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="PENDING">Pendente</SelectItem>
-              <SelectItem value="APPROVED">Aprovada</SelectItem>
-              <SelectItem value="CANCELLED">Cancelada</SelectItem>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
+              <SelectItem value="PENDING">{t("pending")}</SelectItem>
+              <SelectItem value="APPROVED">{t("approved")}</SelectItem>
+              <SelectItem value="CANCELLED">{t("cancelled")}</SelectItem>
             </SelectContent>
           </Select>
         </FilterField>
-        <FilterField label="Status SET (Sifen)">
+        <FilterField label={t("sifenStatus")}>
           <Select value={selectedSifenStatus} onValueChange={setSelectedSifenStatus}>
             <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="none">Não enviado</SelectItem>
-              <SelectItem value="RECIBO_COMUN">Recibo Comum</SelectItem>
-              <SelectItem value="PENDING">Pendente Sifen</SelectItem>
-              <SelectItem value="APPROVED">Aprovado Sifen</SelectItem>
-              <SelectItem value="REJECTED">Rejeitado Sifen</SelectItem>
+              <SelectItem value="all">{t("sifenAll")}</SelectItem>
+              <SelectItem value="none">{t("sifenNotSent")}</SelectItem>
+              <SelectItem value="RECIBO_COMUN">{t("sifenReceipt")}</SelectItem>
+              <SelectItem value="PENDING">{t("sifenPending")}</SelectItem>
+              <SelectItem value="APPROVED">{t("sifenApproved")}</SelectItem>
+              <SelectItem value="REJECTED">{t("sifenRejected")}</SelectItem>
             </SelectContent>
           </Select>
         </FilterField>
@@ -153,7 +159,7 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
       <div className="md:hidden space-y-2.5">
         {sortedInvoices.length === 0 ? (
           <div className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground">
-            Nenhuma fatura encontrada.
+            {t("empty")}
           </div>
         ) : (
           sortedInvoices.map((inv: any) => (
@@ -173,7 +179,7 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                   </p>
                 </div>
                 <Badge variant={inv.type === "PURCHASE" ? "default" : "secondary"} className="shrink-0">
-                  {inv.type === "PURCHASE" ? "Compra" : "Venda"}
+                  {inv.type === "PURCHASE" ? t("purchase") : t("sale")}
                 </Badge>
               </div>
 
@@ -182,20 +188,20 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                   variant={inv.status === "APPROVED" ? "default" : inv.status === "CANCELLED" ? "destructive" : "outline"}
                   className="text-[10px]"
                 >
-                  {inv.status === "APPROVED" ? "Aprovada" : inv.status === "CANCELLED" ? "Cancelada" : "Pendente"}
+                  {inv.status === "APPROVED" ? t("approved") : inv.status === "CANCELLED" ? t("cancelled") : t("pending")}
                 </Badge>
                 <Badge
                   variant={inv.sifenStatus === "APPROVED" ? "default" : inv.sifenStatus === "REJECTED" ? "destructive" : "outline"}
                   className="text-[10px]"
                 >
-                  {sifenStatusLabels[inv.sifenStatus] || inv.sifenStatus || "Não enviado"}
+                  {sifenLabel(inv.sifenStatus)}
                 </Badge>
               </div>
 
               <div className="mt-2.5 flex items-end justify-between gap-2">
                 <div>
                   <p className="text-[11px] text-muted-foreground">
-                    {format(new Date(inv.issuedAt), "dd/MM/yyyy", { locale: ptBR })}
+                    {format(new Date(inv.issuedAt), "dd/MM/yyyy", { locale: dateLocale })}
                   </p>
                   <p className="text-base font-bold tabular-nums">
                     {new Intl.NumberFormat("pt-BR", {
@@ -219,34 +225,34 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
           <TableHeader>
             <TableRow>
               <TableHead onClick={() => handleSort("type")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Tipo{renderSortIndicator("type")}
+                {t("type")}{renderSortIndicator("type")}
               </TableHead>
               <TableHead onClick={() => handleSort("customer")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Cliente{renderSortIndicator("customer")}
+                {t("customer")}{renderSortIndicator("customer")}
               </TableHead>
               <TableHead onClick={() => handleSort("documentNumber")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Fatura{renderSortIndicator("documentNumber")}
+                {t("invoice")}{renderSortIndicator("documentNumber")}
               </TableHead>
               <TableHead onClick={() => handleSort("issuedAt")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Data{renderSortIndicator("issuedAt")}
+                {t("date")}{renderSortIndicator("issuedAt")}
               </TableHead>
               <TableHead onClick={() => handleSort("status")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status{renderSortIndicator("status")}
+                {t("status")}{renderSortIndicator("status")}
               </TableHead>
               <TableHead onClick={() => handleSort("sifenStatus")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status SET{renderSortIndicator("sifenStatus")}
+                {t("sifenColumn")}{renderSortIndicator("sifenStatus")}
               </TableHead>
               <TableHead onClick={() => handleSort("totalAmount")} className="text-right cursor-pointer hover:bg-muted/50 select-none">
-                Total{renderSortIndicator("totalAmount")}
+                {t("total")}{renderSortIndicator("totalAmount")}
               </TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedInvoices.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                  Nenhuma fatura encontrada.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -254,7 +260,7 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                 <TableRow key={inv.id}>
                   <TableCell>
                     <Badge variant={inv.type === "PURCHASE" ? "default" : "secondary"}>
-                      {inv.type === "PURCHASE" ? "Compra" : "Venda"}
+                      {inv.type === "PURCHASE" ? t("purchase") : t("sale")}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium">
@@ -268,7 +274,7 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                           href={inv.attachmentUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="Visualizar documento original"
+                          title={t("viewOriginal")}
                           className="inline-flex text-muted-foreground hover:text-primary transition-colors"
                         >
                           <Paperclip className="h-3.5 w-3.5" />
@@ -278,7 +284,7 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                   </TableCell>
                   <TableCell>
                     {format(new Date(inv.issuedAt), "dd/MM/yyyy", {
-                      locale: ptBR,
+                      locale: dateLocale,
                     })}
                   </TableCell>
                   <TableCell>
@@ -292,10 +298,10 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                       }
                     >
                       {inv.status === "APPROVED"
-                        ? "Aprovada"
+                        ? t("approved")
                         : inv.status === "CANCELLED"
-                        ? "Cancelada"
-                        : "Pendente"}
+                        ? t("cancelled")
+                        : t("pending")}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -308,7 +314,7 @@ export function InvoiceList({ invoices, tenantId }: { invoices: any[]; tenantId:
                           : "outline"
                       }
                     >
-                      {sifenStatusLabels[inv.sifenStatus] || inv.sifenStatus || "Não enviado"}
+                      {sifenLabel(inv.sifenStatus)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono">

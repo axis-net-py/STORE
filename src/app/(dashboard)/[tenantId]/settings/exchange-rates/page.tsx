@@ -113,7 +113,7 @@ export default async function ExchangeRatesPage({
           <Card className="axis-glass-panel old-money-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                USD → PYG
+                {t("usdToPyg")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -139,7 +139,7 @@ export default async function ExchangeRatesPage({
           <Card className="axis-glass-panel old-money-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                BRL → PYG
+                {t("brlToPyg")}
               </CardTitle>
             </CardHeader>
             <CardContent>

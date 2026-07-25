@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Geist_Mono } from "next/font/google";
 import {
@@ -28,6 +29,8 @@ export function CommercialInvoiceSheet({
   invoice?: any;
   trigger?: React.ReactNode;
 }) {
+  const t = useTranslations("billing");
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState<"PURCHASE" | "SALES">(invoice?.type ?? "SALES");
@@ -114,7 +117,7 @@ export function CommercialInvoiceSheet({
         }
       }
     } catch (err) {
-      console.error("Erro ao carregar dados do faturamento:", err);
+      console.error(t("loadError"), err);
     } finally {
       setLoading(false);
     }
@@ -312,7 +315,7 @@ export function CommercialInvoiceSheet({
       }
       setAttachmentUrl((await up.json()).url);
     } catch (err: any) {
-      alert("Erro ao fazer upload do anexo: " + err.message);
+      alert(t("uploadError") + err.message);
     } finally {
       setUploading(false);
     }
@@ -383,7 +386,7 @@ export function CommercialInvoiceSheet({
         router.refresh();
       }
     } catch (err: any) {
-      alert(err.message || "Erro ao criar fatura");
+      alert(err.message || t("createError"));
     } finally {
       setLoading(false);
     }
@@ -401,7 +404,7 @@ export function CommercialInvoiceSheet({
               className="bg-primary hover:bg-primary/95 text-primary-foreground font-bold min-h-[44px] md:h-[32px] px-6 md:px-4 text-[14px] md:text-[13px] rounded-lg shadow-sm flex items-center gap-2 active:scale-98 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 shrink-0" />
-              Faturar Venda / Compra
+              {t("trigger")}
             </button>
           )}
         </DialogTrigger>
@@ -414,10 +417,10 @@ export function CommercialInvoiceSheet({
             <div>
               <DialogTitle className="text-[20px] font-bold tracking-tight text-foreground flex items-center gap-2">
                 <Landmark className="w-5 h-5 text-primary" />
-                {invoice ? "Editar Fatura" : "Painel de Faturamento Global"}
+                {invoice ? t("editTitle") : t("newTitle")}
               </DialogTitle>
               <DialogDescription className="text-[12px] text-muted-foreground font-medium pt-1">
-                Lançamento integrado com controle cambial, conciliação e SIFEN
+                {t("subtitle")}
               </DialogDescription>
             </div>
             
@@ -432,7 +435,7 @@ export function CommercialInvoiceSheet({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Venda
+                {t("sale")}
               </button>
               <button
                 type="button"
@@ -443,7 +446,7 @@ export function CommercialInvoiceSheet({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Compra
+                {t("purchase")}
               </button>
             </div>
           </div>
@@ -455,13 +458,13 @@ export function CommercialInvoiceSheet({
             
             {/* Left Column: Config Panel */}
             <div className="space-y-5 bg-muted/20 p-5 rounded-2xl border border-border/50">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Parâmetros Comerciais</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-primary">{t("commercialParams")}</h3>
               
               {/* Sifen Option (Sales Only) */}
               {type === "SALES" && (
                 <div className="space-y-2">
                   <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                    <FileCheck2 className="w-3.5 h-3.5" /> Tipo de Venda / Emissão
+                    <FileCheck2 className="w-3.5 h-3.5" /> {t("emissionType")}
                   </Label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -473,8 +476,8 @@ export function CommercialInvoiceSheet({
                           : "border-border bg-card text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <span className="text-[12px]">Legal (SIFEN)</span>
-                      <span className="text-[9px] opacity-70">Validação Tributária PY</span>
+                      <span className="text-[12px]">{t("legalSifen")}</span>
+                      <span className="text-[9px] opacity-70">{t("legalSifenHint")}</span>
                     </button>
                     <button
                       type="button"
@@ -485,8 +488,8 @@ export function CommercialInvoiceSheet({
                           : "border-border bg-card text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <span className="text-[12px]">Recibo Comum</span>
-                      <span className="text-[9px] opacity-70">Documento Interno</span>
+                      <span className="text-[12px]">{t("commonReceipt")}</span>
+                      <span className="text-[9px] opacity-70">{t("commonReceiptHint")}</span>
                     </button>
                   </div>
                 </div>
@@ -495,7 +498,7 @@ export function CommercialInvoiceSheet({
               {/* Client Selection */}
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                  {type === "SALES" ? "Cliente" : "Fornecedor"}
+                  {type === "SALES" ? t("customer") : t("supplier")}
                 </Label>
                 <Select value={selectedCustomer} onValueChange={handleCustomerChange} required>
                   <SelectTrigger className="bg-card border-border text-[13px] h-[42px] rounded-xl shadow-sm">
@@ -524,27 +527,27 @@ export function CommercialInvoiceSheet({
                 <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
                   <div className="space-y-2">
                     <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Nº Fatura
+                      {t("invoiceNumber")}
                     </Label>
                     <Input
                       type="text"
                       required
                       value={documentNumber}
                       onChange={(e) => setDocumentNumber(e.target.value)}
-                      placeholder="000-000-0000000"
+                      placeholder={t("invoiceNumberPlaceholder")}
                       className="bg-card border-border text-[13px] h-[42px] rounded-xl shadow-sm"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Nº Timbrado
+                      {t("stampNumber")}
                     </Label>
                     <Input
                       type="text"
                       required
                       value={timbrado}
                       onChange={(e) => setTimbrado(e.target.value)}
-                      placeholder="12345678"
+                      placeholder={t("stampNumberPlaceholder")}
                       className="bg-card border-border text-[13px] h-[42px] rounded-xl shadow-sm"
                     />
                   </div>
@@ -554,7 +557,7 @@ export function CommercialInvoiceSheet({
               {type === "PURCHASE" && (
                 <div className="space-y-2 mt-2">
                   <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                    Documento Original (PDF ou Imagem)
+                    {t("originalDocument")}
                   </Label>
                   <div className="flex gap-2 items-center">
                     <div className="relative flex-1">
@@ -577,7 +580,7 @@ export function CommercialInvoiceSheet({
                         rel="noopener noreferrer"
                         className="text-xs text-primary font-bold hover:underline truncate max-w-[280px]"
                       >
-                        Visualizar Anexo
+                        {t("viewAttachment")}
                       </a>
                     </div>
                   )}
@@ -587,7 +590,7 @@ export function CommercialInvoiceSheet({
               {/* Payment Condition */}
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                  <CalendarRange className="w-3.5 h-3.5" /> Condição de Faturamento
+                  <CalendarRange className="w-3.5 h-3.5" /> {t("billingCondition")}
                 </Label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -599,7 +602,7 @@ export function CommercialInvoiceSheet({
                         : "border-border bg-card text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    À Vista
+                    {t("cash")}
                   </button>
                   <button
                     type="button"
@@ -610,7 +613,7 @@ export function CommercialInvoiceSheet({
                         : "border-border bg-card text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    A Prazo
+                    {t("credit")}
                   </button>
                 </div>
               </div>
@@ -619,7 +622,7 @@ export function CommercialInvoiceSheet({
               {paymentMethod === "A_PRAZO" && (
                 <div className="space-y-2">
                   <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Data de Vencimento
+                    {t("dueDate")}
                   </Label>
                   <Input
                     type="date"
@@ -635,16 +638,16 @@ export function CommercialInvoiceSheet({
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                    <Coins className="w-3.5 h-3.5" /> Moeda da Transação
+                    <Coins className="w-3.5 h-3.5" /> {t("transactionCurrency")}
                   </Label>
                   <Select value={currency} onValueChange={handleCurrencyChange}>
                     <SelectTrigger className="bg-card border-border text-[13px] h-[42px] rounded-xl shadow-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="PYG">PYG - Guarani Paraguai (Gs)</SelectItem>
-                      <SelectItem value="USD">USD - Dólar Americano ($)</SelectItem>
-                      <SelectItem value="BRL">BRL - Real Brasileiro (R$)</SelectItem>
+                      <SelectItem value="PYG">{t("currencyPYG")}</SelectItem>
+                      <SelectItem value="USD">{t("currencyUSD")}</SelectItem>
+                      <SelectItem value="BRL">{t("currencyBRL")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -653,7 +656,7 @@ export function CommercialInvoiceSheet({
                 {currency !== "PYG" && (
                   <div className="space-y-1.5 bg-card border border-border p-3.5 rounded-xl">
                     <Label className="text-[11px] font-bold uppercase tracking-widest text-primary flex items-center justify-between">
-                      <span>Câmbio Manual</span>
+                      <span>{t("manualRate")}</span>
                       <span className="text-[9px] text-muted-foreground">({currency} → PYG)</span>
                     </Label>
                     <Input
@@ -675,7 +678,7 @@ export function CommercialInvoiceSheet({
             {/* Right Column: Items and Subtotals */}
             <div className="space-y-4 flex flex-col justify-between">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Linhas de Itens</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">{t("itemLines")}</h3>
                 
                 {/* Items Container */}
                 <div className="space-y-2 max-h-[35vh] overflow-y-auto pr-1">
@@ -683,14 +686,14 @@ export function CommercialInvoiceSheet({
                     <div key={index} className="grid grid-cols-[1fr_80px_130px_100px_40px] gap-2 items-center bg-card p-3 rounded-xl border border-border">
                       {/* Product Selector */}
                       <div>
-                        <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 block">Produto</Label>
+                        <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 block">{t("product")}</Label>
                         <Select
                           value={item.productId}
                           onValueChange={(v) => updateItem(index, "productId", v)}
                           required
                         >
                           <SelectTrigger className="bg-background border-border text-[13px] h-[36px] rounded-lg">
-                            <SelectValue placeholder="Produto" />
+                            <SelectValue placeholder={t("product")} />
                           </SelectTrigger>
                           <SelectContent className="rounded-lg">
                             {products.map((p) => (
@@ -704,7 +707,7 @@ export function CommercialInvoiceSheet({
 
                       {/* Quantity */}
                       <div>
-                        <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 block">Qtd</Label>
+                        <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 block">{t("qty")}</Label>
                         <Input
                           type="number"
                           required
@@ -713,14 +716,14 @@ export function CommercialInvoiceSheet({
                           onChange={(e) =>
                             updateItem(index, "quantity", Number(e.target.value))
                           }
-                          placeholder="Qtd"
+                          placeholder={t("qty")}
                           className="bg-background border-border text-[13px] h-[36px] rounded-lg"
                         />
                       </div>
 
                       {/* Price (In selected currency) */}
                       <div>
-                        <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 block">Preço ({currency})</Label>
+                        <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 block">{t("priceLabel", { currency })}</Label>
                         <Input
                           type="number"
                           required
@@ -729,26 +732,26 @@ export function CommercialInvoiceSheet({
                           onChange={(e) =>
                             updateItem(index, "unitPrice", Number(e.target.value))
                           }
-                          placeholder="Preço"
+                          placeholder={t("price")}
                           className="bg-background border-border text-[13px] h-[36px] rounded-lg"
                         />
                       </div>
 
                       {/* Tax Type */}
                       <div>
-                        <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 block">IVA</Label>
+                        <Label className="text-[9px] uppercase tracking-wider text-muted-foreground mb-1 block">{t("vat")}</Label>
                         <Select
                           value={item.taxType}
                           onValueChange={(v) => updateItem(index, "taxType", v)}
                           required
                         >
                           <SelectTrigger className="bg-background border-border text-[13px] h-[36px] rounded-lg">
-                            <SelectValue placeholder="IVA" />
+                            <SelectValue placeholder={t("vat")} />
                           </SelectTrigger>
                           <SelectContent className="rounded-lg">
                             <SelectItem value="IVA_10">10%</SelectItem>
                             <SelectItem value="IVA_5">5%</SelectItem>
-                            <SelectItem value="EXENTO">Exento</SelectItem>
+                            <SelectItem value="EXENTO">{t("exempt")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -774,14 +777,14 @@ export function CommercialInvoiceSheet({
                   className="mt-3 flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-bold bg-primary/5 hover:bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-lg transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Adicionar Item
+                  {t("addItem")}
                 </button>
               </div>
 
               {/* Dynamic Totals Panel */}
               <div className="bg-muted/30 border border-border p-4 rounded-2xl grid grid-cols-3 gap-4 items-center">
                 <div className="space-y-0.5">
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total em {currency}</span>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("totalIn", { currency })}</span>
                   <div className={`${geistMono.className} text-xl font-bold text-foreground`}>
                     {formatCurrency(totalSelectedCurrency, currency)}
                   </div>
@@ -789,7 +792,7 @@ export function CommercialInvoiceSheet({
                 
                 {currency !== "PYG" && (
                   <div className="space-y-0.5 border-l border-border pl-4">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Equivalente PYG</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("equivalentPYG")}</span>
                     <div className={`${geistMono.className} text-sm font-bold text-foreground/80`}>
                       {formatCurrency(totalPYG, "PYG")}
                     </div>
@@ -798,7 +801,7 @@ export function CommercialInvoiceSheet({
                 
                 {currency !== "USD" && (
                   <div className="space-y-0.5 border-l border-border pl-4">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Equivalente USD</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{t("equivalentUSD")}</span>
                     <div className={`${geistMono.className} text-sm font-bold text-foreground/80`}>
                       {formatCurrency(totalUSD, "USD")}
                     </div>
@@ -816,7 +819,7 @@ export function CommercialInvoiceSheet({
               onClick={() => setOpen(false)}
               className="px-5 h-[42px] rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted/80 hover:text-foreground active:scale-98 transition-all"
             >
-              Cancelar
+              {tc("cancel")}
             </button>
             <button
               type="submit"
@@ -824,7 +827,7 @@ export function CommercialInvoiceSheet({
               className="bg-primary text-primary-foreground font-bold px-7 h-[42px] rounded-xl hover:bg-primary/95 transition-all flex items-center justify-center gap-2 text-xs shadow-md active:scale-98 disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
-              {loading ? "Gravando..." : invoice ? "Salvar Alterações" : `Confirmar ${type === "SALES" ? "Faturamento" : "Compra"}`}
+              {loading ? t("saving") : invoice ? t("saveChanges") : type === "SALES" ? t("confirmSale") : t("confirmPurchase")}
             </button>
           </div>
 
@@ -840,10 +843,10 @@ export function CommercialInvoiceSheet({
           <DialogHeader className="text-center space-y-2">
             <DialogTitle className="text-lg font-bold flex items-center justify-center gap-2">
               <Printer className="w-5 h-5 text-primary animate-pulse" />
-              Faturamento Concluído!
+              {t("doneTitle")}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              A venda foi registrada com sucesso. Como deseja imprimir o documento?
+              {t("doneDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -858,7 +861,7 @@ export function CommercialInvoiceSheet({
               ) : (
                 <Printer className="w-6 h-6 text-primary" />
               )}
-              <span className="text-xs font-bold">Imprimir A4</span>
+              <span className="text-xs font-bold">{t("printA4")}</span>
             </button>
 
             <button
@@ -871,7 +874,7 @@ export function CommercialInvoiceSheet({
               ) : (
                 <Receipt className="w-6 h-6 text-primary" />
               )}
-              <span className="text-xs font-bold">Imprimir 80mm</span>
+              <span className="text-xs font-bold">{t("print80mm")}</span>
             </button>
           </div>
 
@@ -880,7 +883,7 @@ export function CommercialInvoiceSheet({
               onClick={handleClosePrompt}
               className="w-full py-2.5 rounded-xl text-xs font-bold bg-muted hover:bg-muted/80 text-muted-foreground transition-all active:scale-98"
             >
-              Fechar sem Imprimir
+              {t("closeWithoutPrint")}
             </button>
           </div>
         </DialogContent>

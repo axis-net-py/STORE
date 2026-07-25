@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,6 +11,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
+  const t = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,13 +30,13 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError("Email ou senha inválidos");
+        setError(t("invalidCredentials"));
       } else {
         router.push(callbackUrl);
         router.refresh();
       }
     } catch {
-      setError("Erro ao fazer login");
+      setError(t("loginError"));
     } finally {
       setLoading(false);
     }
@@ -44,21 +46,21 @@ function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <label className="text-[11px] uppercase tracking-widest font-bold text-primary">
-          Email
+          {t("email")}
         </label>
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="admin@axis.erp"
+          placeholder={t("emailPlaceholder")}
           className="w-full h-[44px] px-4 rounded-lg bg-background border border-input text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-ring transition-all"
         />
       </div>
 
       <div className="space-y-2">
         <label className="text-[11px] uppercase tracking-widest font-bold text-primary">
-          Senha
+          {t("password")}
         </label>
         <input
           type="password"
@@ -82,7 +84,7 @@ function LoginForm() {
         className="w-full h-[44px] bg-primary text-primary-foreground rounded-lg font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md active:scale-[0.98]"
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-        {loading ? "Entrando..." : "Entrar"}
+        {loading ? t("signingIn") : t("signIn")}
       </button>
     </form>
   );

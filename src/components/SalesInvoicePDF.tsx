@@ -18,9 +18,14 @@ interface InvoicePDFProps {
     }[];
     totalAmount: number;
   };
+  /** Locale ativo (pt-BR | es-PY) para os rotulos impressos. */
+  locale?: string;
 }
 
-export function SalesInvoicePDF({ invoice }: InvoicePDFProps) {
+export function SalesInvoicePDF({ invoice, locale = "pt-BR" }: InvoicePDFProps) {
+  // Documento impresso segue o idioma ativo do usuario.
+  const t = (pt: string, es: string) => (locale === "es-PY" ? es : pt);
+
   const styles = StyleSheet.create({
     page: { padding: 40, fontSize: 11, fontFamily: "Helvetica" },
     header: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
@@ -82,11 +87,11 @@ export function SalesInvoicePDF({ invoice }: InvoicePDFProps) {
         <View style={styles.table}>
           {/* Cabeçalho da Tabela */}
           <View style={[styles.tableRow, { backgroundColor: "#f0f0f0" }]}>
-            <Text style={[styles.tableColHeader, { width: "40%" }]}>Produto</Text>
+            <Text style={[styles.tableColHeader, { width: "40%" }]}>{t("Produto", "Producto")}</Text>
             <Text style={[styles.tableColHeader, { width: "15%" }]}>SKU</Text>
-            <Text style={[styles.tableColHeader, { width: "15%" }]}>Qtd</Text>
-            <Text style={[styles.tableColHeader, { width: "15%" }]}>Preço Un.</Text>
-            <Text style={[styles.tableColHeader, { width: "15%" }]}>Total</Text>
+            <Text style={[styles.tableColHeader, { width: "15%" }]}>{t("Qtd", "Cant.")}</Text>
+            <Text style={[styles.tableColHeader, { width: "15%" }]}>{t("Preço Un.", "Precio Un.")}</Text>
+            <Text style={[styles.tableColHeader, { width: "15%" }]}>{t("Total", "Total")}</Text>
           </View>
 
           {/* Itens */}
@@ -109,7 +114,7 @@ export function SalesInvoicePDF({ invoice }: InvoicePDFProps) {
 
         {/* Total */}
         <View style={styles.total}>
-          <Text>Total: {Number(invoice.totalAmount).toFixed(2)}</Text>
+          <Text>{t("Total", "Total")}: {Number(invoice.totalAmount).toFixed(2)}</Text>
         </View>
 
         {/* Rodapé */}

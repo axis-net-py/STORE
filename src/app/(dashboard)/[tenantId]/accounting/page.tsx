@@ -3,12 +3,14 @@ import { redirect } from "next/navigation";
 import LedgerTable from "@/components/accounting/LedgerTable";
 import PeriodsManager from "@/components/accounting/PeriodsManager";
 import { PageHeader } from "@/components/ui/page-header";
+import { getTranslations } from "next-intl/server";
 
 export default async function AccountingPage({
   params,
 }: {
   params: Promise<{ tenantId: string }>;
 }) {
+  const t = await getTranslations("pages.accounting");
   const session = await auth();
   if (!session?.user?.tenantId) redirect("/login");
   const tenantId = session.user.tenantId;
@@ -18,7 +20,7 @@ export default async function AccountingPage({
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <PageHeader title="Contabilidade" subtitle="Livro razão e partidas dobradas" />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
       <LedgerTable tenantId={resolvedTenantId} />
 

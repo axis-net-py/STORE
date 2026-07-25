@@ -29,7 +29,7 @@ export function ReportFilters() {
               defaultValue={new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]}
             />
             <span className="text-muted-foreground text-xs">
-              {language === 'pt' ? 'até' : 'hasta'}
+              {t('until')}
             </span>
             <input
               type="date"
@@ -44,9 +44,9 @@ export function ReportFilters() {
               <SelectValue placeholder={t('type')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="sales">Vendas</SelectItem>
-              <SelectItem value="purchases">Compras</SelectItem>
-              <SelectItem value="inventory">Estoque</SelectItem>
+              <SelectItem value="sales">{t('sales')}</SelectItem>
+              <SelectItem value="purchases">{t('purchases')}</SelectItem>
+              <SelectItem value="inventory">{t('inventory')}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -58,7 +58,7 @@ export function ReportFilters() {
               className="h-9 px-3 text-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
-              Imprimir
+              {t('print')}
             </Button>
             <Button className="bg-[hsl(var(--primary))] text-primary-foreground hover:bg-[hsl(var(--primary))]/90 h-9 px-4 text-xs">
               {t('exportPDF')}

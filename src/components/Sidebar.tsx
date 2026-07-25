@@ -2,6 +2,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
@@ -31,73 +32,38 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { icon: LayoutDashboard, key: "dashboard",  defaultLabel: "Dashboard",   href: "dashboard" },
-  { icon: ShoppingCart,    key: "pos",        defaultLabel: "PDV",          href: "pos" },
-  { icon: ClipboardList,   key: "orders",     defaultLabel: "Pedidos",      href: "orders" },
-  { icon: FileText,        key: "invoices",   defaultLabel: "Faturas",      href: "invoices" },
-  { icon: Package,         key: "products",   defaultLabel: "Produtos",     href: "products" },
-  { icon: Boxes,           key: "inventory",  defaultLabel: "Estoque",      href: "inventory" },
-  { icon: Users,           key: "customers",  defaultLabel: "Clientes",     href: "customers" },
-  { icon: Truck,           key: "suppliers",  defaultLabel: "Fornecedores", href: "suppliers" },
-  { icon: Wallet,          key: "finance",    defaultLabel: "Financeiro",   href: "finance" },
-  { icon: BookOpen,        key: "accounting", defaultLabel: "Contabilidade",href: "accounting" },
-  { icon: BarChart3,       key: "reports",    defaultLabel: "Relatórios",   href: "reports" },
+  { icon: LayoutDashboard, key: "dashboard",   href: "dashboard" },
+  { icon: ShoppingCart,    key: "pos",          href: "pos" },
+  { icon: ClipboardList,   key: "orders",      href: "orders" },
+  { icon: FileText,        key: "invoices",      href: "invoices" },
+  { icon: Package,         key: "products",     href: "products" },
+  { icon: Boxes,           key: "inventory",      href: "inventory" },
+  { icon: Users,           key: "customers",     href: "customers" },
+  { icon: Truck,           key: "suppliers", href: "suppliers" },
+  { icon: Wallet,          key: "finance",   href: "finance" },
+  { icon: BookOpen,        key: "accounting",href: "accounting" },
+  { icon: BarChart3,       key: "reports",   href: "reports" },
 ];
 
 const bottomItems = [
-  { icon: RefreshCw, key: "cambio",   defaultLabel: "Câmbio",        href: "settings/exchange-rates" },
-  { icon: Settings,  key: "settings", defaultLabel: "Configurações", href: "settings/team" },
+  { icon: RefreshCw, key: "cambio",        href: "settings/exchange-rates" },
+  { icon: Settings,  key: "settings", href: "settings/team" },
 ];
 
 export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
   const pathname = usePathname();
   const { language, setLanguage } = useLanguage();
+  const t = useTranslations("nav");
+  const tH = useTranslations("header");
   const { theme, setTheme } = useTheme();
-
-  const labelsMap: Record<string, Record<string, string>> = {
-    pt: {
-      dashboard: "Dashboard",
-      pos: "PDV",
-      orders: "Pedidos",
-      invoices: "Faturas",
-      products: "Produtos",
-      inventory: "Estoque",
-      customers: "Clientes",
-      suppliers: "Fornecedores",
-      finance: "Financeiro",
-      accounting: "Contabilidade",
-      reports: "Relatórios",
-      cambio: "Câmbio",
-      settings: "Configurações",
-    },
-    es: {
-      dashboard: "Tablero",
-      pos: "POS",
-      orders: "Pedidos",
-      invoices: "Facturas",
-      products: "Productos",
-      inventory: "Inventario",
-      customers: "Clientes",
-      suppliers: "Proveedores",
-      finance: "Finanzas",
-      accounting: "Contabilidad",
-      reports: "Reportes",
-      cambio: "Cambio",
-      settings: "Configuraciones",
-    },
-  };
-
-  const getLabel = (key: string, defaultLabel: string) => {
-    return labelsMap[language]?.[key] || defaultLabel;
-  };
 
   const isActive = (href: string) =>
     pathname === `/${tenantId}/${href}` ||
     (href !== "dashboard" && pathname.startsWith(`/${tenantId}/${href}`));
 
-  const NavLink = ({ icon: Icon, labelKey, defaultLabel, href }: { icon: any; labelKey: string; defaultLabel: string; href: string }) => {
+  const NavLink = ({ icon: Icon, labelKey, href }: { icon: any; labelKey: string; href: string }) => {
     const active = isActive(href);
-    const label = getLabel(labelKey, defaultLabel);
+    const label = t(labelKey);
     const link = (
       <Link
         href={`/${tenantId}/${href}`}
@@ -145,7 +111,7 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
       {/* Main nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
         {navItems.map((item) => (
-          <NavLink key={item.href} icon={item.icon} labelKey={item.key} defaultLabel={item.defaultLabel} href={item.href} />
+          <NavLink key={item.href} icon={item.icon} labelKey={item.key} href={item.href} />
         ))}
       </nav>
 
@@ -153,7 +119,7 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
       <div className="border-t border-[#2e3f53] px-2 py-3 space-y-2">
         <div className="space-y-0.5">
           {bottomItems.map((item) => (
-            <NavLink key={item.href} icon={item.icon} labelKey={item.key} defaultLabel={item.defaultLabel} href={item.href} />
+            <NavLink key={item.href} icon={item.icon} labelKey={item.key} href={item.href} />
           ))}
         </div>
         
@@ -164,7 +130,7 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
               type="button"
               onClick={() => setLanguage(language === "pt" ? "es" : "pt")}
               className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-[#2e3f53] bg-[#152332] hover:bg-[#253548] hover:border-[#384b60] text-[11px] font-bold text-slate-400 hover:text-white transition-all shadow-inner cursor-pointer"
-              title={language === "pt" ? "Cambiar a Español" : "Mudar para Português"}
+              title={tH("switchLanguage")}
             >
               {language === "pt" ? (
                 <BrazilFlag className="w-4 h-3 rounded-sm object-cover shrink-0" />
@@ -179,17 +145,17 @@ export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
               type="button"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-[#2e3f53] bg-[#152332] hover:bg-[#253548] hover:border-[#384b60] text-[11px] font-bold text-slate-400 hover:text-white transition-all shadow-inner cursor-pointer"
-              title="Alternar Tema"
+              title={tH("toggleTheme")}
             >
               {theme === "dark" ? (
                 <>
                   <Sun className="h-3.5 w-3.5 text-yellow-500" />
-                  <span>CLARO</span>
+                  <span>{tH("themeLight")}</span>
                 </>
               ) : (
                 <>
                   <Moon className="h-3.5 w-3.5 text-slate-400" />
-                  <span>ESCURO</span>
+                  <span>{tH("themeDark")}</span>
                 </>
               )}
             </button>

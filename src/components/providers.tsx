@@ -7,7 +7,13 @@ import { ThemeProvider } from "next-themes";
 import { LanguageProvider } from "./language-provider";
 import { useState } from "react";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode;
+  locale: string;
+  messages: Record<string, unknown>;
+}
+
+export function Providers({ children, locale, messages }: ProvidersProps) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -21,7 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <LanguageProvider>
+          <LanguageProvider locale={locale} messages={messages}>
             <TooltipProvider delayDuration={200}>
               {children}
             </TooltipProvider>

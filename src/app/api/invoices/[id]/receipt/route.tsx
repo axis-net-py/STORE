@@ -48,7 +48,11 @@ export async function GET(
 
   // Renderizar PDF
   const stream = await renderToStream(
-    <Receipt80mm invoice={pdfInvoice as any} tenantName={tenant?.name || undefined} />
+    <Receipt80mm
+      invoice={pdfInvoice as any}
+      tenantName={tenant?.name || undefined}
+      locale={req.cookies.get("NEXT_LOCALE")?.value === "es-PY" ? "es-PY" : "pt-BR"}
+    />
   );
 
   // Converter stream para buffer

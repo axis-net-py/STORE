@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import {
   AreaChart,
   Area,
@@ -32,6 +33,7 @@ function CustomTooltip({ active, payload, label, currency }: any) {
 }
 
 export function SalesChart({ dateRange, currency }: SalesChartProps) {
+  const t = useTranslations("salesChart");
   const { data, isLoading, error } = useQuery({
     queryKey: ['trendData', dateRange, currency],
     queryFn: () => getTrendData({ start: dateRange.from, end: dateRange.to }),
@@ -48,7 +50,7 @@ export function SalesChart({ dateRange, currency }: SalesChartProps) {
   if (error) {
     return (
       <div className="bg-card border shadow-sm p-6 text-destructive text-sm">
-        Erro ao carregar grafico
+        {t("error")}
       </div>
     );
   }
@@ -59,7 +61,7 @@ export function SalesChart({ dateRange, currency }: SalesChartProps) {
     <div className="bg-card border shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          Vendas — 30 dias
+          {t("title")}
         </h3>
         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
           {currency}

@@ -10,9 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Switch } from "@/components/ui/switch";
+import { useTranslations } from "next-intl";
 import { Tag } from "lucide-react";
 
 export function ProductList({ products, tenantId }: { products: Product[]; tenantId: string }) {
+  const t = useTranslations("products");
+  const tc = useTranslations("common");
   const [search, setSearch] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
@@ -92,21 +95,21 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
     <div className="space-y-4">
       {/* Barra de filtros padrão */}
       <FilterBar>
-        <FilterField label="Buscar" grow>
+        <FilterField label={tc("search")} grow>
           <Input
-            placeholder="Buscar por SKU ou nome do produto..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
         </FilterField>
-        <FilterField label="Tag">
+        <FilterField label={t("tag")}>
           <Select value={selectedTag} onValueChange={setSelectedTag}>
             <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todas as tags</SelectItem>
+              <SelectItem value="all">{t("allTags")}</SelectItem>
               {allTags.map((tag) => (
                 <SelectItem key={tag} value={tag} className="capitalize">
                   {tag}
@@ -115,22 +118,22 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
             </SelectContent>
           </Select>
         </FilterField>
-        <FilterField label="Tipo">
+        <FilterField label={t("type")}>
           <Select value={selectedType} onValueChange={setSelectedType}>
             <SelectTrigger className="w-full sm:w-[180px] h-10 sm:h-9 rounded-lg bg-card text-[13px] font-medium">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
-              <SelectItem value="all">Todos os tipos</SelectItem>
-              <SelectItem value="product">Produtos</SelectItem>
-              <SelectItem value="service">Serviços</SelectItem>
+              <SelectItem value="all">{t("allTypes")}</SelectItem>
+              <SelectItem value="product">{t("productsOnly")}</SelectItem>
+              <SelectItem value="service">{t("servicesOnly")}</SelectItem>
             </SelectContent>
           </Select>
         </FilterField>
-        <FilterField label="Inativos">
+        <FilterField label={t("showInactive")}>
           <div className="h-10 sm:h-9 flex items-center gap-2">
             <Switch checked={showInactive} onCheckedChange={setShowInactive} />
-            <span className="text-[13px] text-muted-foreground">Mostrar</span>
+            <span className="text-[13px] text-muted-foreground">{t("show")}</span>
           </div>
         </FilterField>
       </FilterBar>
@@ -139,7 +142,7 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
       <div className="md:hidden space-y-2.5">
         {sortedProducts.length === 0 ? (
           <div className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground">
-            Nenhum produto encontrado.
+            {t("empty")}
           </div>
         ) : (
           sortedProducts.map((product) => (
@@ -150,7 +153,7 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
                   <p className="text-[11px] font-mono text-muted-foreground">{product.sku}</p>
                 </div>
                 <Badge variant={product.isActive ? "default" : "secondary"} className="shrink-0">
-                  {product.isActive ? "Ativo" : "Inativo"}
+                  {product.isActive ? t("active") : t("inactive")}
                 </Badge>
               </div>
 
@@ -180,10 +183,10 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {product.isService ? (
-                      <span className="italic">Serviço</span>
+                      <span className="italic">{t("service")}</span>
                     ) : (
                       <span className={Number(product.currentStock) <= Number(product.minStock) ? "text-red-500 font-bold" : ""}>
-                        Estoque: {Number(product.currentStock)} {product.unit}
+                        {t("stockLabel")}: {Number(product.currentStock)} {product.unit}
                       </span>
                     )}
                   </p>
@@ -204,29 +207,29 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
           <TableHeader>
             <TableRow>
               <TableHead onClick={() => handleSort("sku")} className="cursor-pointer hover:bg-muted/50 select-none">
-                SKU{renderSortIndicator("sku")}
+                {t("sku")}{renderSortIndicator("sku")}
               </TableHead>
               <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Nome{renderSortIndicator("name")}
+                {tc("name")}{renderSortIndicator("name")}
               </TableHead>
               <TableHead onClick={() => handleSort("price")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Preço{renderSortIndicator("price")}
+                {t("price")}{renderSortIndicator("price")}
               </TableHead>
               <TableHead onClick={() => handleSort("currentStock")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Estoque{renderSortIndicator("currentStock")}
+                {t("stock")}{renderSortIndicator("currentStock")}
               </TableHead>
-              <TableHead>Tags</TableHead>
+              <TableHead>{t("tags")}</TableHead>
               <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status{renderSortIndicator("isActive")}
+                {t("status")}{renderSortIndicator("isActive")}
               </TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  Nenhum produto encontrado.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -244,7 +247,7 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
                   </TableCell>
                   <TableCell>
                     {product.isService ? (
-                      <span className="text-muted-foreground italic font-medium">Serviço</span>
+                      <span className="text-muted-foreground italic font-medium">{t("service")}</span>
                     ) : (
                       <span className={Number(product.currentStock) <= Number(product.minStock) ? "text-red-500 font-bold" : ""}>
                         {Number(product.currentStock)} {product.unit}
@@ -267,7 +270,7 @@ export function ProductList({ products, tenantId }: { products: Product[]; tenan
                   </TableCell>
                   <TableCell>
                     <Badge variant={product.isActive ? "default" : "secondary"}>
-                      {product.isActive ? "Ativo" : "Inativo"}
+                      {product.isActive ? t("active") : t("inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

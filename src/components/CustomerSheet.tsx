@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,8 @@ export function CustomerSheet({
   customer?: Customer;
   onSuccess?: () => void;
 }) {
+  const t = useTranslations("customers");
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const isEdit = !!customer;
@@ -35,7 +38,7 @@ export function CustomerSheet({
 
   async function handleDelete() {
     if (!customer) return;
-    const confirmDelete = window.confirm("Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita se houver faturas vinculadas.");
+    const confirmDelete = window.confirm(t("confirmDelete"));
     if (!confirmDelete) return;
 
     setLoading(true);
@@ -44,7 +47,7 @@ export function CustomerSheet({
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      alert(err.message || "Erro ao excluir cliente");
+      alert(err.message || t("deleteError"));
     } finally {
       setLoading(false);
     }
@@ -85,7 +88,7 @@ export function CustomerSheet({
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      alert(err.message || "Erro ao salvar cliente");
+      alert(err.message || t("saveError"));
     } finally {
       setLoading(false);
     }
@@ -95,37 +98,37 @@ export function CustomerSheet({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button className="axis-btn-primary min-h-[44px] md:h-[32px] px-6 md:px-4 text-[14px] md:text-[13px] flex items-center justify-center font-bold shadow-md cursor-pointer">
-          {isEdit ? "Editar" : "Novo Cliente"}
+          {isEdit ? tc("edit") : t("new")}
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[75vw] w-[95vw] glass-pop-up p-0 overflow-hidden">
         <DialogHeader className="text-left space-y-1 p-6 border-b border-border bg-muted/30">
           <DialogTitle className="text-[18px] font-bold tracking-tight text-foreground">
-            {isEdit ? "Editar Cliente" : "Novo Cliente"}
+            {isEdit ? t("editTitle") : t("new")}
           </DialogTitle>
           <DialogDescription className="text-[12px] text-muted-foreground font-medium">
-            {isEdit ? "Atualize os dados do cliente" : "Cadastre um novo cliente no sistema."}
+            {isEdit ? t("editDescription") : t("newDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 max-h-[80vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Nome</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{tc("name")}</Label>
               <Input
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Juan Pérez"
+                placeholder={t("namePlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Documento (RUC/CI)</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("documentLabel")}</Label>
               <Input
                 value={document}
                 onChange={(e) => setDocument(e.target.value)}
-                placeholder="Ex: 123456-8"
+                placeholder={t("documentPlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
@@ -133,10 +136,10 @@ export function CustomerSheet({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Tipo de Documento</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("documentType")}</Label>
               <Select value={documentType} onValueChange={setDocumentType}>
                 <SelectTrigger className="bg-background border-border text-[13px] h-[40px] rounded-[8px] focus:ring-primary/20">
-                  <SelectValue placeholder="Selecione tipo" />
+                  <SelectValue placeholder={t("selectDocumentType")} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border text-popover-foreground">
                   <SelectItem value="RUC" className="text-[12px]">RUC</SelectItem>
@@ -147,14 +150,14 @@ export function CustomerSheet({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Categoria</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("category")}</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger className="bg-background border-border text-[13px] h-[40px] rounded-[8px] focus:ring-primary/20">
-                  <SelectValue placeholder="Selecione categoria" />
+                  <SelectValue placeholder={t("selectCategory")} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border text-popover-foreground">
-                  <SelectItem value="fisica" className="text-[12px]">Física</SelectItem>
-                  <SelectItem value="juridica" className="text-[12px]">Jurídica</SelectItem>
+                  <SelectItem value="fisica" className="text-[12px]">{t("fisica")}</SelectItem>
+                  <SelectItem value="juridica" className="text-[12px]">{t("juridica")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -162,21 +165,21 @@ export function CustomerSheet({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">E-mail</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("email")}</Label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="cliente@exemplo.com"
+                placeholder={t("emailPlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Telefone</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("phone")}</Label>
               <Input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+595 991 234 567"
+                placeholder={t("phonePlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
@@ -184,20 +187,20 @@ export function CustomerSheet({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Endereço</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("address")}</Label>
               <Input
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Calle Principal 123"
+                placeholder={t("addressPlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Cidade</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("city")}</Label>
               <Input
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="Asunción"
+                placeholder={t("cityPlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
@@ -205,14 +208,14 @@ export function CustomerSheet({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">País</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("country")}</Label>
               <Select value={country} onValueChange={setCountry}>
                 <SelectTrigger className="bg-background border-border text-[13px] h-[40px] rounded-[8px] focus:ring-primary/20">
-                  <SelectValue placeholder="Selecione país" />
+                  <SelectValue placeholder={t("selectCountry")} />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border text-popover-foreground">
-                  <SelectItem value="PY" className="text-[12px]">Paraguai (PY)</SelectItem>
-                  <SelectItem value="BR" className="text-[12px]">Brasil (BR)</SelectItem>
+                  <SelectItem value="PY" className="text-[12px]">{t("countryPY")}</SelectItem>
+                  <SelectItem value="BR" className="text-[12px]">{t("countryBR")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -223,7 +226,7 @@ export function CustomerSheet({
                 onChange={(e) => setIsActive(e.target.checked)}
                 className="w-4 h-4"
               />
-              <Label className="text-[13px]">Ativo</Label>
+              <Label className="text-[13px]">{t("active")}</Label>
             </div>
           </div>
 
@@ -236,7 +239,7 @@ export function CustomerSheet({
                   disabled={loading}
                   className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 h-[40px] rounded-[8px] text-[14px] font-bold disabled:opacity-50 shadow-md active:scale-95 transition-all"
                 >
-                  Excluir
+                  {tc("delete")}
                 </button>
               )}
             </div>
@@ -246,7 +249,7 @@ export function CustomerSheet({
                 onClick={() => setOpen(false)}
                 className="px-4 h-[40px] rounded-[8px] text-[14px] font-semibold text-muted-foreground hover:bg-muted transition-all"
               >
-                Cancelar
+                {tc("cancel")}
               </button>
               <button
                 type="submit"
@@ -254,7 +257,7 @@ export function CustomerSheet({
                 className="bg-primary text-primary-foreground px-6 h-[40px] rounded-[8px] hover:bg-primary/90 transition-all flex items-center justify-center gap-2 text-[14px] font-bold disabled:opacity-50 shadow-md active:scale-95"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
-                {loading ? "Salvando..." : isEdit ? "Atualizar" : "Registrar Cliente"}
+                {loading ? tc("saving") : isEdit ? t("update") : t("submit")}
               </button>
             </div>
           </div>

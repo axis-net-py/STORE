@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useLanguage } from "@/components/language-provider";
+import { useTranslations } from "next-intl";
 import { LayoutDashboard, FileText, Package, Wallet, Menu } from "lucide-react";
 
 interface DashboardShellProps {
@@ -19,7 +19,7 @@ export function DashboardShell({ tenantId, children }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const pathname = usePathname();
-  const { language } = useLanguage();
+  const t = useTranslations("nav.mobile");
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -33,26 +33,7 @@ export function DashboardShell({ tenantId, children }: DashboardShellProps) {
     setMobileOpen(false);
   }, [pathname]);
 
-  const mobileLabels: Record<string, Record<string, string>> = {
-    pt: {
-      dashboard: "Início",
-      invoices: "Faturas",
-      products: "Produtos",
-      finance: "Financeiro",
-      menu: "Mais"
-    },
-    es: {
-      dashboard: "Inicio",
-      invoices: "Facturas",
-      products: "Productos",
-      finance: "Finanzas",
-      menu: "Más"
-    }
-  };
-
-  const getMobileLabel = (key: string) => {
-    return mobileLabels[language]?.[key] || key;
-  };
+  const getMobileLabel = (key: string) => t(key);
 
   const isTabActive = (href: string) => {
     if (href === "dashboard") {

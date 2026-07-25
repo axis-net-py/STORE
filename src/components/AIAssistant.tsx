@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef, useEffect } from "react";
 import {
   MessageSquare,
@@ -25,13 +26,14 @@ interface Message {
 }
 
 export function AIAssistant({ tenantId }: { tenantId: string }) {
+  const t = useTranslations("ai");
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "bot",
-      text: "Olá! Sou o Assistente AXIS IA. Posso executar ações em todos os módulos por texto ou voz:\n• 'cadastrar produto Teclado com preço 150000 e custo 100000'\n• 'cadastrar cliente Roberto Silva' / 'fornecedor Distribuidora Asunción'\n• 'venda de 10 sacas de soja para o cliente Cooperativa a 300000 cada'\n• 'pedido de compra de 50 kg de adubo do fornecedor AgroSur'\n• 'recebi 500000 do cliente Roberto' (baixa no financeiro)\n• 'ajustar estoque do produto Soja, entrada de 100 sacas'\n• 'transferir 20 sacas de soja do depósito Principal para a Filial'\n\nOu envie foto/PDF de fatura de compra que eu cadastro tudo automaticamente — fornecedor, produtos, estoque e contabilidade, sem duplicar registros.",
+      text: t("greeting"),
     },
   ]);
   const [inputText, setInputText] = useState("");
@@ -56,7 +58,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
         const rec = new SpeechRecognition();
         rec.continuous = false;
         rec.interimResults = false;
-        rec.lang = "pt-BR";
+        rec.lang = t("speechLang");
 
         rec.onstart = () => {
           setIsRecording(true);
@@ -242,7 +244,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
               <Sparkles className="w-5 h-5 text-primary animate-pulse" />
               <div>
                 <h3 className="text-sm font-bold text-foreground">AXIS IA</h3>
-                <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-widest">Online</span>
+                <span className="text-[9px] font-semibold text-blue-500 uppercase tracking-widest">{t("online")}</span>
               </div>
             </div>
             <button
@@ -305,7 +307,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
                 </div>
                 <div className="bg-muted/40 border border-border rounded-xl px-4 py-3 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  <span className="text-xs text-muted-foreground font-medium">Analisando...</span>
+                  <span className="text-xs text-muted-foreground font-medium">{t("analyzing")}</span>
                 </div>
               </div>
             )}
@@ -328,7 +330,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
               type="button"
               onClick={triggerImageSelect}
               className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-all shrink-0"
-              title="Enviar Arquivo (Fatura ou Folha)"
+              title={t("sendFile")}
             >
               <ImageIcon className="w-4.5 h-4.5" />
             </button>
@@ -342,7 +344,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
                   ? "bg-rose-600 text-white animate-pulse"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
-              title="Digitar por voz"
+              title={t("voiceInput")}
             >
               {isRecording ? <MicOff className="w-4.5 h-4.5" /> : <Mic className="w-4.5 h-4.5" />}
             </button>
@@ -352,7 +354,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Digite ou fale um comando..."
+              placeholder={t("inputPlaceholder")}
               className="flex-1 bg-background border border-border h-9 rounded-lg px-3 text-[12.5px] font-medium focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
             />
 

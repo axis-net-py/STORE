@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/components/language-provider";
+import { useTranslations } from "next-intl";
 import { BrazilFlag, ParaguayFlag } from "@/components/icons/Flags";
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
+  const t = useTranslations("header");
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 sticky top-0 z-30">
@@ -49,7 +51,7 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
           size="sm"
           className="h-8 px-2.5 font-sans text-[11px] font-bold text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer rounded-lg hover:bg-accent/80 transition-all"
           onClick={() => setLanguage(language === "pt" ? "es" : "pt")}
-          title={language === "pt" ? "Cambiar a Español" : "Mudar para Português"}
+          title={t("switchLanguage")}
         >
           {language === "pt" ? (
             <BrazilFlag className="w-4 h-3 rounded-sm object-cover shrink-0" />
@@ -65,7 +67,7 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
           size="icon"
           className="h-8 w-8"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          title={language === "pt" ? "Alternar tema" : "Alternar tema"}
+          title={t("toggleTheme")}
         >
           {theme === "dark" ? (
             <Sun className="h-4 w-4 text-yellow-400" />
@@ -87,7 +89,7 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">{session?.user?.name ?? "Usuário"}</p>
+                <p className="text-sm font-medium">{session?.user?.name ?? t("user")}</p>
                 <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
               </div>
             </DropdownMenuLabel>
@@ -95,7 +97,7 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
             <DropdownMenuItem asChild className="cursor-pointer">
               <Link href="/change-password">
                 <KeyRound className="mr-2 h-4 w-4" />
-                {language === "pt" ? "Alterar senha" : "Cambiar contraseña"}
+                {t("changePassword")}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -103,7 +105,7 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
               onClick={() => signOut({ callbackUrl: "/login" })}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              {language === "pt" ? "Sair" : "Salir"}
+              {t("signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

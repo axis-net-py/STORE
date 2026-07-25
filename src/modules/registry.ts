@@ -6,6 +6,7 @@ import type { ModuleManifest, NavEntry } from "./types";
 // Extensão explícita: o runner nativo do Node (npm test) resolve ESM estrito.
 // Os imports de tipo acima são apagados na compilação e não precisam dela.
 import { storeModule } from "./store/manifest.ts";
+import { farmModule } from "./farm/manifest.ts";
 
 /**
  * Registo de módulos e composição dos verticais.
@@ -28,9 +29,10 @@ export const CORE_NAV: NavEntry[] = [
   { icon: BarChart3,       key: "reports",    defaultLabel: "Relatórios",    href: "reports",    order: 110 },
 ];
 
-/** Todos os módulos conhecidos. Farm, clinic e food entram nas Fases 2, 3 e no Projeto 3. */
+/** Todos os módulos conhecidos. Clinic entra na Fase 3, food no Projeto 3. */
 export const MODULES: Record<string, ModuleManifest> = {
   store: storeModule,
+  farm: farmModule,
 };
 
 /** Composição de cada marca. Um cliente pode ter módulos além dos do seu vertical. */

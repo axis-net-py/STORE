@@ -101,10 +101,27 @@ model Tenant {
   permissions       Permission[]
   journalEntries    JournalEntry[]
   auditLogs         AuditLog[]
+  // módulo store
   orders            Order[]
   warehouses        Warehouse[]
   accountingPeriods AccountingPeriod[]
   payments          Payment[]
+
+  // módulo farm
+  harvests         Harvest[]
+  plots            Plot[]
+  vehicles         Vehicle[]
+  employees        Employee[]
+  contracts        Contract[]
+  vehicleLogs      VehicleLog[]
+  plotApplications PlotApplication[]
+  silos            Silo[]
+  siloMovements    SiloMovement[]
+  soilAnalyses     SoilAnalysis[]
+  livestockBatches LivestockBatch[]
+  livestockEvents  LivestockEvent[]
+  certifications   Certification[]
+  irrigationEvents IrrigationEvent[]
 }
 
 // ─── User ───────────────────────────────────────────────────
@@ -201,6 +218,8 @@ model Product {
   invoiceItems    InvoiceItem[]
   orderItems      OrderItem[]
   warehouseStocks WarehouseStock[]
+  // módulo farm: aplicação de insumos em talhões
+  applications    PlotApplication[]
 
   @@unique([tenantId, sku])
   @@index([tenantId])
@@ -527,4 +546,290 @@ model AccountingPeriod {
 
   @@unique([tenantId, year, month])
   @@index([tenantId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Módulo farm — agronegócio (Projeto 1, Fase 2)
+// Todas as bases têm estas tabelas; só Tenant.modules difere (D4).
+// ═══════════════════════════════════════════════════════════════
+
+enum VehicleLogType {
+  MAINTENANCE
+  FUEL
+}
+enum SiloMovementType {
+  IN
+  OUT
+}
+enum LivestockEventType {
+  WEIGHING
+  HEALTH
+  MOVEMENT
+}
+
+model Harvest {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  cropType    String   // soja, milho, trigo, etc.
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, PLANNED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plots       Plot[]
+  contracts   Contract[]
+  applications PlotApplication[]
+  siloMovements SiloMovement[]
+
+  @@index([tenantId])
+}
+model Plot {
+  id           String            @id @default(cuid())
+  tenantId     String
+  tenant       Tenant            @relation(fields: [tenantId], references: [id])
+  name         String
+  area         Decimal           @db.Decimal(10, 2)
+  unit         String            @default("HECTARE") // HECTARE, ALQUEIRE
+  currentCrop  String?
+  status       String            @default("PLANTED") // FALLOW, PLANTED, PREPARING
+  harvestId    String?
+  harvest      Harvest?          @relation(fields: [harvestId], references: [id])
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  applications PlotApplication[]
+  soilAnalyses SoilAnalysis[]
+  irrigationEvents IrrigationEvent[]
+
+  @@index([tenantId])
+  @@index([harvestId])
+}
+model SoilAnalysis {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  plotId          String
+  plot            Plot     @relation(fields: [plotId], references: [id])
+  date            DateTime
+  ph              Decimal? @db.Decimal(4, 2)
+  phosphorus      Decimal? @db.Decimal(8, 2) // P, mg/dm³
+  potassium       Decimal? @db.Decimal(8, 2) // K, cmolc/dm³
+  organicMatter   Decimal? @db.Decimal(5, 2) // %
+  recommendation  String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([plotId])
+}
+model PlotApplication {
+  id         String    @id @default(cuid())
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  plotId     String
+  plot       Plot      @relation(fields: [plotId], references: [id])
+  harvestId  String?
+  harvest    Harvest?  @relation(fields: [harvestId], references: [id])
+  productId  String
+  product    Product   @relation(fields: [productId], references: [id])
+  quantity   Decimal   @db.Decimal(10, 2)
+  totalCost  Decimal?  @db.Decimal(12, 2)
+  date       DateTime
+  employeeId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([plotId])
+}
+model Vehicle {
+  id               String       @id @default(cuid())
+  tenantId         String
+  tenant           Tenant       @relation(fields: [tenantId], references: [id])
+  name             String
+  type             String       // trator, colheitadeira, pulverizador, caminhao, etc.
+  plate            String?
+  status           String       @default("OPERATIONAL") // OPERATIONAL, MAINTENANCE, OUT_OF_SERVICE
+  currentReading   Decimal?     @db.Decimal(12, 2)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  logs             VehicleLog[]
+
+  @@index([tenantId])
+}
+model VehicleLog {
+  id              String         @id @default(cuid())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  vehicleId       String
+  vehicle         Vehicle        @relation(fields: [vehicleId], references: [id])
+  type            VehicleLogType
+  date            DateTime
+  odometerOrHours Decimal?       @db.Decimal(12, 2)
+  employeeId      String?
+  employee        Employee?      @relation(fields: [employeeId], references: [id])
+  notes           String?
+  liters          Decimal?       @db.Decimal(10, 2)
+  fuelCost        Decimal?       @db.Decimal(12, 2)
+  description     String?
+  maintenanceCost Decimal?       @db.Decimal(12, 2)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([vehicleId])
+}
+model Employee {
+  id          String       @id @default(cuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  name        String
+  role        String       // tratorista, agronomo, operador, auxiliar, etc.
+  phone       String?
+  status      String       @default("ACTIVE") // ACTIVE, INACTIVE, LEAVE
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  vehicleLogs      VehicleLog[]
+  plotApplications PlotApplication[]
+  livestockEvents  LivestockEvent[]
+  irrigationEvents IrrigationEvent[]
+
+  @@index([tenantId])
+}
+model Contract {
+  id             String    @id @default(cuid())
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  contractNumber String
+  harvestId      String?
+  harvest        Harvest?  @relation(fields: [harvestId], references: [id])
+  siloName       String
+  grainType      String    // soja, milho, trigo, etc.
+  quantity       Decimal   @db.Decimal(12, 2)
+  unit           String    @default("TON") // TON, BAG, KG
+  pricePerUnit   Decimal   @db.Decimal(12, 2)
+  currency       Currency  @default(USD)
+  status         String    @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  deliveryDate   DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  siloMovements  SiloMovement[]
+
+  @@index([tenantId])
+  @@index([harvestId])
+}
+model Silo {
+  id           String         @id @default(cuid())
+  tenantId     String
+  tenant       Tenant         @relation(fields: [tenantId], references: [id])
+  name         String
+  capacity     Decimal        @db.Decimal(12, 2)
+  unit         String         @default("TON") // TON, BAG, KG
+  currentStock Decimal        @db.Decimal(12, 2) @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  movements    SiloMovement[]
+
+  @@index([tenantId])
+}
+model SiloMovement {
+  id           String           @id @default(cuid())
+  tenantId     String
+  tenant       Tenant           @relation(fields: [tenantId], references: [id])
+  siloId       String
+  silo         Silo             @relation(fields: [siloId], references: [id])
+  type         SiloMovementType
+  quantity     Decimal          @db.Decimal(12, 2)
+  date         DateTime
+  harvestId    String?
+  harvest      Harvest?         @relation(fields: [harvestId], references: [id])
+  contractId   String?
+  contract     Contract?        @relation(fields: [contractId], references: [id])
+  moisture     Decimal?         @db.Decimal(5, 2)
+  qualityGrade String?
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([tenantId])
+  @@index([siloId])
+}
+model LivestockBatch {
+  id            String            @id @default(cuid())
+  tenantId      String
+  tenant        Tenant            @relation(fields: [tenantId], references: [id])
+  name          String
+  category      String            // bezerro, novilho, vaca, touro, boi, etc.
+  quantity      Int
+  averageWeight Decimal?          @db.Decimal(8, 2) // kg
+  location      String?           // piquete/pasto atual
+  status        String            @default("ACTIVE") // ACTIVE, SOLD
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  events        LivestockEvent[]
+
+  @@index([tenantId])
+}
+model LivestockEvent {
+  id          String             @id @default(cuid())
+  tenantId    String
+  tenant      Tenant             @relation(fields: [tenantId], references: [id])
+  batchId     String
+  batch       LivestockBatch     @relation(fields: [batchId], references: [id])
+  type        LivestockEventType
+  date        DateTime
+  weight      Decimal?           @db.Decimal(8, 2) // WEIGHING: peso médio do lote
+  location    String?            // MOVEMENT: novo piquete/pasto
+  description String?           // HEALTH: vacina/tratamento
+  employeeId  String?
+  employee    Employee?          @relation(fields: [employeeId], references: [id])
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([tenantId])
+  @@index([batchId])
+}
+model Certification {
+  id                String    @id @default(cuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id])
+  name              String    // Ex: GLOBALG.A.P, Orgânico IBD, Rainforest Alliance
+  issuingBody       String?
+  certificateNumber String?
+  issueDate         DateTime?
+  expiryDate        DateTime?
+  status            String    @default("ACTIVE") // ACTIVE, EXPIRED, PENDING
+  scope             String?   // Ex: "Talhões 1-5, Soja"
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+model IrrigationEvent {
+  id             String    @id @default(cuid())
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  plotId         String
+  plot           Plot      @relation(fields: [plotId], references: [id])
+  date           DateTime
+  method         String?   // pivo, gotejamento, aspersao, etc.
+  durationHours  Decimal?  @db.Decimal(6, 2)
+  flowRate       Decimal?  @db.Decimal(10, 2)
+  volumeApplied  Decimal?  @db.Decimal(10, 2) // mm ou m³
+  employeeId     String?
+  employee       Employee? @relation(fields: [employeeId], references: [id])
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([plotId])
 }

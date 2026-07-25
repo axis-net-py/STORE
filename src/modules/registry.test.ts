@@ -55,6 +55,46 @@ test('rota de núcleo nunca é bloqueada', () => {
   }
 })
 
+// ─── Fase 2 — módulo farm ───────────────────────────────────────────────────
+
+/** Ordem exata da barra lateral do FARM (Sidebar.tsx do repositório FARM). */
+const ORDEM_FARM = [
+  'dashboard', 'invoices', 'products', 'inventory', 'customers', 'suppliers',
+  'safra', 'talhoes', 'silos', 'rebanho', 'frota', 'funcionarios',
+  'contratos', 'certificacoes', 'finance', 'accounting', 'reports',
+]
+
+test('vertical farm reproduz a navegação do FARM, com o bloco agrícola no sítio', () => {
+  const chaves = navFor(['farm']).map((n) => n.href)
+  assert.deepEqual(chaves, ORDEM_FARM)
+})
+
+test('farm não traz o PDV nem os Pedidos do store', () => {
+  const chaves = navFor(['farm']).map((n) => n.href)
+  assert.ok(!chaves.includes('pos'))
+  assert.ok(!chaves.includes('orders'))
+})
+
+test('store continua intacto depois de o farm existir', () => {
+  const chaves = navFor(['store']).map((n) => n.href)
+  assert.deepEqual(chaves, ORDEM_ORIGINAL)
+})
+
+test('rotas do farm bloqueadas para quem só tem store', () => {
+  for (const rota of ['safra', 'talhoes', 'silos', 'rebanho', 'frota',
+                      'funcionarios', 'contratos', 'certificacoes']) {
+    assert.equal(isRotaBloqueada(rota, ['store']), true, `${rota} devia estar fechada`)
+    assert.equal(isRotaBloqueada(rota, ['farm']), false, `${rota} devia abrir para o farm`)
+  }
+})
+
+test('cliente misto acumula os dois conjuntos sem duplicar o núcleo', () => {
+  const chaves = navFor(['store', 'farm']).map((n) => n.href)
+  assert.ok(chaves.includes('pos') && chaves.includes('safra'))
+  assert.equal(new Set(chaves).size, chaves.length, 'não pode haver entradas repetidas')
+  assert.equal(chaves.filter((c) => c === 'dashboard').length, 1)
+})
+
 test('cada rota declarada no manifesto tem entrada de menu correspondente', () => {
   for (const m of Object.values(MODULES)) {
     const hrefs = m.nav.map((n) => n.href)

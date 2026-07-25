@@ -24,32 +24,22 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BrazilFlag, ParaguayFlag } from "@/components/icons/Flags";
+import { navFor } from "@/modules/registry";
 
 interface SidebarProps {
   tenantId: string;
+  /** Módulos ativos do cliente. A navegação é núcleo + módulos, ordenada. */
+  modules: string[];
   collapsed?: boolean;
 }
-
-const navItems = [
-  { icon: LayoutDashboard, key: "dashboard",  defaultLabel: "Dashboard",   href: "dashboard" },
-  { icon: ShoppingCart,    key: "pos",        defaultLabel: "PDV",          href: "pos" },
-  { icon: ClipboardList,   key: "orders",     defaultLabel: "Pedidos",      href: "orders" },
-  { icon: FileText,        key: "invoices",   defaultLabel: "Faturas",      href: "invoices" },
-  { icon: Package,         key: "products",   defaultLabel: "Produtos",     href: "products" },
-  { icon: Boxes,           key: "inventory",  defaultLabel: "Estoque",      href: "inventory" },
-  { icon: Users,           key: "customers",  defaultLabel: "Clientes",     href: "customers" },
-  { icon: Truck,           key: "suppliers",  defaultLabel: "Fornecedores", href: "suppliers" },
-  { icon: Wallet,          key: "finance",    defaultLabel: "Financeiro",   href: "finance" },
-  { icon: BookOpen,        key: "accounting", defaultLabel: "Contabilidade",href: "accounting" },
-  { icon: BarChart3,       key: "reports",    defaultLabel: "Relatórios",   href: "reports" },
-];
 
 const bottomItems = [
   { icon: RefreshCw, key: "cambio",   defaultLabel: "Câmbio",        href: "settings/exchange-rates" },
   { icon: Settings,  key: "settings", defaultLabel: "Configurações", href: "settings/team" },
 ];
 
-export function Sidebar({ tenantId, collapsed = false }: SidebarProps) {
+export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) {
+  const navItems = navFor(modules);
   const pathname = usePathname();
   const { language, setLanguage } = useLanguage();
   const { theme, setTheme } = useTheme();

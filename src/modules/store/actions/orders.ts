@@ -5,7 +5,8 @@ import { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { requirePermission } from '@/lib/authz'
-import { createPurchaseInvoice, createSalesInvoice } from './invoice'
+// Módulo a importar do núcleo — permitido. O inverso é que não pode existir.
+import { createPurchaseInvoice, createSalesInvoice } from '@/app/actions/invoice'
 
 const OrderSchema = z.object({
   type: z.enum(['PURCHASE', 'SALES']),

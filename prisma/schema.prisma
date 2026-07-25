@@ -76,6 +76,10 @@ enum TaxType {
 model Tenant {
   id               String   @id @default(cuid())
   name             String
+  /// Módulos ativos deste cliente. O vertical (store/farm/clinic/food) é um
+  /// conjunto nomeado destes — ver src/modules/registry.ts. Todas as bases têm
+  /// as tabelas de todos os módulos; só esta lista difere (spec Projeto 1, D4).
+  modules          String[] @default(["store"])
   businessName     String?
   ruc              String?
   tradeName        String?

@@ -11,10 +11,12 @@ import { LayoutDashboard, FileText, Package, Wallet, Menu } from "lucide-react";
 
 interface DashboardShellProps {
   tenantId: string;
+  /** Módulos ativos do cliente; a barra lateral é construída a partir deles. */
+  modules: string[];
   children: React.ReactNode;
 }
 
-export function DashboardShell({ tenantId, children }: DashboardShellProps) {
+export function DashboardShell({ tenantId, modules, children }: DashboardShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -78,7 +80,7 @@ export function DashboardShell({ tenantId, children }: DashboardShellProps) {
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
-        <Sidebar tenantId={tenantId} collapsed={isMobile ? false : collapsed} />
+        <Sidebar tenantId={tenantId} modules={modules} collapsed={isMobile ? false : collapsed} />
       </div>
 
       {/* Main Layout Area */}

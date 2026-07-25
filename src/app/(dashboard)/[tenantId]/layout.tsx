@@ -39,9 +39,22 @@ export default async function DashboardLayout({
     redirect("/change-password");
   }
 
+  // Módulos ativos deste cliente. Tolerante a base ainda não migrada: sem a
+  // coluna, assume-se o vertical de origem em vez de derrubar a aplicação.
+  let modules: string[] = ["store"];
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { modules: true },
+    });
+    if (tenant?.modules?.length) modules = tenant.modules;
+  } catch (err) {
+    console.error("[layout] Falha ao ler Tenant.modules (migração pendente?):", err);
+  }
+
   return (
     <>
-      <DashboardShell tenantId={tenantId}>{children}</DashboardShell>
+      <DashboardShell tenantId={tenantId} modules={modules}>{children}</DashboardShell>
       <AIAssistant tenantId={tenantId} />
     </>
   );

@@ -3,7 +3,10 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { Decimal } from "decimal.js";
 import { createPurchaseInvoice, createSalesInvoice } from "@/app/actions/invoice";
-import { createOrder } from "@/app/actions/orders";
+// VIOLAÇÃO CONHECIDA da regra de dependência (spec Projeto 1 §2.2): o núcleo não
+// pode importar de um módulo. A resolução é a Fase 5 — as ferramentas da IA
+// passam a ser declaradas pelo manifesto de cada módulo, não fixas no motor.
+import { createOrder } from "@/modules/store/actions/orders";
 import { registerPayment } from "@/app/actions/payments";
 import { adjustStock } from "@/app/actions/inventory";
 import { transferStock } from "@/app/actions/warehouse";

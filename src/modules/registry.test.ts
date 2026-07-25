@@ -95,6 +95,56 @@ test('cliente misto acumula os dois conjuntos sem duplicar o núcleo', () => {
   assert.equal(chaves.filter((c) => c === 'dashboard').length, 1)
 })
 
+// ─── Fase 3 — módulo clinic ─────────────────────────────────────────────────
+
+test('clinic coloca a Agenda logo a seguir ao Dashboard, como no CLINIC', () => {
+  const chaves = navFor(['clinic']).map((n) => n.href)
+  assert.equal(chaves[0], 'dashboard')
+  assert.equal(chaves[1], 'agenda')
+})
+
+test('clinic mantém profissionais e serviços antes da Contabilidade', () => {
+  const chaves = navFor(['clinic']).map((n) => n.href)
+  const i = (h: string) => chaves.indexOf(h)
+  assert.ok(i('suppliers') < i('profissionais'), 'profissionais vêm depois de fornecedores')
+  assert.ok(i('profissionais') < i('servicos'))
+  assert.ok(i('servicos') < i('accounting'), 'serviços vêm antes da contabilidade')
+})
+
+test('clinic renomeia Clientes para Pacientes, sem mudar a rota', () => {
+  const clientes = navFor(['clinic']).find((n) => n.href === 'customers')
+  assert.equal(clientes?.defaultLabel, 'Pacientes')
+  assert.equal(clientes?.href, 'customers', 'a rota tem de continuar a mesma')
+})
+
+test('a renomeação não escapa para os outros verticais', () => {
+  for (const vertical of [['store'], ['farm'], []]) {
+    const clientes = navFor(vertical).find((n) => n.href === 'customers')
+    assert.equal(clientes?.defaultLabel, 'Clientes', `vertical ${vertical.join()} não devia ver "Pacientes"`)
+  }
+})
+
+test('rotas do clinic bloqueadas para quem não tem o módulo', () => {
+  for (const rota of ['agenda', 'profissionais', 'servicos']) {
+    assert.equal(isRotaBloqueada(rota, ['store']), true)
+    assert.equal(isRotaBloqueada(rota, ['farm']), true)
+    assert.equal(isRotaBloqueada(rota, ['clinic']), false)
+  }
+})
+
+test('store e farm continuam intactos depois da Fase 3', () => {
+  assert.deepEqual(navFor(['store']).map((n) => n.href), ORDEM_ORIGINAL)
+  assert.deepEqual(navFor(['farm']).map((n) => n.href), ORDEM_FARM)
+})
+
+test('os três verticais coexistem sem duplicar o núcleo', () => {
+  const chaves = navFor(['store', 'farm', 'clinic']).map((n) => n.href)
+  assert.equal(new Set(chaves).size, chaves.length, 'não pode haver repetições')
+  for (const esperado of ['pos', 'safra', 'agenda']) {
+    assert.ok(chaves.includes(esperado), `${esperado} devia estar presente`)
+  }
+})
+
 test('cada rota declarada no manifesto tem entrada de menu correspondente', () => {
   for (const m of Object.values(MODULES)) {
     const hrefs = m.nav.map((n) => n.href)

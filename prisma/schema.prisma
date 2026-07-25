@@ -122,6 +122,11 @@ model Tenant {
   livestockEvents  LivestockEvent[]
   certifications   Certification[]
   irrigationEvents IrrigationEvent[]
+
+  // módulo clinic
+  professionals Professional[]
+  services      Service[]
+  appointments  Appointment[]
 }
 
 // ─── User ───────────────────────────────────────────────────
@@ -160,8 +165,13 @@ model Customer {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  invoices CommercialInvoice[]
-  orders   Order[]
+  // módulo clinic: o cliente é também o paciente
+  birthDate    DateTime?
+  healthNotes  String?
+
+  invoices     CommercialInvoice[]
+  orders       Order[]
+  appointments Appointment[]
 
   @@index([tenantId])
 }
@@ -832,4 +842,72 @@ model IrrigationEvent {
 
   @@index([tenantId])
   @@index([plotId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Módulo clinic — clínicas e consultórios (Projeto 1, Fase 3)
+// O Conselheiro NÃO vem: é projeto independente (decisão D6).
+// ═══════════════════════════════════════════════════════════════
+
+enum AppointmentStatus {
+  AGENDADA
+  CONFIRMADA
+  CONCLUIDA
+  CANCELADA
+  FALTOU
+}
+
+model Professional {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  name         String
+  specialty    String?
+  color        String   @default("#3e5c50")
+  workingHours Json?
+  userId       String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@index([tenantId])
+}
+model Service {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  durationMin Int      @default(30)
+  price       Decimal  @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@index([tenantId])
+}
+model Appointment {
+  id             String            @id @default(cuid())
+  tenantId       String
+  tenant         Tenant            @relation(fields: [tenantId], references: [id])
+  patientId      String
+  patient        Customer          @relation(fields: [patientId], references: [id])
+  professionalId String
+  professional   Professional      @relation(fields: [professionalId], references: [id])
+  serviceId      String
+  service        Service           @relation(fields: [serviceId], references: [id])
+  startsAt       DateTime
+  endsAt         DateTime
+  status         AppointmentStatus @default(AGENDADA)
+  clinicalNotes  String?
+  chargedAmount  Decimal?
+  invoiceId      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([tenantId, professionalId, startsAt])
+  @@index([tenantId, patientId, startsAt])
 }

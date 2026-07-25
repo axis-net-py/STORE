@@ -31,4 +31,10 @@ export type ModuleManifest = {
    * 404 quando o módulo não está ativo — esconder do menu não é suficiente.
    */
   routes: string[];
+  /**
+   * Rótulos do núcleo que este módulo reescreve. Numa clínica, "Clientes"
+   * chama-se "Pacientes": é a mesma entidade e a mesma rota, com o vocabulário
+   * do negócio. Chave = `key` da entrada do núcleo.
+   */
+  labelOverrides?: Record<string, string>;
 };

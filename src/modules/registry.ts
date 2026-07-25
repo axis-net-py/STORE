@@ -7,6 +7,7 @@ import type { ModuleManifest, NavEntry } from "./types";
 // Os imports de tipo acima são apagados na compilação e não precisam dela.
 import { storeModule } from "./store/manifest.ts";
 import { farmModule } from "./farm/manifest.ts";
+import { clinicModule } from "./clinic/manifest.ts";
 
 /**
  * Registo de módulos e composição dos verticais.
@@ -29,10 +30,11 @@ export const CORE_NAV: NavEntry[] = [
   { icon: BarChart3,       key: "reports",    defaultLabel: "Relatórios",    href: "reports",    order: 110 },
 ];
 
-/** Todos os módulos conhecidos. Clinic entra na Fase 3, food no Projeto 3. */
+/** Todos os módulos conhecidos. Food entra no Projeto 3. */
 export const MODULES: Record<string, ModuleManifest> = {
   store: storeModule,
   farm: farmModule,
+  clinic: clinicModule,
 };
 
 /** Composição de cada marca. Um cliente pode ter módulos além dos do seu vertical. */
@@ -48,10 +50,20 @@ export function resolveModules(active: string[]): ModuleManifest[] {
   return active.map((name) => MODULES[name]).filter((m): m is ModuleManifest => !!m);
 }
 
-/** Navegação final: núcleo + módulos ativos, ordenada. */
+/**
+ * Navegação final: núcleo + módulos ativos, ordenada, com os rótulos do núcleo
+ * reescritos pelos módulos que o pedem (ex.: "Clientes" → "Pacientes").
+ */
 export function navFor(active: string[]): NavEntry[] {
-  const doModulo = resolveModules(active).flatMap((m) => m.nav);
-  return [...CORE_NAV, ...doModulo].sort((a, b) => a.order - b.order);
+  const modulos = resolveModules(active);
+  const overrides: Record<string, string> = {};
+  for (const m of modulos) Object.assign(overrides, m.labelOverrides ?? {});
+
+  const nucleo = CORE_NAV.map((e) =>
+    overrides[e.key] ? { ...e, defaultLabel: overrides[e.key] } : e
+  );
+
+  return [...nucleo, ...modulos.flatMap((m) => m.nav)].sort((a, b) => a.order - b.order);
 }
 
 /**

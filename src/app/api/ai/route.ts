@@ -921,6 +921,43 @@ Se for apenas conversa ou dúvida, retorne:
 
         await createPurchaseInvoice(invoicePayload);
       } else if (result.action === "create_sales_invoice") {
+        // Pré-validação: nenhuma escrita antes de confirmar que todos os itens são viáveis.
+        // A IA reporta o obstáculo; nunca o remove — nem criando produtos que não existem,
+        // nem fabricando estoque. Ver docs/superpowers/specs, Projeto 1 §6.3 (princípio P3).
+        for (const item of result.data.items) {
+          const existing = await prisma.product.findFirst({
+            where: { tenantId, name: { equals: item.name, mode: "insensitive" } },
+            select: { name: true, currentStock: true, unit: true, isService: true }
+          });
+
+          if (!existing) {
+            // O nome não bate exatamente. Sugerir semelhantes em vez de criar um produto:
+            // foi assim que "Votomassa Argamasa" virou duplicado de
+            // "VOTOMASSA ARGAMASA 20KG AC3", com custo inventado, em 2026-07-25.
+            const termo = item.name.trim().split(/\s+/)[0];
+            const parecidos = await prisma.product.findMany({
+              where: { tenantId, isActive: true, name: { contains: termo, mode: "insensitive" } },
+              select: { name: true, sku: true, currentStock: true },
+              take: 5
+            });
+            const sugestao = parecidos.length
+              ? ` Produtos parecidos: ${parecidos.map((p) => `"${p.name}" (${p.sku}, estoque ${p.currentStock})`).join("; ")}.`
+              : "";
+            throw new Error(
+              `Produto não encontrado: "${item.name}".${sugestao} Nenhum produto foi criado e a venda não foi registrada. Use o nome exato ou cadastre o produto antes.`
+            );
+          }
+
+          if (existing.isService) continue;
+
+          const wanted = parseExtractedNumber(item.quantity, false);
+          if (Number(existing.currentStock) < wanted) {
+            throw new Error(
+              `Estoque insuficiente para "${existing.name}". Disponível: ${existing.currentStock} ${existing.unit}, solicitado: ${wanted}. A venda não foi registrada.`
+            );
+          }
+        }
+
         const customerName = result.data.customerName;
         let customer = await prisma.customer.findFirst({
           where: { tenantId, name: { equals: customerName, mode: "insensitive" } }
@@ -948,26 +985,12 @@ Se for apenas conversa ou dúvida, retorne:
           const unitPrice = parseExtractedNumber(item.unitPrice, isPygInvoiceText);
 
           if (!product) {
-            const cleanSku = item.sku || `PROD-${item.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
-            const unit = normalizeUnit(item.name, item.unit);
-            product = await prisma.product.create({
-              data: {
-                tenantId,
-                sku: cleanSku,
-                name: item.name,
-                price: new Decimal(unitPrice),
-                cost: new Decimal(unitPrice * 0.7),
-                currency: result.data.currency || "PYG",
-                unit: unit,
-                taxType: item.taxType || "IVA_10",
-                currentStock: new Decimal(qty),
-                isActive: true
-              }
-            });
-          } else if (Number(product.currentStock) < qty) {
-            // Completa o estoque via ajuste oficial (sincroniza depósito e gera movimentação auditável)
-            const needed = qty - Number(product.currentStock);
-            await adjustStock(product.id, "ENTRADA", needed, "Ajuste automático via IA para atender venda");
+            // Inalcançável: a pré-validação acima já teria falhado. Guarda defensiva —
+            // criar produto a partir de uma venda gera duplicado com custo inventado
+            // e estoque que nunca existiu.
+            throw new Error(
+              `Produto não encontrado: "${item.name}". A venda não foi registrada.`
+            );
           }
 
           resolvedItems.push({

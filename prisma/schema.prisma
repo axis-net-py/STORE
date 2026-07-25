@@ -3,8 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  // Usado APENAS por `prisma migrate dev`, em desenvolvimento local.
+  // `prisma generate`, `migrate deploy` e o runtime não lhe tocam — por isso a
+  // variável não precisa de existir no Vercel. Ver docs/superpowers/plans, Etapa 4.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 // ─── Enums ──────────────────────────────────────────────────

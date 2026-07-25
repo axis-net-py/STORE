@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
 import { ensureDefaultWarehouse, bumpWarehouseStock } from '@/lib/warehouse'
 import { assertPeriodOpen } from '@/lib/accounting-period'
+import { calculateTax } from '@/lib/tax'
 import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import type { CommercialInvoice, InvoiceItem } from '@prisma/client'
@@ -64,22 +65,6 @@ function validateInvoiceData(data: InvoiceFormData) {
     const first = result.error.issues[0]
     throw new Error(`Dados inválidos: ${first.message}`)
   }
-}
-
-// Helper para cálculo de impostos paraguaios
-function calculateTax(totalPrice: Prisma.Decimal, taxType: 'IVA_10' | 'IVA_5' | 'EXENTO') {
-  let taxAmount = new Prisma.Decimal(0)
-  let taxBase = totalPrice
-
-  if (taxType === 'IVA_10') {
-    taxAmount = totalPrice.dividedBy(11).toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP)
-  } else if (taxType === 'IVA_5') {
-    taxAmount = totalPrice.dividedBy(21).toDecimalPlaces(0, Prisma.Decimal.ROUND_HALF_UP)
-  } else {
-    taxAmount = new Prisma.Decimal(0)
-  }
-
-  return { taxAmount, taxBase }
 }
 
 // Listar faturas do tenant

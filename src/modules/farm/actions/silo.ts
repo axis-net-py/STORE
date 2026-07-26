@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { Silo } from '@prisma/client'
@@ -13,9 +14,7 @@ export type SiloFormData = {
 }
 
 export async function getSilos(): Promise<Silo[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.silo.findMany({
     where: { tenantId },
@@ -24,17 +23,13 @@ export async function getSilos(): Promise<Silo[]> {
 }
 
 export async function getSiloById(id: string): Promise<Silo | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.silo.findFirst({ where: { id, tenantId } })
 }
 
 export async function createSilo(data: SiloFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   await prisma.silo.create({
     data: {
@@ -49,9 +44,7 @@ export async function createSilo(data: SiloFormData) {
 }
 
 export async function updateSilo(id: string, data: Partial<SiloFormData>) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name
@@ -64,9 +57,7 @@ export async function updateSilo(id: string, data: Partial<SiloFormData>) {
 }
 
 export async function deleteSilo(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   await prisma.silo.deleteMany({ where: { id, tenantId } })
 

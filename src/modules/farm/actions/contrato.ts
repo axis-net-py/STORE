@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import type { Contract } from '@prisma/client'
 import { Decimal } from 'decimal.js'
@@ -21,9 +22,7 @@ export type ContractFormData = {
 }
 
 export async function getContracts(): Promise<(Contract & { harvest?: { name: string } | null })[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.contract.findMany({
     where: { tenantId },
@@ -37,9 +36,7 @@ export async function getContracts(): Promise<(Contract & { harvest?: { name: st
 }
 
 export async function createContract(data: ContractFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   await prisma.contract.create({
     data: {
@@ -62,9 +59,7 @@ export async function createContract(data: ContractFormData) {
 }
 
 export async function updateContract(id: string, data: Partial<ContractFormData>) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const updateData: any = {}
   if (data.contractNumber !== undefined) updateData.contractNumber = data.contractNumber
@@ -88,9 +83,7 @@ export async function updateContract(id: string, data: Partial<ContractFormData>
 }
 
 export async function deleteContract(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   await prisma.contract.deleteMany({
     where: { id, tenantId },

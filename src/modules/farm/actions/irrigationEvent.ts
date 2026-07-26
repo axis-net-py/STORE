@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { IrrigationEvent } from '@prisma/client'
@@ -20,9 +21,7 @@ export type IrrigationEventFormData = {
 export async function getIrrigationEvents(
   plotId: string
 ): Promise<(IrrigationEvent & { employee: { id: string; name: string } | null })[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.irrigationEvent.findMany({
     where: { tenantId, plotId },
@@ -32,9 +31,7 @@ export async function getIrrigationEvents(
 }
 
 export async function createIrrigationEvent(data: IrrigationEventFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const plot = await prisma.plot.findFirst({ where: { id: data.plotId, tenantId } })
   if (!plot) throw new Error('Talhão não encontrado')
@@ -57,9 +54,7 @@ export async function createIrrigationEvent(data: IrrigationEventFormData) {
 }
 
 export async function deleteIrrigationEvent(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   const event = await prisma.irrigationEvent.findFirst({ where: { id, tenantId } })
   if (!event) throw new Error('Registro não encontrado')

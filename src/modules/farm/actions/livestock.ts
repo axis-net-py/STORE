@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { LivestockBatch } from '@prisma/client'
@@ -16,9 +17,7 @@ export type LivestockBatchFormData = {
 }
 
 export async function getLivestockBatches(): Promise<LivestockBatch[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.livestockBatch.findMany({
     where: { tenantId },
@@ -27,17 +26,13 @@ export async function getLivestockBatches(): Promise<LivestockBatch[]> {
 }
 
 export async function getLivestockBatchById(id: string): Promise<LivestockBatch | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.livestockBatch.findFirst({ where: { id, tenantId } })
 }
 
 export async function createLivestockBatch(data: LivestockBatchFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   await prisma.livestockBatch.create({
     data: {
@@ -55,9 +50,7 @@ export async function createLivestockBatch(data: LivestockBatchFormData) {
 }
 
 export async function updateLivestockBatch(id: string, data: Partial<LivestockBatchFormData>) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name
@@ -73,9 +66,7 @@ export async function updateLivestockBatch(id: string, data: Partial<LivestockBa
 }
 
 export async function deleteLivestockBatch(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   await prisma.livestockBatch.deleteMany({ where: { id, tenantId } })
 

@@ -32,6 +32,12 @@ export type ModuleManifest = {
    */
   routes: string[];
   /**
+   * Ações de permissão que este módulo introduz, no formato `modulo:nivel`.
+   * São semeadas quando o módulo é ativado para um cliente — sem isso o
+   * requirePermission nega OPERATOR e AUDITOR (lib/authz.ts:38-52).
+   */
+  permissions: string[];
+  /**
    * Rótulos do núcleo que este módulo reescreve. Numa clínica, "Clientes"
    * chama-se "Pacientes": é a mesma entidade e a mesma rota, com o vocabulário
    * do negócio. Chave = `key` da entrada do núcleo.

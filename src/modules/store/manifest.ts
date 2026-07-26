@@ -16,4 +16,8 @@ export const storeModule: ModuleManifest = {
     { icon: ClipboardList, key: "orders", defaultLabel: "Pedidos", href: "orders", order: 30 },
   ],
   routes: ["pos", "orders"],
+  // Declaradas por convenção e semeadas com o módulo. As actions atuais de
+  // pedidos usam `invoices:*` do núcleo, porque um pedido converte-se numa
+  // fatura — funcionalidades futuras do módulo usarão estas.
+  permissions: ["store:read", "store:write", "store:delete"],
 };

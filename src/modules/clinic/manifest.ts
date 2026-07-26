@@ -22,6 +22,7 @@ export const clinicModule: ModuleManifest = {
     { icon: ClipboardList, key: "servicos",      defaultLabel: "Serviços",      href: "servicos",      order: 92 },
   ],
   routes: ["agenda", "profissionais", "servicos"],
+  permissions: ["clinic:read", "clinic:write", "clinic:delete"],
   // Numa clínica o cliente é o paciente: mesma entidade, mesma rota, outro nome.
   labelOverrides: { customers: "Pacientes" },
 };

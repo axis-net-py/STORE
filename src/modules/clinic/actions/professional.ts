@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import type { Professional } from '@prisma/client'
 import { ProfessionalSchema, type ProfessionalFormData } from '@/modules/clinic/schemas'
@@ -13,15 +14,13 @@ function requireTenant(session: Awaited<ReturnType<typeof auth>>) {
 }
 
 export async function getProfessionals(): Promise<Professional[]> {
-  const session = await auth()
-  const tenantId = requireTenant(session)
+  const { tenantId } = await requirePermission('clinic:read')
   return prisma.professional.findMany({ where: { tenantId }, orderBy: { name: 'asc' } })
 }
 
 export async function createProfessional(data: ProfessionalFormData) {
   try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+    const { tenantId } = await requirePermission('clinic:write')
     const parsed = ProfessionalSchema.parse(data)
 
     await prisma.professional.create({
@@ -36,8 +35,7 @@ export async function createProfessional(data: ProfessionalFormData) {
 
 export async function updateProfessional(id: string, data: Partial<ProfessionalFormData>) {
   try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+    const { tenantId } = await requirePermission('clinic:write')
     const parsed = ProfessionalSchema.partial().parse(data)
 
     await prisma.professional.updateMany({
@@ -53,8 +51,7 @@ export async function updateProfessional(id: string, data: Partial<ProfessionalF
 
 export async function deleteProfessional(id: string): Promise<{ archived: boolean } | undefined> {
   try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+    const { tenantId } = await requirePermission('clinic:delete')
 
     const professional = await prisma.professional.findFirst({ where: { id, tenantId }, select: { id: true } })
     if (!professional) throw new Error('Profissional não encontrado')

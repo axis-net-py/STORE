@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import type { Plot } from '@prisma/client'
 import { Decimal } from 'decimal.js'
@@ -16,9 +17,7 @@ export type PlotFormData = {
 }
 
 export async function getPlots(): Promise<(Plot & { harvest?: { name: string } | null })[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.plot.findMany({
     where: { tenantId },
@@ -32,9 +31,7 @@ export async function getPlots(): Promise<(Plot & { harvest?: { name: string } |
 }
 
 export async function getPlotById(id: string): Promise<(Plot & { harvest?: { name: string } | null }) | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.plot.findFirst({
     where: { id, tenantId },
@@ -43,9 +40,7 @@ export async function getPlotById(id: string): Promise<(Plot & { harvest?: { nam
 }
 
 export async function createPlot(data: PlotFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   await prisma.plot.create({
     data: {
@@ -63,9 +58,7 @@ export async function createPlot(data: PlotFormData) {
 }
 
 export async function updatePlot(id: string, data: Partial<PlotFormData>) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name
@@ -84,9 +77,7 @@ export async function updatePlot(id: string, data: Partial<PlotFormData>) {
 }
 
 export async function deletePlot(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   await prisma.plot.deleteMany({
     where: { id, tenantId },

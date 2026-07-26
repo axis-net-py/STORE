@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { SiloMovement, SiloMovementType } from '@prisma/client'
@@ -24,9 +25,7 @@ export async function getSiloMovements(siloId: string): Promise<
     contract: { id: string; contractNumber: string } | null
   })[]
 > {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.siloMovement.findMany({
     where: { tenantId, siloId },
@@ -39,9 +38,7 @@ export async function getSiloMovements(siloId: string): Promise<
 }
 
 export async function createSiloMovement(data: SiloMovementFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const silo = await prisma.silo.findFirst({ where: { id: data.siloId, tenantId } })
   if (!silo) throw new Error('Silo não encontrado')
@@ -77,9 +74,7 @@ export async function createSiloMovement(data: SiloMovementFormData) {
 }
 
 export async function deleteSiloMovement(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   const movement = await prisma.siloMovement.findFirst({ where: { id, tenantId } })
   if (!movement) throw new Error('Registro não encontrado')

@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import type { AppointmentStatus } from '@prisma/client'
 import {
@@ -21,8 +22,7 @@ function requireTenant(session: Awaited<ReturnType<typeof auth>>) {
 
 /** Dados da janela visível da agenda + catálogos para os formulários. */
 export async function getAgendaData(fromISO: string, toISO: string) {
-  const session = await auth()
-  const tenantId = requireTenant(session)
+  const { tenantId } = await requirePermission('clinic:read')
   const from = new Date(fromISO)
   const to = new Date(toISO)
 
@@ -86,8 +86,7 @@ async function assertNoConflict(
 
 export async function createAppointment(data: AppointmentFormData) {
   try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+    const { tenantId } = await requirePermission('clinic:write')
     const parsed = AppointmentSchema.parse(data)
 
     const service = await prisma.service.findFirst({
@@ -119,8 +118,7 @@ export async function createAppointment(data: AppointmentFormData) {
 
 export async function rescheduleAppointment(id: string, startsAtISO: string) {
   try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+    const { tenantId } = await requirePermission('clinic:write')
     const startsAt = new Date(startsAtISO)
     if (isNaN(startsAt.getTime())) throw new ValidationError('Data inválida')
 
@@ -147,8 +145,7 @@ export async function rescheduleAppointment(id: string, startsAtISO: string) {
 
 export async function setAppointmentStatus(id: string, status: AppointmentStatus) {
   try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+    const { tenantId } = await requirePermission('clinic:write')
 
     await prisma.appointment.updateMany({ where: { id, tenantId }, data: { status } })
     revalidatePath(`/${tenantId}/agenda`)
@@ -161,8 +158,7 @@ export async function setAppointmentStatus(id: string, status: AppointmentStatus
  * O serviço vira um Product espelho (isService: true — sem estoque) para caber no InvoiceItem. */
 export async function invoiceAppointment(id: string) {
   try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+    const { tenantId } = await requirePermission('clinic:write')
 
     const appt = await prisma.appointment.findFirst({
       where: { id, tenantId },
@@ -212,8 +208,7 @@ export async function invoiceAppointment(id: string) {
 
 export async function completeAppointment(id: string, data: CompleteAppointmentFormData) {
   try {
-    const session = await auth()
-    const tenantId = requireTenant(session)
+    const { tenantId } = await requirePermission('clinic:write')
     const parsed = CompleteAppointmentSchema.parse(data)
 
     await prisma.appointment.updateMany({

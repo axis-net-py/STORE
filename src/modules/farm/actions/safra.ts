@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import type { Harvest } from '@prisma/client'
 
@@ -14,9 +15,7 @@ export type HarvestFormData = {
 }
 
 export async function getHarvests(): Promise<Harvest[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.harvest.findMany({
     where: { tenantId },
@@ -25,9 +24,7 @@ export async function getHarvests(): Promise<Harvest[]> {
 }
 
 export async function getHarvestById(id: string): Promise<Harvest | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.harvest.findFirst({
     where: { id, tenantId },
@@ -35,9 +32,7 @@ export async function getHarvestById(id: string): Promise<Harvest | null> {
 }
 
 export async function createHarvest(data: HarvestFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   await prisma.harvest.create({
     data: {
@@ -54,9 +49,7 @@ export async function createHarvest(data: HarvestFormData) {
 }
 
 export async function updateHarvest(id: string, data: Partial<HarvestFormData>) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name
@@ -74,9 +67,7 @@ export async function updateHarvest(id: string, data: Partial<HarvestFormData>) 
 }
 
 export async function deleteHarvest(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   await prisma.harvest.deleteMany({
     where: { id, tenantId },

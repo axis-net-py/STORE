@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import type { Employee } from '@prisma/client'
 
@@ -13,9 +14,7 @@ export type EmployeeFormData = {
 }
 
 export async function getEmployees(): Promise<Employee[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.employee.findMany({
     where: { tenantId },
@@ -24,9 +23,7 @@ export async function getEmployees(): Promise<Employee[]> {
 }
 
 export async function createEmployee(data: EmployeeFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   await prisma.employee.create({
     data: {
@@ -42,9 +39,7 @@ export async function createEmployee(data: EmployeeFormData) {
 }
 
 export async function updateEmployee(id: string, data: Partial<EmployeeFormData>) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name
@@ -61,9 +56,7 @@ export async function updateEmployee(id: string, data: Partial<EmployeeFormData>
 }
 
 export async function deleteEmployee(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   await prisma.employee.deleteMany({
     where: { id, tenantId },

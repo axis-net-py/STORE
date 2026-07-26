@@ -26,4 +26,5 @@ export const farmModule: ModuleManifest = {
     { icon: BadgeCheck, key: "certificacoes", defaultLabel: "Certificações", href: "certificacoes", order: 88 },
   ],
   routes: ["safra", "talhoes", "silos", "rebanho", "frota", "funcionarios", "contratos", "certificacoes"],
+  permissions: ["farm:read", "farm:write", "farm:delete"],
 };

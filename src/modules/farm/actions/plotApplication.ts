@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { PlotApplication } from '@prisma/client'
@@ -18,9 +19,7 @@ export type PlotApplicationFormData = {
 export async function getPlotApplications(
   plotId: string
 ): Promise<(PlotApplication & { product: { id: string; name: string; unit: string }; employee: { id: string; name: string } | null })[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.plotApplication.findMany({
     where: { tenantId, plotId },
@@ -33,9 +32,7 @@ export async function getPlotApplications(
 }
 
 export async function createPlotApplication(data: PlotApplicationFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const product = await prisma.product.findFirst({
     where: { id: data.productId, tenantId },
@@ -92,9 +89,7 @@ export async function createPlotApplication(data: PlotApplicationFormData) {
 }
 
 export async function deletePlotApplication(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   const application = await prisma.plotApplication.findFirst({ where: { id, tenantId } })
   if (!application) throw new Error('Aplicação não encontrada')

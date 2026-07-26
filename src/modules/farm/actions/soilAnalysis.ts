@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { SoilAnalysis } from '@prisma/client'
@@ -18,9 +19,7 @@ export type SoilAnalysisFormData = {
 }
 
 export async function getSoilAnalyses(plotId: string): Promise<SoilAnalysis[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.soilAnalysis.findMany({
     where: { tenantId, plotId },
@@ -29,9 +28,7 @@ export async function getSoilAnalyses(plotId: string): Promise<SoilAnalysis[]> {
 }
 
 export async function createSoilAnalysis(data: SoilAnalysisFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const plot = await prisma.plot.findFirst({ where: { id: data.plotId, tenantId } })
   if (!plot) throw new Error('Talhão não encontrado')
@@ -54,9 +51,7 @@ export async function createSoilAnalysis(data: SoilAnalysisFormData) {
 }
 
 export async function deleteSoilAnalysis(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   const analysis = await prisma.soilAnalysis.findFirst({ where: { id, tenantId } })
   if (!analysis) throw new Error('Análise não encontrada')

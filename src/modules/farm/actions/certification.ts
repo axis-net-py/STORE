@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import type { Certification } from '@prisma/client'
 
@@ -17,9 +18,7 @@ export type CertificationFormData = {
 }
 
 export async function getCertifications(): Promise<Certification[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.certification.findMany({
     where: { tenantId },
@@ -28,9 +27,7 @@ export async function getCertifications(): Promise<Certification[]> {
 }
 
 export async function createCertification(data: CertificationFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   await prisma.certification.create({
     data: {
@@ -50,9 +47,7 @@ export async function createCertification(data: CertificationFormData) {
 }
 
 export async function updateCertification(id: string, data: Partial<CertificationFormData>) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name
@@ -70,9 +65,7 @@ export async function updateCertification(id: string, data: Partial<Certificatio
 }
 
 export async function deleteCertification(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   await prisma.certification.deleteMany({ where: { id, tenantId } })
 

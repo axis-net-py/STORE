@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { VehicleLog, VehicleLogType } from '@prisma/client'
@@ -20,9 +21,7 @@ export type VehicleLogFormData = {
 }
 
 export async function getVehicleLogs(vehicleId: string): Promise<(VehicleLog & { employee: { id: string; name: string } | null })[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   return prisma.vehicleLog.findMany({
     where: { tenantId, vehicleId },
@@ -32,9 +31,7 @@ export async function getVehicleLogs(vehicleId: string): Promise<(VehicleLog & {
 }
 
 export async function createVehicleLog(data: VehicleLogFormData) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const reading = data.odometerOrHours !== undefined ? new Decimal(data.odometerOrHours) : null
 
@@ -65,9 +62,7 @@ export async function createVehicleLog(data: VehicleLogFormData) {
 }
 
 export async function updateVehicleLog(id: string, data: Partial<VehicleLogFormData>) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:write')
 
   const updateData: any = {}
   if (data.type !== undefined) updateData.type = data.type
@@ -89,9 +84,7 @@ export async function updateVehicleLog(id: string, data: Partial<VehicleLogFormD
 }
 
 export async function deleteVehicleLog(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:delete')
 
   const log = await prisma.vehicleLog.findFirst({ where: { id, tenantId } })
   if (!log) throw new Error('Registro não encontrado')
@@ -102,9 +95,7 @@ export async function deleteVehicleLog(id: string) {
 }
 
 export async function getFuelConsumption(vehicleId: string): Promise<{ average: number | null; unit: 'h' | 'km'; deltas: number[] }> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   const fuelLogs = await prisma.vehicleLog.findMany({
     where: { tenantId, vehicleId, type: 'FUEL', odometerOrHours: { not: null }, liters: { not: null } },

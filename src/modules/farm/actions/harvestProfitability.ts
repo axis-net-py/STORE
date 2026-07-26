@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 
 export type PlotCost = {
   plotId: string
@@ -23,9 +24,7 @@ export type HarvestProfitability = {
 }
 
 export async function getHarvestProfitability(harvestId: string): Promise<HarvestProfitability> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('farm:read')
 
   const [plots, applications, contracts] = await Promise.all([
     prisma.plot.findMany({

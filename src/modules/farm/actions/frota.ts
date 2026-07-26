@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { VehiclePartialSchema, VehicleSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import type { Vehicle } from '@prisma/client'
 
@@ -33,6 +34,9 @@ export async function getVehicleById(id: string): Promise<Vehicle | null> {
 export async function createVehicle(data: VehicleFormData) {
   const { tenantId } = await requirePermission('farm:write')
 
+  const parsed = VehicleSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
   await prisma.vehicle.create({
     data: {
       tenantId,
@@ -48,6 +52,9 @@ export async function createVehicle(data: VehicleFormData) {
 
 export async function updateVehicle(id: string, data: Partial<VehicleFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = VehiclePartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name

@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { HarvestPartialSchema, HarvestSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import type { Harvest } from '@prisma/client'
 
@@ -34,6 +35,9 @@ export async function getHarvestById(id: string): Promise<Harvest | null> {
 export async function createHarvest(data: HarvestFormData) {
   const { tenantId } = await requirePermission('farm:write')
 
+  const parsed = HarvestSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
   await prisma.harvest.create({
     data: {
       tenantId,
@@ -50,6 +54,9 @@ export async function createHarvest(data: HarvestFormData) {
 
 export async function updateHarvest(id: string, data: Partial<HarvestFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = HarvestPartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name

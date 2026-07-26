@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { SiloMovementSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { SiloMovement, SiloMovementType } from '@prisma/client'
@@ -39,6 +40,9 @@ export async function getSiloMovements(siloId: string): Promise<
 
 export async function createSiloMovement(data: SiloMovementFormData) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = SiloMovementSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const silo = await prisma.silo.findFirst({ where: { id: data.siloId, tenantId } })
   if (!silo) throw new Error('Silo não encontrado')

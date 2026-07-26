@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { VehicleLogPartialSchema, VehicleLogSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { VehicleLog, VehicleLogType } from '@prisma/client'
@@ -32,6 +33,9 @@ export async function getVehicleLogs(vehicleId: string): Promise<(VehicleLog & {
 
 export async function createVehicleLog(data: VehicleLogFormData) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = VehicleLogSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const reading = data.odometerOrHours !== undefined ? new Decimal(data.odometerOrHours) : null
 
@@ -63,6 +67,9 @@ export async function createVehicleLog(data: VehicleLogFormData) {
 
 export async function updateVehicleLog(id: string, data: Partial<VehicleLogFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = VehicleLogPartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.type !== undefined) updateData.type = data.type

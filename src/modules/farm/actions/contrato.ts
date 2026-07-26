@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { ContractPartialSchema, ContractSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import type { Contract } from '@prisma/client'
 import { Decimal } from 'decimal.js'
@@ -38,6 +39,9 @@ export async function getContracts(): Promise<(Contract & { harvest?: { name: st
 export async function createContract(data: ContractFormData) {
   const { tenantId } = await requirePermission('farm:write')
 
+  const parsed = ContractSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
   await prisma.contract.create({
     data: {
       tenantId,
@@ -60,6 +64,9 @@ export async function createContract(data: ContractFormData) {
 
 export async function updateContract(id: string, data: Partial<ContractFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = ContractPartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.contractNumber !== undefined) updateData.contractNumber = data.contractNumber

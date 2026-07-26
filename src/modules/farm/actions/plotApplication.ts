@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { PlotApplicationSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { PlotApplication } from '@prisma/client'
@@ -33,6 +34,9 @@ export async function getPlotApplications(
 
 export async function createPlotApplication(data: PlotApplicationFormData) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = PlotApplicationSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const product = await prisma.product.findFirst({
     where: { id: data.productId, tenantId },

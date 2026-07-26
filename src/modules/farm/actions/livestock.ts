@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { LivestockBatchPartialSchema, LivestockBatchSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { LivestockBatch } from '@prisma/client'
@@ -34,6 +35,9 @@ export async function getLivestockBatchById(id: string): Promise<LivestockBatch 
 export async function createLivestockBatch(data: LivestockBatchFormData) {
   const { tenantId } = await requirePermission('farm:write')
 
+  const parsed = LivestockBatchSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
   await prisma.livestockBatch.create({
     data: {
       tenantId,
@@ -51,6 +55,9 @@ export async function createLivestockBatch(data: LivestockBatchFormData) {
 
 export async function updateLivestockBatch(id: string, data: Partial<LivestockBatchFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = LivestockBatchPartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name

@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { CertificationPartialSchema, CertificationSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import type { Certification } from '@prisma/client'
 
@@ -29,6 +30,9 @@ export async function getCertifications(): Promise<Certification[]> {
 export async function createCertification(data: CertificationFormData) {
   const { tenantId } = await requirePermission('farm:write')
 
+  const parsed = CertificationSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
   await prisma.certification.create({
     data: {
       tenantId,
@@ -48,6 +52,9 @@ export async function createCertification(data: CertificationFormData) {
 
 export async function updateCertification(id: string, data: Partial<CertificationFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = CertificationPartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name

@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { SiloPartialSchema, SiloSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { Silo } from '@prisma/client'
@@ -31,6 +32,9 @@ export async function getSiloById(id: string): Promise<Silo | null> {
 export async function createSilo(data: SiloFormData) {
   const { tenantId } = await requirePermission('farm:write')
 
+  const parsed = SiloSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
   await prisma.silo.create({
     data: {
       tenantId,
@@ -45,6 +49,9 @@ export async function createSilo(data: SiloFormData) {
 
 export async function updateSilo(id: string, data: Partial<SiloFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = SiloPartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name

@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { PlotPartialSchema, PlotSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import type { Plot } from '@prisma/client'
 import { Decimal } from 'decimal.js'
@@ -42,6 +43,9 @@ export async function getPlotById(id: string): Promise<(Plot & { harvest?: { nam
 export async function createPlot(data: PlotFormData) {
   const { tenantId } = await requirePermission('farm:write')
 
+  const parsed = PlotSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
   await prisma.plot.create({
     data: {
       tenantId,
@@ -59,6 +63,9 @@ export async function createPlot(data: PlotFormData) {
 
 export async function updatePlot(id: string, data: Partial<PlotFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = PlotPartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name

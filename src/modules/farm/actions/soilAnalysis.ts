@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { SoilAnalysisSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { SoilAnalysis } from '@prisma/client'
@@ -29,6 +30,9 @@ export async function getSoilAnalyses(plotId: string): Promise<SoilAnalysis[]> {
 
 export async function createSoilAnalysis(data: SoilAnalysisFormData) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = SoilAnalysisSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const plot = await prisma.plot.findFirst({ where: { id: data.plotId, tenantId } })
   if (!plot) throw new Error('Talhão não encontrado')

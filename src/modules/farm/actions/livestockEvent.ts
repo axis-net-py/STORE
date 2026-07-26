@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { LivestockEventSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
 import type { LivestockEvent, LivestockEventType } from '@prisma/client'
@@ -32,6 +33,9 @@ export async function getLivestockEvents(
 
 export async function createLivestockEvent(data: LivestockEventFormData) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = LivestockEventSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const batch = await prisma.livestockBatch.findFirst({ where: { id: data.batchId, tenantId } })
   if (!batch) throw new Error('Lote não encontrado')

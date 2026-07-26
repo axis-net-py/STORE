@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { EmployeePartialSchema, EmployeeSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import type { Employee } from '@prisma/client'
 
@@ -25,6 +26,9 @@ export async function getEmployees(): Promise<Employee[]> {
 export async function createEmployee(data: EmployeeFormData) {
   const { tenantId } = await requirePermission('farm:write')
 
+  const parsed = EmployeeSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
   await prisma.employee.create({
     data: {
       tenantId,
@@ -40,6 +44,9 @@ export async function createEmployee(data: EmployeeFormData) {
 
 export async function updateEmployee(id: string, data: Partial<EmployeeFormData>) {
   const { tenantId } = await requirePermission('farm:write')
+
+  const parsed = EmployeePartialSchema.safeParse(data)
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name

@@ -76,6 +76,10 @@ enum TaxType {
 model Tenant {
   id               String   @id @default(cuid())
   name             String
+  /// Subdomínio deste cliente: `smartbuy` → smartbuy.axisstore.com.
+  /// Único em toda a instalação. Ver src/lib/tenant-host.ts para o formato e
+  /// a lista de slugs reservados (spec Projeto 2, §3.1).
+  slug             String?  @unique
   /// Módulos ativos deste cliente. O vertical (store/farm/clinic/food) é um
   /// conjunto nomeado destes — ver src/modules/registry.ts. Todas as bases têm
   /// as tabelas de todos os módulos; só esta lista difere (spec Projeto 1, D4).

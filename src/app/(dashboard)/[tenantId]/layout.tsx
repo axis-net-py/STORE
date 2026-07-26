@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { DashboardShell } from "@/components/DashboardShell";
 import { AIAssistant } from "@/components/AIAssistant";
+import { verificarCoerencia } from "@/lib/tenant-context";
 
 export default async function DashboardLayout({
   children,
@@ -21,6 +22,15 @@ export default async function DashboardLayout({
   // Ensure user belongs to this tenant
   if (session.user.tenantId !== tenantId) {
     redirect(`/${session.user.tenantId}/dashboard`);
+  }
+
+  // Defesa em profundidade (spec Projeto 2, §4.2): quando o acesso vem por
+  // subdomínio, a sessão tem de pertencer àquele cliente. A cookie host-only
+  // já o garante; isto é a segunda linha, para o caso de falhar.
+  const coerencia = await verificarCoerencia(session.user.tenantId as string);
+  if (!coerencia.ok) {
+    console.warn(`[layout] Acesso recusado por subdomínio: ${coerencia.motivo}`);
+    redirect("/login");
   }
 
   // Primeiro acesso com senha temporária: forçar troca antes de usar o sistema.

@@ -131,6 +131,50 @@ model Tenant {
   professionals Professional[]
   services      Service[]
   appointments  Appointment[]
+
+  fiscalCredentials FiscalCredential[]
+}
+
+/// Certificado digital fiscal (SIFEN) de um cliente.
+///
+/// Model próprio, e não colunas no Tenant, por necessidade operacional: os
+/// certificados renovam-se anualmente e é preciso carregar o novo ANTES de o
+/// antigo expirar. Com colunas só cabia um, e a substituição seria uma janela
+/// de risco (spec Projeto 2, §6.2).
+///
+/// Vive na base do próprio cliente: o certificado é propriedade dele. Se o
+/// cliente sair com os seus dados, o certificado sai junto, sem ação nossa.
+model FiscalCredential {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  /// Conteúdo do .p12, cifrado com AES-256-GCM (chave TENANT_SECRET_KEY).
+  certificateCipher String
+  certificateIv     String
+  certificateTag    String
+
+  /// Palavra-passe do .p12, cifrada com a mesma chave.
+  passCipher String
+  passIv     String
+  passTag    String
+
+  /// Nome do ficheiro original, só para o utilizador se orientar.
+  fileName String?
+
+  validFrom DateTime?
+  /// Data de expiração. O aviso automático depende dela (spec §6.5).
+  validUntil DateTime?
+
+  /// "test" (SET de homologação) ou "prod".
+  environment String  @default("test")
+  isActive    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
 }
 
 // ─── User ───────────────────────────────────────────────────

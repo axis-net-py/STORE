@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getCertificadoAtivo } from "@/app/actions/fiscal-credential";
 import { revalidatePath } from "next/cache";
 import type { SifenInvoice, SifenConfig } from "@axis/sifen";
 import { SifenClient } from "@axis/sifen";
@@ -73,11 +74,22 @@ export async function submitInvoiceToSifen(
       customerDocType: (invoice.customer?.documentType as "RUC" | "CEDULA" | "PASAPORTE" | "EXTRANJERO") || "RUC",
     };
 
-    // Create SIFEN client
+    // Certificado DESTE cliente, não o global (spec Projeto 2, §6).
+    //
+    // O `|| ""` que aqui estava fazia com que um certificado em falta
+    // produzisse uma submissão à SET com credencial vazia, falhando com um
+    // erro obscuro do lado da autoridade fiscal. Agora falha aqui, claro.
+    const credencial = await getCertificadoAtivo(tenantId);
+    if (!credencial) {
+      throw new Error(
+        "Nenhum certificado digital ativo. Carregue o certificado da empresa em Configurações › Fiscal antes de emitir documentos eletrônicos."
+      );
+    }
+
     const sifenClient = new SifenClient(sifenConfig, {
       apiUrl: process.env.SIFEN_API_URL || "https://sifen.set.gov.py/de/factura",
-      certificate: process.env.SIFEN_CERTIFICATE || "",
-      certificatePass: process.env.SIFEN_CERTIFICATE_PASS || "",
+      certificate: credencial.certificate,
+      certificatePass: credencial.password,
       timeout: 30000,
       retryAttempts: 3,
     });

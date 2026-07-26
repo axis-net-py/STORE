@@ -21,6 +21,7 @@ import {
   ClipboardList,
   Boxes,
   ShoppingCart,
+  ShieldCheck,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BrazilFlag, ParaguayFlag } from "@/components/icons/Flags";
@@ -34,8 +35,9 @@ interface SidebarProps {
 }
 
 const bottomItems = [
-  { icon: RefreshCw, key: "cambio",   defaultLabel: "Câmbio",        href: "settings/exchange-rates" },
-  { icon: Settings,  key: "settings", defaultLabel: "Configurações", href: "settings/team" },
+  { icon: RefreshCw,  key: "cambio",   defaultLabel: "Câmbio",        href: "settings/exchange-rates" },
+  { icon: ShieldCheck, key: "fiscal",  defaultLabel: "Certificado",   href: "settings/fiscal" },
+  { icon: Settings,   key: "settings", defaultLabel: "Configurações", href: "settings/team" },
 ];
 
 export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) {
@@ -58,6 +60,7 @@ export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) 
       accounting: "Contabilidade",
       reports: "Relatórios",
       cambio: "Câmbio",
+      fiscal: "Certificado",
       settings: "Configurações",
     },
     es: {
@@ -73,6 +76,7 @@ export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) 
       accounting: "Contabilidad",
       reports: "Reportes",
       cambio: "Cambio",
+      fiscal: "Certificado",
       settings: "Configuraciones",
     },
   };

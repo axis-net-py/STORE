@@ -14,11 +14,21 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const FICHEIRO = 'src/app/api/ai/route.ts'
-const ESCRITA = /prisma\.\w+\.(create|update|delete|createMany|updateMany|deleteMany|upsert)\s*\(/g
+const ESCRITA = /prisma\.(\w+)\.(create|update|delete|createMany|updateMany|deleteMany|upsert)\s*\(/g
 
-test('a camada de IA não escreve diretamente na base de dados', () => {
+/**
+ * Exceção declarada: `auditLog`.
+ *
+ * O registo de auditoria não é dado de negócio — é o registo de que a operação
+ * aconteceu. Não tem regra de negócio a herdar de uma server action, e passá-lo
+ * por uma só acrescentaria indireção. A exceção fica aqui, explícita e visível,
+ * em vez de diluída no código.
+ */
+const PERMITIDOS = new Set(['auditLog'])
+
+test('a camada de IA não escreve dados de negócio diretamente', () => {
   const codigo = readFileSync(FICHEIRO, 'utf8')
-  const encontradas = [...codigo.matchAll(ESCRITA)]
+  const encontradas = [...codigo.matchAll(ESCRITA)].filter((m) => !PERMITIDOS.has(m[1]))
 
   const detalhe = encontradas.map((m) => {
     const linha = codigo.slice(0, m.index).split('\n').length
@@ -40,6 +50,13 @@ test('a camada de IA importa as server actions de escrita', () => {
   ]) {
     assert.ok(codigo.includes(acao), `esperava a rota usar ${acao}`)
   }
+})
+
+test('a camada de IA regista auditoria das ações que executa', () => {
+  const codigo = readFileSync(FICHEIRO, 'utf8')
+  assert.ok(codigo.includes('prisma.auditLog.create'), 'esperava registo de auditoria')
+  assert.ok(codigo.includes('confirmadoPeloUtilizador'), 'a auditoria tem de registar se houve confirmação')
+  assert.ok(codigo.includes('comando'), 'a auditoria tem de guardar o comando original')
 })
 
 test('leituras diretas continuam permitidas', () => {

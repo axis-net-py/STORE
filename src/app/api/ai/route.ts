@@ -9,6 +9,7 @@ import { createCustomer } from "@/app/actions/customer";
 import { createSupplier, updateSupplier } from "@/app/actions/supplier";
 import { createProduct, updateProduct } from "@/app/actions/product";
 import { createFinanceTransaction } from "@/app/actions/finance";
+import { exigeConfirmacao, nivelDe, assinarIntencao, verificarIntencao, resumirIntencao } from "./intents";
 // VIOLAÇÃO CONHECIDA da regra de dependência (spec Projeto 1 §2.2): o núcleo não
 // pode importar de um módulo. A resolução é a Fase 5 — as ferramentas da IA
 // passam a ser declaradas pelo manifesto de cada módulo, não fixas no motor.
@@ -461,12 +462,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
   const tenantId = session.user.tenantId;
+  const userId = session.user.id as string;
 
   const apiKey = process.env.GEMINI_API_KEY;
 
   try {
     const body = await req.json();
-    const { text, image, file, mimeType, purpose, attachmentUrl } = body;
+    const { text, image, file, mimeType, purpose, attachmentUrl, confirmacao } = body;
     const fileBase64 = file || image;
     // For file uploads, we only support invoice parsing since crop diagnostic is removed
     const activePurpose = purpose || "invoice";
@@ -710,6 +712,16 @@ Retorne APENAS um objeto JSON puro no seguinte formato, sem formatação markdow
     if (text) {
       let result: any = null;
 
+      // P4: o utilizador está a confirmar uma intenção proposta antes.
+      // Usamos os dados ASSINADOS, não os que o cliente devolveu — foi aquilo
+      // que ele viu e aprovou. E não voltamos a chamar o modelo: uma segunda
+      // interpretação do mesmo texto podia dar outra coisa.
+      if (confirmacao) {
+        const v = verificarIntencao(confirmacao, tenantId, userId);
+        if (!v.ok) return NextResponse.json({ error: v.motivo }, { status: 400 });
+        result = { action: v.intencao.action, data: v.intencao.data, message: "" };
+      }
+
       const prompt = `Analise a intenção do usuário: "${text}".
 Temos as seguintes ações possíveis no ERP comercial:
 1. "create_product" (Produto): campos { name: string, sku?: string, price: number, cost: number, currency: "PYG"|"USD"|"BRL", unit?: string, currentStock?: number }
@@ -749,7 +761,7 @@ Se for apenas conversa ou dúvida, retorne:
   "message": "Sua resposta amigável sobre o sistema AXIS STORE"
 }`;
 
-      if (process.env.GEMINI_API_KEY) {
+      if (!result && process.env.GEMINI_API_KEY) {
         const geminiResponse = await callGemini(prompt);
         if (geminiResponse) {
           try {
@@ -772,6 +784,18 @@ Se for apenas conversa ou dúvida, retorne:
         if (requiredPerm) {
           await requirePermission(requiredPerm);
         }
+      }
+
+      // P4 e P5: ações com consequência de negócio ou fiscais não se executam
+      // sem confirmação explícita. A IA propõe; quem decide é o utilizador.
+      if (result.action && result.action !== "chat" && exigeConfirmacao(result.action) && !confirmacao) {
+        return NextResponse.json({
+          needsConfirmation: true,
+          action: result.action,
+          nivel: nivelDe(result.action),
+          resumo: resumirIntencao(result.action, result.data),
+          intencao: assinarIntencao({ action: result.action, data: result.data, tenantId, userId }),
+        });
       }
 
       // Execute database actions if detected
@@ -1213,6 +1237,33 @@ Se for apenas conversa ou dúvida, retorne:
         result.message = open.length === 0
           ? `Nenhum título em aberto ${isReceivable ? "a receber" : "a pagar"}.`
           : `Total ${isReceivable ? "a receber" : "a pagar"}: ${fmt.format(total)} Gs. em ${open.length} fatura(s). Maiores: ${top}`;
+      }
+
+      // Auditoria (spec §6.4): permite reconstruir o que foi pedido e o que foi
+      // feito. Regista o comando original, a intenção interpretada, quem
+      // confirmou e a origem — que é o que faltava no incidente de 2026-07-25.
+      if (result.action && result.action !== "chat") {
+        try {
+          await prisma.auditLog.create({
+            data: {
+              tenantId,
+              userId,
+              action: `AI_${result.action.toUpperCase()}`,
+              entity: "AIAssistant",
+              details: {
+                comando: String(text).slice(0, 2000),
+                intencao: result.action,
+                nivel: nivelDe(result.action),
+                dados: result.data ?? null,
+                confirmadoPeloUtilizador: !!confirmacao,
+                origem: process.env.GEMINI_API_KEY ? "modelo" : "nlp-local",
+              },
+            },
+          });
+        } catch (e) {
+          // A auditoria nunca pode derrubar a operação que já foi executada.
+          console.error("[ai] Falha ao registar auditoria:", e);
+        }
       }
 
       return NextResponse.json({

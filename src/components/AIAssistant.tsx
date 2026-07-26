@@ -22,6 +22,12 @@ interface Message {
   isDiagnostic?: boolean;
   options?: { label: string; value: string }[];
   filePending?: { base64: string; mimeType: string; fileName: string; attachmentUrl?: string };
+  /**
+   * Proposta à espera de confirmação (princípio P4 da spec).
+   * A intenção vem assinada pelo servidor e é devolvida tal e qual: o cliente
+   * não a pode alterar entre a proposta e a confirmação.
+   */
+  confirmacaoPendente?: { intencao: string; nivel: number; comando: string };
 }
 
 export function AIAssistant({ tenantId }: { tenantId: string }) {
@@ -94,6 +100,43 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
     }
   };
 
+  /** Retira os botões da proposta, para não poder ser confirmada duas vezes. */
+  const consumirProposta = (index: number) =>
+    setMessages((prev) => prev.map((m, i) => (i === index ? { ...m, confirmacaoPendente: undefined } : m)));
+
+  const handleCancelar = (index: number) => {
+    consumirProposta(index);
+    setMessages((prev) => [...prev, { sender: "bot", text: "Cancelado. Nada foi registrado." }]);
+  };
+
+  /** P4: executa a intenção assinada que o utilizador viu e aprovou. */
+  const handleConfirmar = async (index: number) => {
+    const pendente = messages[index]?.confirmacaoPendente;
+    if (!pendente) return;
+
+    consumirProposta(index);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: pendente.comando, confirmacao: pendente.intencao }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao confirmar");
+
+      setMessages((prev) => [...prev, { sender: "bot", text: data.message }]);
+      if (data.action && data.action !== "chat") router.refresh();
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: err.message || "Não foi possível concluir a operação." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSendText = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputText.trim()) return;
@@ -113,8 +156,21 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro de resposta da IA");
 
+      // P4: nada foi executado ainda — o servidor devolveu uma proposta.
+      if (data.needsConfirmation) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "bot",
+            text: data.resumo,
+            confirmacaoPendente: { intencao: data.intencao, nivel: data.nivel, comando: userText },
+          },
+        ]);
+        return;
+      }
+
       setMessages((prev) => [...prev, { sender: "bot", text: data.message }]);
-      
+
       // If it created a database record, refresh the page content
       if (data.action && data.action !== "chat") {
         router.refresh();
@@ -281,6 +337,33 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
                   }`}
                 >
                   <p className="whitespace-pre-line">{msg.text}</p>
+                  {msg.confirmacaoPendente && (
+                    <div className="mt-2.5 pt-2.5 border-t border-border/40">
+                      <p className="mb-2 text-[11px] uppercase tracking-widest font-bold text-amber-700 dark:text-amber-500">
+                        {msg.confirmacaoPendente.nivel >= 3
+                          ? "Documento fiscal — confirmação obrigatória"
+                          : "Confirmação necessária"}
+                      </p>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => handleConfirmar(index)}
+                          className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground transition-all active:scale-[0.98] shadow-sm disabled:opacity-50"
+                        >
+                          Confirmar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => handleCancelar(index)}
+                          className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-muted hover:bg-muted/80 text-foreground/80 border border-border transition-all active:scale-[0.98] disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {msg.options && (
                     <div className="mt-2.5 flex flex-col gap-1.5 pt-2.5 border-t border-border/40">
                       {msg.options.map((opt) => (

@@ -47,7 +47,7 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
 export async function createCustomer(data: CustomerFormData) {
   const { tenantId } = await requirePermission('customers:write')
 
-  await prisma.customer.create({
+  const criado = await prisma.customer.create({
     data: {
       tenantId,
       name: data.name,
@@ -64,6 +64,7 @@ export async function createCustomer(data: CustomerFormData) {
   })
 
   revalidatePath(`/${tenantId}/customers`)
+  return criado
 }
 
 // Atualizar cliente

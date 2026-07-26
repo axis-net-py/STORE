@@ -48,7 +48,7 @@ export async function getSupplierById(id: string): Promise<Supplier | null> {
 export async function createSupplier(data: SupplierFormData) {
   const { tenantId } = await requirePermission('suppliers:write')
 
-  await prisma.supplier.create({
+  const criado = await prisma.supplier.create({
     data: {
       tenantId,
       name: data.name,
@@ -67,6 +67,7 @@ export async function createSupplier(data: SupplierFormData) {
   })
 
   revalidatePath(`/${tenantId}/suppliers`)
+  return criado
 }
 
 // Atualizar fornecedor

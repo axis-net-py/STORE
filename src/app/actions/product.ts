@@ -7,6 +7,9 @@ import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import type { Product } from '@prisma/client'
 
+// NOTA: existe um segundo ProductFormData em lib/schemas/index.ts, derivado do
+// ProductSchema com z.input. Os dois descreveram sempre a mesma coisa e podem
+// divergir — candidato a unificação, fora do âmbito desta fase.
 export type ProductFormData = {
   sku: string
   name: string
@@ -19,6 +22,7 @@ export type ProductFormData = {
   tags?: string
   isService?: boolean
   currency?: 'PYG' | 'USD' | 'BRL'
+  taxType?: 'IVA_10' | 'IVA_5' | 'EXENTO'
 }
 
 // Listar produtos do tenant
@@ -73,7 +77,7 @@ export async function getProductById(id: string): Promise<any | null> {
 export async function createProduct(data: ProductFormData) {
   const { tenantId } = await requirePermission('products:write')
 
-  await prisma.product.create({
+  const criado = await prisma.product.create({
     data: {
       tenantId,
       sku: data.sku,
@@ -87,10 +91,12 @@ export async function createProduct(data: ProductFormData) {
       isActive: data.isActive ?? true,
       tags: data.tags,
       isService: data.isService ?? false,
+      taxType: data.taxType ?? 'IVA_10',
     },
   })
 
   revalidatePath(`/${tenantId}/products`)
+  return criado
 }
 
 // Atualizar produto

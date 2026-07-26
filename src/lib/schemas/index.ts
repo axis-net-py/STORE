@@ -39,6 +39,9 @@ export const ProductSchema = z.object({
   tags: z.string().max(500).optional(),
   isService: z.boolean().default(false),
   currency: z.enum(['PYG', 'USD', 'BRL']).default('PYG'),
+  // Existe no model desde sempre e faltava aqui: sem isto, criar um produto
+  // por esta via perdia a taxa de IVA e caía no default do Postgres.
+  taxType: z.enum(['IVA_10', 'IVA_5', 'EXENTO']).default('IVA_10'),
 })
 
 export const SupplierSchema = z.object({

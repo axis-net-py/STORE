@@ -3,6 +3,12 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { Decimal } from "decimal.js";
 import { createPurchaseInvoice, createSalesInvoice } from "@/app/actions/invoice";
+// Princípio P1 (spec Projeto 1 §6.3): toda a escrita da IA passa pelas mesmas
+// server actions que um humano usa. Nenhum prisma.*.create() nesta camada.
+import { createCustomer } from "@/app/actions/customer";
+import { createSupplier, updateSupplier } from "@/app/actions/supplier";
+import { createProduct, updateProduct } from "@/app/actions/product";
+import { createFinanceTransaction } from "@/app/actions/finance";
 // VIOLAÇÃO CONHECIDA da regra de dependência (spec Projeto 1 §2.2): o núcleo não
 // pode importar de um módulo. A resolução é a Fase 5 — as ferramentas da IA
 // passam a ser declaradas pelo manifesto de cada módulo, não fixas no motor.
@@ -41,19 +47,19 @@ async function findOrCreateCustomer(tenantId: string, data: any) {
     });
   }
   if (customer) return { customer, created: false };
-  customer = await prisma.customer.create({
-    data: {
-      tenantId,
-      name: data.name,
-      document: data.document || null,
-      documentType: data.documentType || "RUC",
-      email: data.email || null,
-      phone: data.phone || null,
-      address: data.address || null,
-      city: data.city || null,
-      country: "PY",
-      isActive: true,
-    },
+
+  // Princípio P1 (spec Projeto 1 §6.3): a IA não tem caminho de escrita próprio.
+  // Passa pela mesma server action que um humano usa, herdando validação Zod,
+  // verificação de permissão e revalidação de cache.
+  customer = await createCustomer({
+    name: data.name,
+    document: data.document || undefined,
+    documentType: data.documentType || "RUC",
+    email: data.email || undefined,
+    phone: data.phone || undefined,
+    address: data.address || undefined,
+    city: data.city || undefined,
+    country: "PY",
   });
   return { customer, created: true };
 }
@@ -70,21 +76,18 @@ async function findOrCreateSupplier(tenantId: string, data: any) {
     });
   }
   if (supplier) return { supplier, created: false };
-  supplier = await prisma.supplier.create({
-    data: {
-      tenantId,
-      name: data.name,
-      businessName: data.businessName || data.name,
-      document: data.document || null,
-      documentType: data.documentType || "RUC",
-      email: data.email || null,
-      phone: data.phone || null,
-      address: data.address || null,
-      city: data.city || null,
-      country: "PY",
-      category: "retail",
-      isActive: true,
-    },
+
+  // Princípio P1: escrita através da server action, nunca direta.
+  supplier = await createSupplier({
+    name: data.name,
+    businessName: data.businessName || data.name,
+    document: data.document || undefined,
+    documentType: data.documentType || "RUC",
+    email: data.email || undefined,
+    phone: data.phone || undefined,
+    address: data.address || undefined,
+    city: data.city || undefined,
+    country: "PY",
   });
   return { supplier, created: true };
 }
@@ -586,32 +589,25 @@ Retorne APENAS um objeto JSON puro no seguinte formato, sem formatação markdow
       }
 
       if (!supplier && supplierName) {
-        supplier = await prisma.supplier.create({
-          data: {
-            tenantId,
-            name: supplierName,
-            businessName: extracted.supplier.businessName || supplierName,
-            document: supplierDoc || null,
-            documentType: extracted.supplier.documentType || "RUC",
-            email: extracted.supplier.email || null,
-            phone: extracted.supplier.phone || null,
-            address: extracted.supplier.address || null,
-            city: extracted.supplier.city || null,
-            isActive: true,
-            category: "retail",
-            country: "PY"
-          }
+        // P1: escrita pela server action, com validação e permissão.
+        supplier = await createSupplier({
+          name: supplierName,
+          businessName: extracted.supplier.businessName || supplierName,
+          document: supplierDoc || undefined,
+          documentType: extracted.supplier.documentType || "RUC",
+          email: extracted.supplier.email || undefined,
+          phone: extracted.supplier.phone || undefined,
+          address: extracted.supplier.address || undefined,
+          city: extracted.supplier.city || undefined,
+          country: "PY",
         });
       } else if (supplier && !supplier.email && extracted.supplier?.email) {
-        // Update existing supplier missing email or contact details
-        await prisma.supplier.update({
-          where: { id: supplier.id },
-          data: {
-            email: extracted.supplier.email,
-            phone: supplier.phone || extracted.supplier.phone || null,
-            address: supplier.address || extracted.supplier.address || null,
-            city: supplier.city || extracted.supplier.city || null,
-          }
+        // Completa contactos em falta de um fornecedor já existente.
+        await updateSupplier(supplier.id, {
+          email: extracted.supplier.email,
+          phone: supplier.phone || extracted.supplier.phone || undefined,
+          address: supplier.address || extracted.supplier.address || undefined,
+          city: supplier.city || extracted.supplier.city || undefined,
         });
       }
 
@@ -641,19 +637,17 @@ Retorne APENAS um objeto JSON puro no seguinte formato, sem formatação markdow
         if (!product && item.name) {
           const cleanSku = item.sku || `PROD-${item.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
           const unit = normalizeUnit(item.name, item.unit);
-          product = await prisma.product.create({
-            data: {
-              tenantId,
-              sku: cleanSku,
-              name: item.name,
-              price: new Decimal(unitPrice), // Cost as price (no markup)
-              cost: new Decimal(unitPrice),
-              currency: extracted.currency || "PYG",
-              unit: unit,
-              taxType: item.taxType || "IVA_10",
-              currentStock: new Decimal(0),
-              isActive: true
-            }
+          // P1: criar produto ao registar uma COMPRA é legítimo — está a entrar
+          // mercadoria nova. O custo é o preço pago, sem margem inventada.
+          product = await createProduct({
+            sku: cleanSku,
+            name: item.name,
+            price: unitPrice,
+            cost: unitPrice,
+            currency: extracted.currency || "PYG",
+            unit,
+            taxType: item.taxType || "IVA_10",
+            currentStock: 0,
           });
         }
 
@@ -794,25 +788,27 @@ Se for apenas conversa ou dúvida, retorne:
           if (price > 0) updateData.price = new Decimal(price);
           if (cost > 0) updateData.cost = new Decimal(cost);
           if (Object.keys(updateData).length > 0) {
-            await prisma.product.update({ where: { id: existing.id }, data: updateData });
+            // P1: atualização pela server action.
+            await updateProduct(existing.id, {
+              ...(price > 0 ? { price } : {}),
+              ...(cost > 0 ? { cost } : {}),
+            });
             result.message = `Produto "${existing.name}" já existia — preço/custo atualizados sem duplicar o cadastro.`;
           } else {
             result.message = `Produto "${existing.name}" já está cadastrado (SKU ${existing.sku}). Nenhuma duplicata criada.`;
           }
         } else {
           const sku = result.data.sku || `PROD-${result.data.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
-          await prisma.product.create({
-            data: {
-              tenantId,
-              sku,
-              name: result.data.name,
-              price: new Decimal(price || 0),
-              cost: new Decimal(cost || 0),
-              currency: result.data.currency || "PYG",
-              unit: result.data.unit || "un",
-              currentStock: new Decimal(currentStock || 0),
-              isActive: true
-            }
+          // P1: criação explícita pedida pelo utilizador ("cadastrar produto"),
+          // pela server action.
+          await createProduct({
+            sku,
+            name: result.data.name,
+            price: price || 0,
+            cost: cost || 0,
+            currency: result.data.currency || "PYG",
+            unit: result.data.unit || "un",
+            currentStock: currentStock || 0,
           });
         }
       } else if (result.action === "create_customer") {
@@ -828,33 +824,28 @@ Se for apenas conversa ou dúvida, retorne:
       } else if (result.action === "create_finance_transaction") {
         const amount = Number(result.data.amount || 0);
         const exchangeRate = Number(result.data.exchangeRate || 1);
-        await prisma.transaction.create({
-          data: {
-            tenantId,
-            type: result.data.type || "PAYABLE",
-            entityId: result.data.entityId || "Geral",
-            currency: result.data.currency || "PYG",
-            amount: new Decimal(amount),
-            exchangeRate: new Decimal(exchangeRate),
-            totalPyg: new Decimal(result.data.currency === "PYG" ? amount : amount * exchangeRate),
-            category: result.data.category || "Outros"
-          }
+        // P1: pela server action, que valida, calcula o total em guaranis e
+        // regista auditoria. Devolve {success,error} em vez de lançar.
+        const rFin = await createFinanceTransaction({
+          type: result.data.type || "PAYABLE",
+          entityId: result.data.entityId || "Geral",
+          category: result.data.category || "Outros",
+          currency: result.data.currency || "PYG",
+          amount,
+          exchangeRate,
         });
+        if (!rFin.success) throw new Error(rFin.error || "Falha ao registar a transação financeira.");
       } else if (result.action === "create_purchase_invoice") {
         const supplierName = result.data.supplierName;
         let supplier = await prisma.supplier.findFirst({
           where: { tenantId, name: { equals: supplierName, mode: "insensitive" } }
         });
         if (!supplier) {
-          supplier = await prisma.supplier.create({
-            data: {
-              tenantId,
-              name: supplierName,
-              businessName: supplierName,
-              isActive: true,
-              category: "retail",
-              country: "PY"
-            }
+          // P1: pela server action.
+          supplier = await createSupplier({
+            name: supplierName,
+            businessName: supplierName,
+            country: "PY",
           });
         }
 
@@ -870,20 +861,17 @@ Se for apenas conversa ou dúvida, retorne:
 
           if (!product) {
             const cleanSku = item.sku || `PROD-${item.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
-            const unit = normalizeUnit(item.name, item.unit);
-            product = await prisma.product.create({
-              data: {
-                tenantId,
-                sku: cleanSku,
-                name: item.name,
-                price: new Decimal(unitPrice), // Cost as price (no markup)
-                cost: new Decimal(unitPrice),
-                currency: result.data.currency || "PYG",
-                unit: unit,
-                taxType: item.taxType || "IVA_10",
-                currentStock: new Decimal(0),
-                isActive: true
-              }
+            // P1: compra de mercadoria nova — criação legítima, pela action.
+            // Custo = preço pago, sem margem inventada.
+            product = await createProduct({
+              sku: cleanSku,
+              name: item.name,
+              price: unitPrice,
+              cost: unitPrice,
+              currency: result.data.currency || "PYG",
+              unit: normalizeUnit(item.name, item.unit),
+              taxType: item.taxType || "IVA_10",
+              currentStock: 0,
             });
           }
 
@@ -966,14 +954,11 @@ Se for apenas conversa ou dúvida, retorne:
           where: { tenantId, name: { equals: customerName, mode: "insensitive" } }
         });
         if (!customer) {
-          customer = await prisma.customer.create({
-            data: {
-              tenantId,
-              name: customerName,
-              isActive: true,
-              category: "retail",
-              country: "PY"
-            }
+          // P1: pela server action. Criar o cliente de uma venda é aceitável —
+          // ao contrário de criar o produto, que foi o incidente de 2026-07-25.
+          customer = await createCustomer({
+            name: customerName,
+            country: "PY",
           });
         }
 
@@ -1048,19 +1033,32 @@ Se for apenas conversa ou dúvida, retorne:
           const qty = parseExtractedNumber(item.quantity, false) || 1;
           let unitPrice = parseExtractedNumber(item.unitPrice, true);
           if (!product && item.name) {
+            // P3: num pedido de VENDA, produto inexistente é obstáculo a
+            // comunicar, não a remover — mesma regra da fatura de venda.
+            if (isSales) {
+              const termo = item.name.trim().split(/\s+/)[0];
+              const parecidos = await prisma.product.findMany({
+                where: { tenantId, isActive: true, name: { contains: termo, mode: "insensitive" } },
+                select: { name: true, sku: true },
+                take: 5,
+              });
+              const sugestao = parecidos.length
+                ? ` Produtos parecidos: ${parecidos.map((p) => `"${p.name}" (${p.sku})`).join("; ")}.`
+                : "";
+              throw new Error(
+                `Produto não encontrado: "${item.name}".${sugestao} Nenhum produto foi criado e o pedido não foi registrado.`
+              );
+            }
+            // Pedido de COMPRA: mercadoria nova, criação legítima pela action.
             const cleanSku = `PROD-${item.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
-            product = await prisma.product.create({
-              data: {
-                tenantId,
-                sku: cleanSku,
-                name: item.name,
-                price: new Decimal(unitPrice || 0),
-                cost: new Decimal(unitPrice || 0),
-                currency: "PYG",
-                unit: normalizeUnit(item.name, item.unit),
-                currentStock: new Decimal(0),
-                isActive: true
-              }
+            product = await createProduct({
+              sku: cleanSku,
+              name: item.name,
+              price: unitPrice || 0,
+              cost: unitPrice || 0,
+              currency: "PYG",
+              unit: normalizeUnit(item.name, item.unit),
+              currentStock: 0,
             });
           }
           if (!product) continue;

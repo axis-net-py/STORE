@@ -35,7 +35,10 @@ export async function createFinanceTransaction(data: FinanceTransactionInput) {
         amount: data.amount,
         exchangeRate: data.exchangeRate,
         totalPyg: totalPyg,
-        // category: data.category, // Assuming category mapping or adding to schema if needed
+        // O schema exige category e o model tem a coluna, mas isto estava
+        // comentado: a categoria era validada e depois descartada, gravando
+        // sempre null. Corrigido na Fase 5 do Projeto 1.
+        category: data.category,
       },
     });
 

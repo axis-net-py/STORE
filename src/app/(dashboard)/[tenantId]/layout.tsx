@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { DashboardShell } from "@/components/DashboardShell";
 import { AIAssistant } from "@/components/AIAssistant";
 import { verificarCoerencia } from "@/lib/tenant-context";
+import { CertificadoBanner } from "@/components/CertificadoBanner";
 
 export default async function DashboardLayout({
   children,
@@ -64,7 +65,10 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <DashboardShell tenantId={tenantId} modules={modules}>{children}</DashboardShell>
+      <DashboardShell tenantId={tenantId} modules={modules}>
+        <CertificadoBanner tenantId={tenantId} />
+        {children}
+      </DashboardShell>
       <AIAssistant tenantId={tenantId} />
     </>
   );

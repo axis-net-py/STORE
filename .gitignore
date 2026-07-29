@@ -48,3 +48,6 @@ drizzle/
 
 .vercel
 .tmp.driveupload/
+
+# Clientes Prisma gerados — recriados pelo postinstall.
+/src/generated/

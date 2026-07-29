@@ -8,7 +8,8 @@
     "start": "next start",
     "vercel-build": "next build",
     "test": "node --test \"src/**/*.test.ts\"",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && prisma generate --schema prisma/control/schema.prisma",
+    "migrate:control": "prisma migrate deploy --schema prisma/control/schema.prisma"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",

@@ -1,0 +1,99 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// Control plane — registo de clientes (spec Projeto 2, §3.1)
+//
+// Vive num projeto Neon PRÓPRIO, separado das bases dos clientes. Guarda as
+// strings de ligação de todos: se vivesse dentro da base de um cliente,
+// comprometer esse cliente exporia todos os outros.
+//
+// NUNCA guarda dados de negócio. Só o que é preciso para encontrar e servir
+// cada cliente.
+// ═══════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/control"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CONTROL_PLANE_DATABASE_URL")
+}
+
+enum TenantStatus {
+  /// A ser criado. Se ficar aqui, o provisionamento falhou a meio.
+  PROVISIONING
+  ACTIVE
+  /// Falta de pagamento. Os dados ficam INTACTOS — nunca se apaga (§7.5).
+  SUSPENDED
+  /// Provisionamento falhou. Requer inspeção manual; nunca limpeza automática.
+  FAILED
+  /// Uma migração falhou nesta base. O middleware mostra manutenção (§7.1).
+  MIGRATION_FAILED
+}
+
+/// Onde vivem os dados de um cliente.
+enum TenantHosting {
+  /// Base partilhada, isolamento por tenantId. O arranque de qualquer cliente.
+  SHARED
+  /// Projeto Neon dedicado.
+  DEDICATED
+}
+
+model TenantRegistry {
+  id String @id @default(cuid())
+
+  /// Subdomínio: `smartbuy` → smartbuy.axisstore.com. Espelha Tenant.slug.
+  slug String @unique
+  name String
+
+  /// Id do tenant na base onde os dados vivem. Com hospedagem partilhada é o
+  /// discriminador de todas as queries; com dedicada, continua a existir —
+  /// é o seguro que permite consolidar clientes sem reescrever o ERP (D5).
+  tenantId String
+
+  hosting TenantHosting @default(SHARED)
+  status  TenantStatus  @default(PROVISIONING)
+
+  /// Projeto Neon do cliente, quando a hospedagem é dedicada.
+  /// Gravado ANTES de qualquer passo que possa falhar: sem isto, uma
+  /// reexecução criaria um segundo projeto e deixaria o primeiro órfão (§5.2).
+  neonProjectId String?
+
+  /// String de ligação, cifrada com AES-256-GCM (chave CONNECTION_SECRET_KEY).
+  /// Nula com hospedagem partilhada: nesse caso usa-se a ligação do ambiente.
+  connectionCipher String?
+  connectionIv     String?
+  connectionTag    String?
+
+  /// Vertical comercial: store, farm, clinic, food.
+  vertical String @default("store")
+  /// Módulos contratados. Informação comercial — por isso vive aqui.
+  modules  String[] @default(["store"])
+
+  /// Última migração aplicada nesta base. Permite ver quem está atrasado.
+  schemaVersion String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventos ProvisioningEvent[]
+
+  @@index([status])
+  @@index([hosting])
+}
+
+/// Registo do que aconteceu a cada cliente. O provisionamento cria recursos
+/// fora da nossa base (projetos Neon) e essa história tem de ficar escrita.
+model ProvisioningEvent {
+  id       String         @id @default(cuid())
+  tenantId String
+  tenant   TenantRegistry @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  step    String
+  ok      Boolean
+  detalhe Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+}

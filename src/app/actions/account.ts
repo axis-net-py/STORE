@@ -3,13 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { compare, hash } from 'bcryptjs'
-import { z } from 'zod'
-
-const PasswordSchema = z
-  .string()
-  .min(8, 'A nova senha deve ter no mínimo 8 caracteres')
-  .regex(/[a-zA-Z]/, 'A nova senha deve conter letras')
-  .regex(/[0-9]/, 'A nova senha deve conter números')
+import { PasswordSchema } from '@/lib/schemas'
 
 export async function changePassword(currentPassword: string, newPassword: string) {
   const session = await auth()
@@ -25,6 +19,15 @@ export async function changePassword(currentPassword: string, newPassword: strin
     select: { password: true },
   })
   if (!user) throw new Error('Usuário não encontrado')
+
+  // Utilizador recém-provisionado ainda não definiu password: não há "senha
+  // atual" para confirmar, e este não é o caminho certo. Ele usa o link de
+  // configuração de uso único (spec Projeto 2, §5.3).
+  if (!user.password) {
+    throw new Error(
+      'Esta conta ainda não tem senha definida. Use o link de configuração que recebeu para criar a sua.'
+    )
+  }
 
   const valid = await compare(currentPassword, user.password)
   if (!valid) throw new Error('Senha atual incorreta')

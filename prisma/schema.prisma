@@ -180,10 +180,14 @@ model FiscalCredential {
 // ─── User ───────────────────────────────────────────────────
 
 model User {
-  id                 String    @id @default(cuid())
-  email              String    @unique
-  name               String
-  password           String
+  id    String @id @default(cuid())
+  email String @unique
+  name  String
+  /// Opcional de propósito: um utilizador recém-provisionado NÃO tem password.
+  /// Define-a ele próprio através de um PasswordSetupToken de uso único, para
+  /// que o fornecedor do sistema nunca conheça credenciais de clientes
+  /// (spec Projeto 2, §5.3).
+  password           String?
   role               Role      @default(OPERATOR)
   tenantId           String
   tenant             Tenant    @relation(fields: [tenantId], references: [id])
@@ -191,7 +195,29 @@ model User {
   mustChangePassword Boolean   @default(false)
   createdAt          DateTime  @default(now())
 
+  setupTokens PasswordSetupToken[]
+
   @@index([tenantId])
+}
+
+/// Token de uso único para o utilizador definir a sua primeira password.
+///
+/// Guarda-se apenas o HASH: quem ler a base de dados não consegue usar o
+/// token. O valor em claro existe uma só vez, no momento em que é gerado, e
+/// segue para o cliente pelo canal que já se usa com ele.
+model PasswordSetupToken {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 do token. Único, para o poder procurar sem varrer a tabela.
+  tokenHash String   @unique
+  expiresAt DateTime
+  /// Preenchido ao ser usado. Um token usado nunca volta a servir.
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ─── Customer ───────────────────────────────────────────────

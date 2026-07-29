@@ -1,5 +1,16 @@
 import { z } from 'zod'
 
+/**
+ * Força mínima de password. Vive aqui, e não dentro de uma action, porque é
+ * usada em dois sítios: mudar a senha e definir a primeira pelo link de
+ * configuração. Duplicá-la deixaria os dois caminhos divergirem.
+ */
+export const PasswordSchema = z
+  .string()
+  .min(8, 'A senha deve ter no mínimo 8 caracteres')
+  .regex(/[a-zA-Z]/, 'A senha deve conter letras')
+  .regex(/[0-9]/, 'A senha deve conter números')
+
 const optionalEmail = z
   .string()
   .email('E-mail inválido')

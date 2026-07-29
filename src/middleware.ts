@@ -30,6 +30,8 @@ export function middleware(request: NextRequest) {
   // Rotas públicas
   if (
     pathname.startsWith("/login") ||
+    // Definição da primeira password: quem chega aqui ainda não tem sessão.
+    pathname.startsWith("/setup") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/portal") ||
     pathname.includes(".") // ficheiros estáticos

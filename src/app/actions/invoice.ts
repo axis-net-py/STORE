@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
 import { ensureDefaultWarehouse, bumpWarehouseStock } from '@/lib/warehouse'
 import { assertPeriodOpen } from '@/lib/accounting-period'
+import { prefixoFiscal, proximoNumero } from '@/lib/numeracao-fiscal'
 import { calculateTax } from '@/lib/tax'
 import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
@@ -261,7 +262,9 @@ export async function createSalesInvoice(data: InvoiceFormData) {
   validateInvoiceData(data)
   await assertPeriodOpen(prisma, tenantId, data.issuedAt ?? new Date())
 
-  const result = await prisma.$transaction(async (tx: any) => {
+  // Se duas faturas forem emitidas no mesmo instante, uma delas colide no
+  // índice único do número de documento e é repetida com o número seguinte.
+  const result = await comRetryDeNumeracao(() => prisma.$transaction(async (tx: any) => {
     // 1. Validar estoque para todos os itens antes de qualquer operação
     for (const item of data.items) {
       const product = await tx.product.findFirst({
@@ -391,7 +394,7 @@ export async function createSalesInvoice(data: InvoiceFormData) {
     await postInvoiceToLedger(invoice.id, tx)
 
     return invoice
-  })
+  }))
 
   // 6. Integração SIFEN (Real-time, non-blocking)
   // Executado fora da transação para não travar o banco em caso de timeout do Sifen
@@ -582,30 +585,74 @@ export async function fetchExchangeRatesAction(tenantId: string) {
 }
 
 // Obter próximo número sequencial de fatura de venda (001-001-0000001)
+/**
+ * Próximo número de fatura de venda, no formato SIFEN EEE-PPP-NNNNNNN.
+ *
+ * O estabelecimento e o ponto de emissão vêm do cadastro do cliente, e não
+ * fixos em "001-001": um cliente com uma segunda loja emite documentos com
+ * outro estabelecimento, e numerá-los todos como 001 seria irregular perante
+ * a SET.
+ *
+ * ATENÇÃO: isto lê o último e soma um. Com o isolamento Read Committed do
+ * Postgres, duas emissões simultâneas leem o MESMO valor. Quem garante a
+ * unicidade é o índice único parcial criado por SQL (ver schema.prisma) — a
+ * segunda transação falha e é repetida por quem chama. Não confiar nesta
+ * função sozinha para garantir sequência.
+ */
 export async function getNextSalesInvoiceNumber(tenantId: string, tx?: any) {
   const db = tx || prisma
+
+  const tenant = await db.tenant.findUnique({
+    where: { id: tenantId },
+    select: { establishment: true, emissionPoint: true },
+  })
+  const prefixo = prefixoFiscal(tenant?.establishment, tenant?.emissionPoint)
+
   const lastInvoice = await db.commercialInvoice.findFirst({
-    where: { 
-      tenantId, 
+    where: {
+      tenantId,
       type: 'SALES',
-      documentNumber: { startsWith: '001-001-' }
+      documentNumber: { startsWith: prefixo },
     },
     // Ordenar pelo próprio número (zero-padded) evita pular/duplicar sequência quando createdAt empata
-    orderBy: { documentNumber: 'desc' }
+    orderBy: { documentNumber: 'desc' },
   })
 
-  if (!lastInvoice || !lastInvoice.documentNumber) {
-    return '001-001-0000001'
-  }
+  // A regra de sequência vive em lib/numeracao-fiscal.ts, testada à parte.
+  return proximoNumero(prefixo, lastInvoice?.documentNumber)
+}
 
-  const parts = lastInvoice.documentNumber.split('-')
-  if (parts.length === 3) {
-    const nextNum = parseInt(parts[2], 10) + 1
-    const paddedNum = String(nextNum).padStart(7, '0')
-    return `${parts[0]}-${parts[1]}-${paddedNum}`
-  }
+/** Colisão do índice único do número de documento. */
+function ehNumeroDuplicado(e: any): boolean {
+  return (
+    e?.code === 'P2002' ||
+    /duplicate key|unique constraint/i.test(String(e?.message ?? ''))
+  )
+}
 
-  return '001-001-0000001'
+/**
+ * Repete a operação quando duas emissões simultâneas disputam o mesmo número.
+ *
+ * A alternativa seria serializar todas as emissões do cliente, o que tornaria
+ * o balcão lento nas horas de ponta. Repetir é raro e barato: só acontece
+ * quando duas faturas são emitidas no mesmo instante.
+ */
+async function comRetryDeNumeracao<T>(fn: () => Promise<T>, tentativas = 5): Promise<T> {
+  let ultimo: any
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      if (!ehNumeroDuplicado(e)) throw e
+      ultimo = e
+      // Espera curta e crescente, para as concorrentes não voltarem a colidir.
+      await new Promise((r) => setTimeout(r, 25 * (i + 1)))
+    }
+  }
+  throw new Error(
+    'Não foi possível obter um número de fatura livre. Tente novamente. ' +
+      `(${ultimo?.message ?? 'colisão de numeração'})`
+  )
 }
 
 // Atualizar Fatura (Compra/Venda) com recálculo de estoque e ledger

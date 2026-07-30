@@ -347,6 +347,11 @@ model CommercialInvoice {
   @@index([tenantId])
   @@index([customerId])
   @@index([supplierId])
+  /// NOTA: existe um índice ÚNICO PARCIAL criado por SQL na migração
+  /// …_unique_sales_document_number, sobre (tenantId, documentNumber) apenas
+  /// quando type = 'SALES'. O Prisma não exprime índices parciais, por isso
+  /// não aparece aqui — mas é ele que impede duas faturas de venda com o
+  /// mesmo número, o que a SET rejeita. Não remover.
 }
 
 // ─── Invoice Item ───────────────────────────────────────────

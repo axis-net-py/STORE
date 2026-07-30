@@ -7,6 +7,12 @@ import { isRateLimited, recordFailedAttempt, clearAttempts } from "@/lib/rate-li
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
+    // 12 horas: cobre um dia de trabalho longo sem obrigar a reautenticar a
+    // meio do turno. O valor por omissão do NextAuth são 30 DIAS, o que num
+    // sistema com dados fiscais e financeiros é tempo a mais para uma sessão
+    // esquecida num computador partilhado.
+    maxAge: 12 * 60 * 60,
+    updateAge: 60 * 60,
   },
   pages: {
     signIn: "/login",
@@ -23,13 +29,19 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const rateKey = `login:${credentials.email.toLowerCase()}`;
+        // O email é normalizado antes de qualquer coisa. A coluna é única e
+        // sensível a maiúsculas no Postgres: sem isto, quem fosse provisionado
+        // como "admin@x.com" não entrava ao escrever "Admin@X.com", e podiam
+        // coexistir duas contas distintas que só diferem na capitalização.
+        const email = credentials.email.trim().toLowerCase();
+
+        const rateKey = `login:${email}`;
         if (isRateLimited(rateKey)) {
           throw new Error("Muitas tentativas de login. Aguarde 15 minutos e tente novamente.");
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
           include: { tenant: { select: { name: true } } },
         });
 

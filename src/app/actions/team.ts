@@ -168,15 +168,20 @@ export async function createUserAction(data: { name: string; email: string; role
   const tempPassword = `Cx-${randomBytes(9).toString("base64url")}`;
   const hashedPassword = await hash(tempPassword, 10);
 
+  // Normalizado antes da verificação de duplicado E da criação: a coluna é
+  // sensível a maiúsculas, e sem isto "Ana@x.com" passaria a verificação e
+  // criaria uma segunda conta ao lado de "ana@x.com".
+  const email = data.email.trim().toLowerCase();
+
   const existingUser = await prisma.user.findUnique({
-    where: { email: data.email },
+    where: { email },
   });
   if (existingUser) throw new Error("E-mail já cadastrado");
 
   const newUser = await prisma.user.create({
     data: {
       name: data.name,
-      email: data.email,
+      email,
       password: hashedPassword,
       role: data.role,
       tenantId,

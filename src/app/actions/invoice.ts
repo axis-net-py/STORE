@@ -100,7 +100,10 @@ async function assertContraparteDoTenant(
  * A partir do momento em que existe CDC, ou um estado de envio, o documento
  * deixa de ser um registo interno e passa a ser uma declaração à autoridade.
  */
-export function ehDocumentoFiscalReal(inv: {
+// NÃO exportar: este ficheiro é 'use server', e o Next.js exige que todos os
+// exports de um módulo de server actions sejam funções assíncronas. Um
+// predicado síncrono exportado faz o build falhar.
+function ehDocumentoFiscalReal(inv: {
   sifenCdc?: string | null
   sifenStatus?: string | null
 }): boolean {

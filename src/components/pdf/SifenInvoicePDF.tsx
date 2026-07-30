@@ -364,7 +364,7 @@ export function SifenInvoicePDF({
         {invoice.sifenCdc && (
           <View style={styles.sifenSection}>
             <Text style={styles.cdcLabel}>
-              CDC (Código de Controle - SIFEN)
+              {t('CDC (Código de Controle - SIFEN)', 'CDC (Código de Control - SIFEN)')}
             </Text>
             <Text style={styles.cdcValue}>{invoice.sifenCdc}</Text>
 
@@ -407,7 +407,7 @@ export function SifenInvoicePDF({
             <Text style={styles.colPrice}>
               {t('Preço Un.', 'Precio Un.')}
             </Text>
-            <Text style={styles.colTotal}>Total</Text>
+            <Text style={styles.colTotal}>{t('Total', 'Total')}</Text>
           </View>
 
           {/* Items */}

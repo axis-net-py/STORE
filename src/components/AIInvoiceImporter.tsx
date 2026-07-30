@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -13,6 +14,7 @@ import { Loader2, Sparkles, FileText, CheckCircle2, AlertCircle } from "lucide-r
 
 export function AIInvoiceImporter() {
   const router = useRouter();
+  const t = useTranslations("ai");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
@@ -128,7 +130,7 @@ export function AIInvoiceImporter() {
         className="bg-blue-600 hover:bg-blue-700 text-white min-h-[44px] md:h-[32px] px-6 md:px-4 text-[14px] md:text-[13px] flex items-center justify-center font-bold shadow-md cursor-pointer rounded-lg gap-2 active:scale-98 transition-all"
       >
         <Sparkles className="w-4 h-4 text-blue-200 animate-pulse shrink-0" />
-        Importar Fatura com IA
+        {t("importTrigger")}
       </button>
 
       {/* Loading & Status Dialog */}
@@ -141,19 +143,19 @@ export function AIInvoiceImporter() {
               {status === "processing" && (
                 <>
                   <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                  Processando Fatura
+                  {t("importProcessing")}
                 </>
               )}
               {status === "success" && (
                 <>
                   <CheckCircle2 className="w-5 h-5 text-blue-500 animate-bounce" />
-                  Importação Concluída
+                  {t("importDone")}
                 </>
               )}
               {status === "error" && (
                 <>
                   <AlertCircle className="w-5 h-5 text-destructive" />
-                  Falha no Processamento
+                  {t("importFailed")}
                 </>
               )}
             </DialogTitle>

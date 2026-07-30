@@ -18,6 +18,12 @@ import { registerPayment } from "@/app/actions/payments";
 import { adjustStock } from "@/app/actions/inventory";
 import { transferStock } from "@/app/actions/warehouse";
 import { requirePermission } from "@/lib/authz";
+import {
+  resolveLocale,
+  localeLanguageName,
+  serverMessages,
+  type AppLocale,
+} from "@/lib/i18n/server-messages";
 
 // RBAC: permissão exigida para cada ação executável pela IA
 const actionPermissions: Record<string, string> = {
@@ -248,7 +254,8 @@ function parseLatamNumber(s: string): number {
 }
 
 // Local NLP Fallback Engine for Core ERP
-function localNlpProcessor(text: string) {
+function localNlpProcessor(text: string, locale: AppLocale = "pt-BR") {
+  const m = serverMessages(locale);
   const cleanText = text.toLowerCase().trim();
 
   // 0.01 QUERY STOCK — "quanto tem de estoque de X", "estoque baixo"
@@ -287,7 +294,7 @@ function localNlpProcessor(text: string) {
           fromWarehouse: whMatch[1].trim(),
           toWarehouse: whMatch[2].trim().replace(/\.$/, ""),
         },
-        message: "Transferência de estoque processada.",
+        message: m.stockTransferred,
       };
     }
   }
@@ -306,7 +313,7 @@ function localNlpProcessor(text: string) {
           quantity: parseLatamNumber(qtyMatch[1]),
           reason: "Ajuste via IA (offline)",
         },
-        message: "Ajuste de estoque processado.",
+        message: m.stockAdjusted,
       };
     }
   }
@@ -327,7 +334,7 @@ function localNlpProcessor(text: string) {
           invoiceNumber: invMatch ? invMatch[1] : undefined,
           method: "CASH",
         },
-        message: "Baixa processada.",
+        message: m.paymentRegistered,
       };
     }
   }
@@ -352,7 +359,7 @@ function localNlpProcessor(text: string) {
             },
           ],
         },
-        message: "Pedido processado.",
+        message: m.orderProcessed,
       };
     }
   }
@@ -385,7 +392,7 @@ function localNlpProcessor(text: string) {
         unit: "un",
         currentStock: 0,
       },
-      message: `Produto "${name || "Produto IA"}" com preço ${price} e custo ${cost} identificado e cadastrado com sucesso!`
+      message: m.productCreated(name || m.defaultProductName, price, cost)
     };
   }
 
@@ -402,7 +409,7 @@ function localNlpProcessor(text: string) {
         documentType: "RUC",
         isActive: true,
       },
-      message: `Cliente "${name || "Cliente IA"}" cadastrado com sucesso!`
+      message: m.customerCreated(name || m.defaultCustomerName)
     };
   }
 
@@ -419,7 +426,7 @@ function localNlpProcessor(text: string) {
         documentType: "RUC",
         isActive: true,
       },
-      message: `Fornecedor "${name || "Fornecedor IA"}" cadastrado com sucesso!`
+      message: m.supplierCreated(name || m.defaultSupplierName)
     };
   }
 
@@ -445,21 +452,27 @@ function localNlpProcessor(text: string) {
         exchangeRate: 1,
         category,
       },
-      message: `Transação de ${type === "RECEIVABLE" ? "receita" : "despesa"} no valor de ${amount} registrada com sucesso!`
+      message: m.transactionCreated(type, amount)
     };
   }
 
   // default response
   return {
     action: "chat",
-    message: `Olá! Eu entendi: "${text}". Posso ajudar você a gerenciar produtos, clientes, fornecedores, transações financeiras e faturas. Diga comandos como "cadastrar produto Mouse com preço 50000 e custo 30000".`
+    message: m.fallbackChat(text)
   };
 }
 
 export async function POST(req: NextRequest) {
+  // Idioma ativo do usuário (cookie definido pelo language-provider): a IA e as
+  // mensagens de erro devem sempre usar o mesmo idioma que a interface exibe.
+  const locale = resolveLocale(req.cookies.get("NEXT_LOCALE")?.value);
+  const langName = localeLanguageName(locale);
+  const m = serverMessages(locale);
+
   const session = await auth();
   if (!session?.user?.tenantId) {
-    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    return NextResponse.json({ error: m.notAuthenticated }, { status: 401 });
   }
   const tenantId = session.user.tenantId;
   const userId = session.user.id as string;
@@ -478,7 +491,7 @@ export async function POST(req: NextRequest) {
       await requirePermission("invoices:write");
       if (!apiKey) {
         return NextResponse.json(
-          { error: "A leitura de faturas por foto/PDF exige a chave GEMINI_API_KEY configurada no servidor. Comandos de texto continuam funcionando." },
+          { error: m.missingApiKey },
           { status: 400 }
         );
       }
@@ -569,7 +582,7 @@ Retorne APENAS um objeto JSON puro no seguinte formato, sem formatação markdow
 
       if (!extracted) {
         return NextResponse.json(
-          { error: "Não foi possível analisar ou extrair os dados estruturados da fatura usando a IA do Gemini." },
+          { error: m.invoiceParseFailed },
           { status: 500 }
         );
       }
@@ -704,7 +717,12 @@ Retorne APENAS um objeto JSON puro no seguinte formato, sem formatação markdow
       return NextResponse.json({
         action: "create_purchase_invoice",
         invoiceId: createdInvoice.id,
-        message: `Fatura de compra #${extracted.documentNumber || createdInvoice.id.slice(-6)} do fornecedor "${supplier.name}" (${extracted.paymentMethod === "A_PRAZO" ? "A Prazo" : "À Vista"}) importada com sucesso via IA! Foram cadastrados/associados ${resolvedItems.length} produtos sem duplicidades.`
+        message: m.invoiceImported(
+          extracted.documentNumber || createdInvoice.id.slice(-6),
+          supplier.name,
+          extracted.paymentMethod === "A_PRAZO",
+          resolvedItems.length
+        )
       });
     }
 
@@ -722,7 +740,9 @@ Retorne APENAS um objeto JSON puro no seguinte formato, sem formatação markdow
         result = { action: v.intencao.action, data: v.intencao.data, message: "" };
       }
 
-      const prompt = `Analise a intenção do usuário: "${text}".
+      const prompt = `IDIOMA DA RESPOSTA: escreva TODO o campo "message" em ${langName}. Toda comunicação com o usuário (mensagens de sucesso e respostas de conversa) deve estar nesse idioma, independentemente do idioma em que o usuário digitou.
+
+Analise a intenção do usuário: "${text}".
 Temos as seguintes ações possíveis no ERP comercial:
 1. "create_product" (Produto): campos { name: string, sku?: string, price: number, cost: number, currency: "PYG"|"USD"|"BRL", unit?: string, currentStock?: number }
 2. "create_customer" (Cliente): campos { name: string, document?: string, documentType?: "RUC"|"CI"|"CPF"|"CNPJ", email?: string, phone?: string, address?: string, city?: string }
@@ -753,12 +773,12 @@ Se a intenção do usuário corresponder a um cadastro, retorne um objeto JSON p
 {
   "action": "nome_da_acao",
   "data": { ...campos mapeados... },
-  "message": "Mensagem amigável de sucesso em português explicando o que foi feito"
+  "message": "Mensagem amigável de sucesso em ${langName} explicando o que foi feito"
 }
 Se for apenas conversa ou dúvida, retorne:
 {
   "action": "chat",
-  "message": "Sua resposta amigável sobre o sistema AXIS STORE"
+  "message": "Sua resposta amigável sobre o sistema AXIS STORE, escrita em ${langName}"
 }`;
 
       if (!result && process.env.GEMINI_API_KEY) {
@@ -775,7 +795,7 @@ Se for apenas conversa ou dúvida, retorne:
 
       // Fallback NLP processor if Gemini fails or is not working/responding
       if (!result) {
-        result = localNlpProcessor(text);
+        result = localNlpProcessor(text, locale);
       }
 
       // RBAC: valida a permissão do usuário antes de executar qualquer ação
@@ -1272,7 +1292,7 @@ Se for apenas conversa ou dúvida, retorne:
       });
     }
 
-    return NextResponse.json({ error: "Prompt vazio" }, { status: 400 });
+    return NextResponse.json({ error: m.emptyPrompt }, { status: 400 });
   } catch (err: any) {
     console.error("AI Route error:", err);
     return NextResponse.json({ error: err.message || "Erro no processamento da IA" }, { status: 500 });

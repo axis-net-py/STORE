@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import {
   Cloud,
@@ -26,6 +27,7 @@ interface WeatherData {
 }
 
 export function WeatherCard() {
+  const t = useTranslations("weather");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -175,7 +177,7 @@ export function WeatherCard() {
     return (
       <div className="border border-border rounded-xl p-6 bg-card flex items-center justify-center h-[180px]">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        <span className="ml-2 text-sm text-muted-foreground font-medium">Buscando dados climáticos (GPS)...</span>
+        <span className="ml-2 text-sm text-muted-foreground font-medium">{t("loading")}</span>
       </div>
     );
   }
@@ -184,7 +186,7 @@ export function WeatherCard() {
     return (
       <div className="border border-border rounded-xl p-6 bg-card flex items-center justify-center h-[180px]">
         <AlertTriangle className="w-6 h-6 text-rose-500 mr-2" />
-        <span className="text-sm text-rose-500 font-medium">Não foi possível carregar a previsão.</span>
+        <span className="text-sm text-rose-500 font-medium">{t("error")}</span>
       </div>
     );
   }
@@ -220,17 +222,17 @@ export function WeatherCard() {
         <div className="grid grid-cols-3 gap-4 md:border-r border-border/50 md:pr-4">
           <div className="flex flex-col items-center justify-center text-center">
             <Droplets className="w-5 h-5 text-sky-600 dark:text-sky-400 mb-1" />
-            <span className="text-[10px] uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-widest">Umidade</span>
+            <span className="text-[10px] uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-widest">{t("humidity")}</span>
             <span className="text-sm font-extrabold text-slate-900 dark:text-slate-50 mt-0.5">{weather.humidity}%</span>
           </div>
           <div className="flex flex-col items-center justify-center text-center">
             <Wind className="w-5 h-5 text-teal-600 dark:text-teal-400 mb-1" />
-            <span className="text-[10px] uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-widest">Ventos</span>
+            <span className="text-[10px] uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-widest">{t("wind")}</span>
             <span className="text-sm font-extrabold text-slate-900 dark:text-slate-50 mt-0.5">{weather.windSpeed.toFixed(0)} km/h</span>
           </div>
           <div className="flex flex-col items-center justify-center text-center">
             <CloudRain className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mb-1" />
-            <span className="text-[10px] uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-widest">Chuva</span>
+            <span className="text-[10px] uppercase font-extrabold text-slate-500 dark:text-slate-400 tracking-widest">{t("rain")}</span>
             <span className="text-sm font-extrabold text-slate-900 dark:text-slate-50 mt-0.5">{weather.precipitation.toFixed(1)} mm</span>
           </div>
         </div>

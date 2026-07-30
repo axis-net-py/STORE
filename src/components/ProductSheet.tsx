@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,8 @@ export function ProductSheet({
   product?: Product;
   onSuccess?: () => void;
 }) {
+  const t = useTranslations("products");
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const isEdit = !!product;
@@ -42,19 +45,19 @@ export function ProductSheet({
 
   async function handleDelete() {
     if (!product) return;
-    const confirmDelete = window.confirm("Tem certeza que deseja excluir este produto? Se ele já tiver faturas ou movimentações de estoque, será arquivado em vez de apagado (o histórico fiscal é preservado).");
+    const confirmDelete = window.confirm(t("confirmDelete"));
     if (!confirmDelete) return;
 
     setLoading(true);
     try {
       const res = await deleteProduct(product.id);
       if (res?.archived) {
-        alert("Produto arquivado: ele tem faturas ou movimentações vinculadas, então o cadastro foi desativado para preservar o histórico fiscal.");
+        alert(t("archived"));
       }
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      alert(err.message || "Erro ao excluir produto");
+      alert(err.message || t("deleteError"));
     } finally {
       setLoading(false);
     }
@@ -95,7 +98,7 @@ export function ProductSheet({
       setOpen(false);
       onSuccess?.();
     } catch (err: any) {
-      alert(err.message || "Erro ao salvar produto");
+      alert(err.message || t("saveError"));
     } finally {
       setLoading(false);
     }
@@ -105,33 +108,33 @@ export function ProductSheet({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button className="axis-btn-primary min-h-[44px] md:h-[32px] px-6 md:px-4 text-[14px] md:text-[13px] flex items-center justify-center font-bold shadow-md cursor-pointer">
-          {isEdit ? "Editar" : "Novo Produto"}
+          {isEdit ? tc("edit") : t("new")}
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[75vw] w-[95vw] glass-pop-up p-0 overflow-hidden">
         <DialogHeader className="text-left space-y-1 p-6 border-b border-border bg-muted/30">
           <DialogTitle className="text-[18px] font-bold tracking-tight text-foreground">
-            {isEdit ? "Editar Produto" : "Novo Produto"}
+            {isEdit ? t("editTitle") : t("new")}
           </DialogTitle>
           <DialogDescription className="text-[12px] text-muted-foreground font-medium">
-            {isEdit ? "Atualize os dados do produto" : "Cadastre um novo produto no sistema."}
+            {isEdit ? t("editDescription") : t("newDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 max-h-[80vh] overflow-y-auto">
           <div className="grid grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">SKU</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("sku")}</Label>
               <Input
                 required
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
-                placeholder="Ex: PROD-001"
+                placeholder={t("skuPlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Categoria</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("category")}</Label>
               <Select
                 value={isService ? "service" : "product"}
                 onValueChange={(val) => setIsService(val === "service")}
@@ -140,13 +143,13 @@ export function ProductSheet({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-[8px]">
-                  <SelectItem value="product">Produto (Físico)</SelectItem>
-                  <SelectItem value="service">Serviço (Sem Estoque)</SelectItem>
+                  <SelectItem value="product">{t("kindProduct")}</SelectItem>
+                  <SelectItem value="service">{t("kindService")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Moeda</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("currency")}</Label>
               <Select
                 value={currency}
                 onValueChange={(val: "PYG" | "USD" | "BRL") => setCurrency(val)}
@@ -162,30 +165,30 @@ export function ProductSheet({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Unidade</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("unit")}</Label>
               <Input
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                placeholder="Ex: un, kg, lt"
+                placeholder={t("unitPlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Nome</Label>
+            <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{tc("name")}</Label>
             <Input
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Produto A"
+              placeholder={t("namePlaceholder")}
               className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Preço ({currency})</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("priceLabel", { currency })}</Label>
               <Input
                 type="number"
                 required
@@ -193,12 +196,12 @@ export function ProductSheet({
                 step={currency === "PYG" ? "1" : "0.01"}
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
-                placeholder="Ex: 50000"
+                placeholder={t("pricePlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Custo ({currency})</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("costLabel", { currency })}</Label>
               <Input
                 type="number"
                 required
@@ -206,7 +209,7 @@ export function ProductSheet({
                 step={currency === "PYG" ? "1" : "0.01"}
                 value={cost}
                 onChange={(e) => setCost(Number(e.target.value))}
-                placeholder="Ex: 35000"
+                placeholder={t("costPlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
@@ -215,14 +218,14 @@ export function ProductSheet({
           <div className="grid grid-cols-2 gap-4">
             {!isService && (
               <div className="space-y-2">
-                <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Estoque Mínimo</Label>
+                <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("minStock")}</Label>
                 <Input
                   type="number"
                   min={0}
                   step="1"
                   value={minStock}
                   onChange={(e) => setMinStock(Number(e.target.value))}
-                  placeholder="Ex: 10"
+                  placeholder={t("minStockPlaceholder")}
                   className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
                 />
               </div>
@@ -234,17 +237,17 @@ export function ProductSheet({
                 onChange={(e) => setIsActive(e.target.checked)}
                 className="w-4 h-4"
               />
-              <Label className="text-[13px]">Ativo</Label>
+              <Label className="text-[13px]">{t("active")}</Label>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">Tags / Filtros (Separados por vírgula)</Label>
+              <Label className="text-[11px] text-primary uppercase tracking-widest font-bold">{t("tagsLabel")}</Label>
               <Input
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-                placeholder="Ex: eletronicos, importado, novo"
+                placeholder={t("tagsPlaceholder")}
                 className="bg-background border-border text-[13px] h-[40px] rounded-[8px] font-medium shadow-sm focus:ring-primary/20"
               />
             </div>
@@ -259,7 +262,7 @@ export function ProductSheet({
                   disabled={loading}
                   className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 h-[40px] rounded-[8px] text-[14px] font-bold disabled:opacity-50 shadow-md active:scale-95 transition-all"
                 >
-                  Excluir
+                  {tc("delete")}
                 </button>
               )}
             </div>
@@ -269,7 +272,7 @@ export function ProductSheet({
                 onClick={() => setOpen(false)}
                 className="px-4 h-[40px] rounded-[8px] text-[14px] font-semibold text-muted-foreground hover:bg-muted transition-all"
               >
-                Cancelar
+                {tc("cancel")}
               </button>
               <button
                 type="submit"
@@ -277,7 +280,7 @@ export function ProductSheet({
                 className="bg-primary text-primary-foreground px-6 h-[40px] rounded-[8px] hover:bg-primary/90 transition-all flex items-center justify-center gap-2 text-[14px] font-bold disabled:opacity-50 shadow-md active:scale-95"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin text-secondary" />}
-                {loading ? "Salvando..." : isEdit ? "Atualizar" : "Registrar Produto"}
+                {loading ? tc("saving") : isEdit ? t("update") : t("submit")}
               </button>
             </div>
           </div>

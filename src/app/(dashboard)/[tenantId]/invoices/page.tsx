@@ -3,6 +3,7 @@ import { CommercialInvoiceSheet } from "@/components/CommercialInvoiceSheet";
 import { AIInvoiceImporter } from "@/components/AIInvoiceImporter";
 import { InvoiceList } from "@/components/InvoiceList";
 import { PageHeader } from "@/components/ui/page-header";
+import { getTranslations } from "next-intl/server";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
@@ -11,6 +12,7 @@ export default async function InvoicesPage({
 }: {
   params: Promise<{ tenantId: string }>;
 }) {
+  const t = await getTranslations("pages.invoices");
   const session = await auth();
   if (!session?.user?.tenantId) redirect("/login");
   const tenantId = session.user.tenantId;
@@ -22,8 +24,8 @@ export default async function InvoicesPage({
   return (
     <div className="space-y-4 md:space-y-6">
       <PageHeader
-        title="Faturas"
-        subtitle="Faturas de compra e venda"
+        title={t("title")}
+        subtitle={t("subtitle")}
         actions={
           <>
             <AIInvoiceImporter />

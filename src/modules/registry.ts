@@ -59,8 +59,10 @@ export function navFor(active: string[]): NavEntry[] {
   const overrides: Record<string, string> = {};
   for (const m of modulos) Object.assign(overrides, m.labelOverrides ?? {});
 
+  // O override troca a CHAVE de tradução, não um texto fixo: a barra lateral
+  // traduz por chave (next-intl), e um literal aqui ficaria só num idioma.
   const nucleo = CORE_NAV.map((e) =>
-    overrides[e.key] ? { ...e, defaultLabel: overrides[e.key] } : e
+    overrides[e.key] ? { ...e, key: overrides[e.key] } : e
   );
 
   return [...nucleo, ...modulos.flatMap((m) => m.nav)].sort((a, b) => a.order - b.order);

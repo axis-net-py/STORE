@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { getReportData, ReportItem } from "@/app/actions/reports";
 import { useLanguage } from "@/components/language-provider";
+import { useTranslations } from "next-intl";
+import { useIntlLocale } from "@/lib/i18n/date-locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +13,8 @@ import { Loader2, Printer, BarChart3, Filter } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 
 export default function ReportsDashboard() {
-  const { language } = useLanguage();
+  const t = useTranslations("reportsDashboard");
+  const intlLocale = useIntlLocale();
   const [loading, setLoading] = useState(false);
   const [reportType, setReportType] = useState<
     "sales" | "purchases" | "inventory"
@@ -23,57 +26,6 @@ export default function ReportsDashboard() {
     new Date().toISOString().split("T")[0]
   );
   const [data, setData] = useState<ReportItem[]>([]);
-
-  const labels = {
-    pt: {
-      title: "Relatórios",
-      subtitle: "Análise comercial, compras e controle de estoque",
-      type: "Tipo de Relatório",
-      sales: "Relatório de Vendas",
-      purchases: "Relatório de Compras",
-      inventory: "Relatório de Estoque",
-      startDate: "Data Inicial",
-      endDate: "Data Final",
-      filter: "Filtrar",
-      print: "Imprimir",
-      date: "Data",
-      customer: "Cliente",
-      supplier: "Fornecedor",
-      product: "Produto / Descrição",
-      total: "Total",
-      quantity: "Quantidade",
-      movementType: "Tipo",
-      loading: "Carregando...",
-      noData: "Nenhum registro encontrado para o período",
-      count: "Quantidade Total",
-    },
-    es: {
-      title: "Informes",
-      subtitle: "Análisis comercial, compras e inventario",
-      type: "Tipo de Informe",
-      sales: "Informe de Ventas",
-      purchases: "Informe de Compras",
-      inventory: "Informe de Inventario",
-      startDate: "Fecha Inicial",
-      endDate: "Fecha Final",
-      filter: "Filtrar",
-      print: "Imprimir",
-      date: "Fecha",
-      customer: "Cliente",
-      supplier: "Proveedor",
-      product: "Producto / Descripción",
-      total: "Total",
-      quantity: "Cantidad",
-      movementType: "Tipo",
-      loading: "Cargando...",
-      noData: "No se encontraron registros para el período",
-      count: "Cantidad Total",
-    },
-  };
-
-  const t = (key: keyof typeof labels.pt) => {
-    return labels[language as "pt" | "es"]?.[key] || labels.pt[key];
-  };
 
   const fetchReport = async () => {
     setLoading(true);
@@ -136,8 +88,8 @@ export default function ReportsDashboard() {
             </p>
           </div>
           <div className="text-right text-[10px] text-muted-foreground font-mono">
-            <div>Gerado em: {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'es-PY')} {new Date().toLocaleTimeString(language === 'pt' ? 'pt-BR' : 'es-PY', {hour: '2-digit', minute:'2-digit'})}</div>
-            <div>Status: Consolidado</div>
+            <div>{t("generatedAt")} {new Date().toLocaleDateString(intlLocale)} {new Date().toLocaleTimeString(intlLocale, {hour: '2-digit', minute:'2-digit'})}</div>
+            <div>{t("statusConsolidated")}</div>
           </div>
         </div>
       </div>
@@ -339,7 +291,7 @@ export default function ReportsDashboard() {
               <>
                 <div className="text-right">
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block">
-                    Total Entradas
+                    {t("totalIn")}
                   </span>
                   <span className="text-lg font-bold text-primary print:text-black mt-1 block">
                     {totalEntrada.toFixed(2)}
@@ -347,7 +299,7 @@ export default function ReportsDashboard() {
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold block">
-                    Total Saídas
+                    {t("totalOut")}
                   </span>
                   <span className="text-lg font-bold text-destructive print:text-black mt-1 block">
                     {totalSaida.toFixed(2)}

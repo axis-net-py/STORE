@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from "next-intl";
 import { Geist_Mono } from 'next/font/google';
 import { useQuery } from '@tanstack/react-query';
 import { getTopProducts } from '@/lib/dashboard';
@@ -15,6 +16,7 @@ interface TopProductsProps {
 }
 
 export function TopProducts({ dateRange, currency, limit = 5 }: TopProductsProps) {
+  const t = useTranslations("topProducts");
   const { data, isLoading, error } = useQuery({
     queryKey: ['topProducts', dateRange, currency, limit],
     queryFn: () => getTopProducts({ start: dateRange.from, end: dateRange.to }, limit),
@@ -34,7 +36,7 @@ export function TopProducts({ dateRange, currency, limit = 5 }: TopProductsProps
   if (error) {
     return (
       <div className="bg-card border shadow-sm p-6 text-destructive text-sm">
-        Erro ao carregar produtos
+        {t("error")}
       </div>
     );
   }
@@ -55,9 +57,9 @@ export function TopProducts({ dateRange, currency, limit = 5 }: TopProductsProps
       <div className="space-y-1">
         <div className="grid grid-cols-12 gap-2 pb-2 border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
           <div className="col-span-1">#</div>
-          <div className="col-span-5">Produto</div>
-          <div className="col-span-2 text-right">Qtd</div>
-          <div className="col-span-4 text-right">Receita</div>
+          <div className="col-span-5">{t("product")}</div>
+          <div className="col-span-2 text-right">{t("qty")}</div>
+          <div className="col-span-4 text-right">{t("revenue")}</div>
         </div>
 
         {products.map((product, index) => (

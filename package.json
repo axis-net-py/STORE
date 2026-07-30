@@ -8,6 +8,7 @@
     "start": "next start",
     "vercel-build": "next build",
     "test": "node --test \"src/**/*.test.ts\"",
+    "check:i18n": "node scripts/check-i18n.mjs",
     "postinstall": "prisma generate && prisma generate --schema prisma/control/schema.prisma",
     "migrate:control": "prisma migrate deploy --schema prisma/control/schema.prisma"
   },

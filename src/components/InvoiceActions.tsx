@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Printer, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ interface InvoiceActionsProps {
 }
 
 export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
+  const t = useTranslations("invoiceActions");
   const [printing, setPrinting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const router = useRouter();
@@ -30,13 +32,13 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
 
   const handleDelete = async () => {
     if (!canDelete || cancelling) return;
-    if (!window.confirm(`Excluir definitivamente a fatura ${invoice.documentNumber || ""}? O estoque e os lançamentos contábeis serão revertidos. Esta ação não pode ser desfeita.`)) return;
+    if (!window.confirm(t("confirmDelete", { number: invoice.documentNumber || "" }))) return;
     setCancelling(true);
     try {
       await deletePurchaseInvoice(invoice.id);
       router.refresh();
     } catch (err: any) {
-      alert(err.message || "Erro ao excluir a fatura.");
+      alert(err.message || t("deleteError"));
     } finally {
       setCancelling(false);
     }
@@ -100,7 +102,7 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
             className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-card hover:bg-accent border-border"
           >
             <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-            <span>Editar</span>
+            <span>{t("edit")}</span>
           </Button>
         }
       />
@@ -118,7 +120,7 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
             ) : (
               <Printer className="w-3.5 h-3.5 text-muted-foreground" />
             )}
-            <span>Imprimir</span>
+            <span>{t("print")}</span>
             <ChevronDown className="w-3 h-3 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
@@ -141,7 +143,7 @@ export function InvoiceActions({ invoice, tenantId }: InvoiceActionsProps) {
         ) : (
           <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
         )}
-        <span>Excluir</span>
+        <span>{t("delete")}</span>
       </Button>
     </div>
   );

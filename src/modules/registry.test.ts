@@ -113,14 +113,14 @@ test('clinic mantém profissionais e serviços antes da Contabilidade', () => {
 
 test('clinic renomeia Clientes para Pacientes, sem mudar a rota', () => {
   const clientes = navFor(['clinic']).find((n) => n.href === 'customers')
-  assert.equal(clientes?.defaultLabel, 'Pacientes')
+  assert.equal(clientes?.key, 'customersPatients', 'o override troca a chave de tradução')
   assert.equal(clientes?.href, 'customers', 'a rota tem de continuar a mesma')
 })
 
 test('a renomeação não escapa para os outros verticais', () => {
   for (const vertical of [['store'], ['farm'], []]) {
     const clientes = navFor(vertical).find((n) => n.href === 'customers')
-    assert.equal(clientes?.defaultLabel, 'Clientes', `vertical ${vertical.join()} não devia ver "Pacientes"`)
+    assert.equal(clientes?.key, 'customers', `vertical ${vertical.join()} não devia ver "Pacientes"`)
   }
 })
 
@@ -142,6 +142,28 @@ test('os três verticais coexistem sem duplicar o núcleo', () => {
   assert.equal(new Set(chaves).size, chaves.length, 'não pode haver repetições')
   for (const esperado of ['pos', 'safra', 'agenda']) {
     assert.ok(chaves.includes(esperado), `${esperado} devia estar presente`)
+  }
+})
+
+// ─── i18n ───────────────────────────────────────────────────────────────────
+//
+// A barra lateral traduz por chave (next-intl). Uma entrada sem tradução
+// aparece ao utilizador como a chave crua — "safra" em vez de "Safras".
+
+test('toda entrada de navegação tem tradução nos dois idiomas', async () => {
+  const pt = (await import('../messages/pt-BR.json', { with: { type: 'json' } })).default as any
+  const es = (await import('../messages/es-PY.json', { with: { type: 'json' } })).default as any
+
+  const todas = new Set<string>()
+  for (const e of navFor(Object.keys(MODULES))) todas.add(e.key)
+  // Inclui o rótulo alternativo da clínica, que só aparece com esse módulo.
+  for (const m of Object.values(MODULES)) {
+    for (const k of Object.values(m.labelOverrides ?? {})) todas.add(k)
+  }
+
+  for (const chave of todas) {
+    assert.ok(pt.nav?.[chave], `falta tradução pt-BR para nav.${chave}`)
+    assert.ok(es.nav?.[chave], `falta tradução es-PY para nav.${chave}`)
   }
 })
 

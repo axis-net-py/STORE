@@ -4,6 +4,7 @@ import { SalesChart } from '@/components/dashboard/SalesChart';
 import { TopProducts } from '@/components/dashboard/TopProducts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/ui/page-header';
+import { getTranslations } from 'next-intl/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,10 +17,12 @@ const defaultDateRange = {
 // Default currency - should come from tenant settings
 const defaultCurrency = 'PYG' as const;
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const t = await getTranslations("pages.dashboard");
+
   return (
     <div className="space-y-4 md:space-y-6">
-      <PageHeader title="Dashboard" subtitle="Visão geral do seu negócio" />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
       {/* Stats Cards */}
       <Suspense

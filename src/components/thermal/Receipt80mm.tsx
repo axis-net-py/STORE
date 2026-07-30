@@ -21,10 +21,15 @@ interface Receipt80mmProps {
     totalUSD?: number;
   };
   tenantName?: string;
+  /** Locale ativo (pt-BR | es-PY) para os rotulos impressos. */
+  locale?: string;
 }
 
 // ─── Component: Receipt80mm ─────────────────────────
-export function Receipt80mm({ invoice, tenantName }: Receipt80mmProps) {
+export function Receipt80mm({ invoice, tenantName, locale = 'pt-BR' }: Receipt80mmProps) {
+  // Recibo impresso segue o idioma ativo do usuario.
+  const t = (pt: string, es: string) => (locale === 'es-PY' ? es : pt);
+
   const width = 227; // 80mm in points
 
   return (
@@ -78,7 +83,7 @@ export function Receipt80mm({ invoice, tenantName }: Receipt80mmProps) {
 
         {/* Total */}
         <View style={styles.totalRow}>
-          <Text>TOTAL (PYG)</Text>
+          <Text>{t('TOTAL (PYG)', 'TOTAL (PYG)')}</Text>
           <Text style={{ fontFamily: 'Courier' }}>
             Gs. {Number(invoice.totalAmount).toFixed(2)}
           </Text>
@@ -97,7 +102,7 @@ export function Receipt80mm({ invoice, tenantName }: Receipt80mmProps) {
         <View style={styles.footer}>
           <Text>AXIS ERP • {new Date().getFullYear()}</Text>
           <Text style={{ fontSize: 5, marginTop: 2, opacity: 0.5 }}>
-            Obrigado pela preferência!
+            {t('Obrigado pela preferência!', '¡Gracias por su preferencia!')}
           </Text>
         </View>
       </Page>

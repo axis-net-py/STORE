@@ -23,6 +23,8 @@ export const clinicModule: ModuleManifest = {
   ],
   routes: ["agenda", "profissionais", "servicos"],
   permissions: ["clinic:read", "clinic:write", "clinic:delete"],
-  // Numa clínica o cliente é o paciente: mesma entidade, mesma rota, outro nome.
-  labelOverrides: { customers: "Pacientes" },
+  // Numa clínica o cliente é o paciente: mesma entidade, mesma rota, outro
+  // nome. O valor é uma CHAVE de tradução (nav.customersPatients), não um
+  // texto — senão o rótulo ficaria só num idioma.
+  labelOverrides: { customers: "customersPatients" },
 };

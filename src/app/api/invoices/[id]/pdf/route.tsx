@@ -32,7 +32,10 @@ export async function GET(
 
   // Renderizar PDF
   const stream = await renderToStream(
-    <SalesInvoicePDF invoice={pdfInvoice as any} />
+    <SalesInvoicePDF
+      invoice={pdfInvoice as any}
+      locale={req.cookies.get("NEXT_LOCALE")?.value === "es-PY" ? "es-PY" : "pt-BR"}
+    />
   );
 
   // Converter stream para buffer

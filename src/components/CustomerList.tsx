@@ -9,8 +9,11 @@ import type { Customer } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Switch } from "@/components/ui/switch";
+import { useTranslations } from "next-intl";
 
 export function CustomerList({ customers, tenantId }: { customers: Customer[]; tenantId: string }) {
+  const t = useTranslations("customers");
+  const tc = useTranslations("common");
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [sortField, setSortField] = useState<"name" | "document" | "email" | "category" | "isActive" | null>(null);
@@ -61,18 +64,18 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
     <div className="space-y-4">
       {/* Barra de filtros padrão */}
       <FilterBar>
-        <FilterField label="Buscar" grow>
+        <FilterField label={tc("search")} grow>
           <Input
-            placeholder="Buscar por nome, documento ou e-mail do cliente..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
         </FilterField>
-        <FilterField label="Inativos">
+        <FilterField label={t("showInactive")}>
           <div className="h-10 sm:h-9 flex items-center gap-2">
             <Switch checked={showInactive} onCheckedChange={setShowInactive} />
-            <span className="text-[13px] text-muted-foreground">Mostrar</span>
+            <span className="text-[13px] text-muted-foreground">{t("show")}</span>
           </div>
         </FilterField>
       </FilterBar>
@@ -81,7 +84,7 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
       <div className="md:hidden space-y-2.5">
         {sortedCustomers.length === 0 ? (
           <div className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground">
-            Nenhum cliente cadastrado ou encontrado.
+            {t("empty")}
           </div>
         ) : (
           sortedCustomers.map((customer) => (
@@ -90,17 +93,17 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
                 <div className="min-w-0">
                   <p className="font-medium text-sm truncate">{customer.name}</p>
                   <p className="text-[11px] text-muted-foreground truncate">
-                    {customer.document || "Sem documento"}
+                    {customer.document || t("noDocument")}
                     {customer.email ? ` · ${customer.email}` : ""}
                   </p>
                 </div>
                 <Badge variant={customer.isActive ? "default" : "secondary"} className="shrink-0">
-                  {customer.isActive ? "Ativo" : "Inativo"}
+                  {customer.isActive ? t("active") : t("inactive")}
                 </Badge>
               </div>
               <div className="mt-2.5 flex items-center justify-between gap-2">
                 <Badge variant="outline" className="capitalize text-[10px]">
-                  {customer.category === "fisica" ? "Física" : customer.category === "juridica" ? "Jurídica" : customer.category}
+                  {customer.category === "fisica" ? t("fisica") : customer.category === "juridica" ? t("juridica") : customer.category}
                 </Badge>
                 <div className="flex items-center gap-1.5">
                   <CustomerSheet tenantId={tenantId} customer={customer} />
@@ -118,28 +121,28 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
           <TableHeader>
             <TableRow>
               <TableHead onClick={() => handleSort("name")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Nome{renderSortIndicator("name")}
+                {t("name")}{renderSortIndicator("name")}
               </TableHead>
               <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Documento{renderSortIndicator("document")}
+                {t("document")}{renderSortIndicator("document")}
               </TableHead>
               <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
-                E-mail{renderSortIndicator("email")}
+                {t("email")}{renderSortIndicator("email")}
               </TableHead>
               <TableHead onClick={() => handleSort("category")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Categoria{renderSortIndicator("category")}
+                {t("category")}{renderSortIndicator("category")}
               </TableHead>
               <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status{renderSortIndicator("isActive")}
+                {t("status")}{renderSortIndicator("isActive")}
               </TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedCustomers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  Nenhum cliente cadastrado ou encontrado.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -150,12 +153,12 @@ export function CustomerList({ customers, tenantId }: { customers: Customer[]; t
                   <TableCell>{customer.email ?? "-"}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">
-                      {customer.category === "fisica" ? "Física" : customer.category === "juridica" ? "Jurídica" : customer.category}
+                      {customer.category === "fisica" ? t("fisica") : customer.category === "juridica" ? t("juridica") : customer.category}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={customer.isActive ? "default" : "secondary"}>
-                      {customer.isActive ? "Ativo" : "Inativo"}
+                      {customer.isActive ? t("active") : t("inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

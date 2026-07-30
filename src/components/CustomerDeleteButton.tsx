@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import { deleteCustomer } from "@/app/actions/customer";
  * Cliente com histórico fiscal é arquivado pela action, não apagado.
  */
 export function CustomerDeleteButton({ customer }: { customer: { id: string; name: string } }) {
+  const t = useTranslations("customers");
+  const tc = useTranslations("common");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -18,7 +21,7 @@ export function CustomerDeleteButton({ customer }: { customer: { id: string; nam
     if (loading) return;
     if (
       !window.confirm(
-        `Excluir "${customer.name}"? Se já tiver faturas ou pedidos vinculados, será arquivado em vez de apagado (o histórico fiscal é preservado).`
+        t("confirmDeleteNamed", { name: customer.name })
       )
     )
       return;
@@ -28,12 +31,12 @@ export function CustomerDeleteButton({ customer }: { customer: { id: string; nam
       const res = await deleteCustomer(customer.id);
       if (res?.archived) {
         alert(
-          "Cliente arquivado: ele tem faturas ou pedidos vinculados, então o cadastro foi desativado para preservar o histórico fiscal."
+          t("archived")
         );
       }
       router.refresh();
     } catch (err: any) {
-      alert(err.message || "Erro ao excluir cliente");
+      alert(err.message || t("deleteError"));
     } finally {
       setLoading(false);
     }
@@ -45,7 +48,7 @@ export function CustomerDeleteButton({ customer }: { customer: { id: string; nam
       size="sm"
       disabled={loading}
       onClick={handleDelete}
-      title="Excluir cliente"
+      title={t("deleteTitle")}
       className="h-8 px-2.5 text-xs flex items-center gap-1.5 bg-card hover:bg-destructive/10 hover:text-destructive border-border"
     >
       {loading ? (
@@ -53,7 +56,7 @@ export function CustomerDeleteButton({ customer }: { customer: { id: string; nam
       ) : (
         <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
       )}
-      <span>Excluir</span>
+      <span>{tc("delete")}</span>
     </Button>
   );
 }

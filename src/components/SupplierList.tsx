@@ -9,8 +9,11 @@ import type { Supplier } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { FilterBar, FilterField } from "@/components/ui/filter-bar";
 import { Switch } from "@/components/ui/switch";
+import { useTranslations } from "next-intl";
 
 export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; tenantId: string }) {
+  const t = useTranslations("suppliers");
+  const tc = useTranslations("common");
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [sortField, setSortField] = useState<"phone" | "businessName" | "document" | "email" | "paymentTerms" | "isActive" | null>(null);
@@ -62,18 +65,18 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
     <div className="space-y-4">
       {/* Barra de filtros padrão */}
       <FilterBar>
-        <FilterField label="Buscar" grow>
+        <FilterField label={tc("search")} grow>
           <Input
-            placeholder="Buscar por razão social, documento, telefone ou e-mail..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-10 sm:h-9 rounded-lg border-border bg-card text-[13px]"
           />
         </FilterField>
-        <FilterField label="Inativos">
+        <FilterField label={t("showInactive")}>
           <div className="h-10 sm:h-9 flex items-center gap-2">
             <Switch checked={showInactive} onCheckedChange={setShowInactive} />
-            <span className="text-[13px] text-muted-foreground">Mostrar</span>
+            <span className="text-[13px] text-muted-foreground">{t("show")}</span>
           </div>
         </FilterField>
       </FilterBar>
@@ -82,7 +85,7 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
       <div className="md:hidden space-y-2.5">
         {sortedSuppliers.length === 0 ? (
           <div className="rounded-lg border border-border bg-card py-10 text-center text-sm text-muted-foreground">
-            Nenhum fornecedor cadastrado ou encontrado.
+            {t("empty")}
           </div>
         ) : (
           sortedSuppliers.map((supplier) => (
@@ -91,16 +94,16 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
                 <div className="min-w-0">
                   <p className="font-medium text-sm truncate">{supplier.businessName || supplier.name}</p>
                   <p className="text-[11px] text-muted-foreground truncate">
-                    {supplier.document ? `${supplier.documentType ?? "DOC"}: ${supplier.document}` : "Sem documento"}
+                    {supplier.document ? `${supplier.documentType ?? "DOC"}: ${supplier.document}` : t("noDocument")}
                     {supplier.phone ? ` · ${supplier.phone}` : ""}
                   </p>
                 </div>
                 <Badge variant={supplier.isActive ? "default" : "secondary"} className="shrink-0">
-                  {supplier.isActive ? "Ativo" : "Inativo"}
+                  {supplier.isActive ? t("active") : t("inactive")}
                 </Badge>
               </div>
               <div className="mt-2.5 flex items-center justify-between gap-2">
-                <Badge variant="outline" className="text-[10px]">{supplier.paymentTerms ?? "Contado"}</Badge>
+                <Badge variant="outline" className="text-[10px]">{supplier.paymentTerms ?? t("cash")}</Badge>
                 <div className="flex items-center gap-1.5">
                   <SupplierSheet tenantId={tenantId} supplier={supplier} />
                   <SupplierDeleteButton supplier={{ id: supplier.id, name: supplier.businessName || supplier.name }} />
@@ -117,31 +120,31 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
           <TableHeader>
             <TableRow>
               <TableHead onClick={() => handleSort("businessName")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Razão Social{renderSortIndicator("businessName")}
+                {t("businessName")}{renderSortIndicator("businessName")}
               </TableHead>
               <TableHead onClick={() => handleSort("document")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Documento{renderSortIndicator("document")}
+                {t("document")}{renderSortIndicator("document")}
               </TableHead>
               <TableHead onClick={() => handleSort("phone")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Telefone{renderSortIndicator("phone")}
+                {t("phone")}{renderSortIndicator("phone")}
               </TableHead>
               <TableHead onClick={() => handleSort("email")} className="cursor-pointer hover:bg-muted/50 select-none">
-                E-mail{renderSortIndicator("email")}
+                {t("email")}{renderSortIndicator("email")}
               </TableHead>
               <TableHead onClick={() => handleSort("paymentTerms")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Condição Pagto{renderSortIndicator("paymentTerms")}
+                {t("paymentTerms")}{renderSortIndicator("paymentTerms")}
               </TableHead>
               <TableHead onClick={() => handleSort("isActive")} className="cursor-pointer hover:bg-muted/50 select-none">
-                Status{renderSortIndicator("isActive")}
+                {t("status")}{renderSortIndicator("isActive")}
               </TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedSuppliers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  Nenhum fornecedor cadastrado ou encontrado.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -152,11 +155,11 @@ export function SupplierList({ suppliers, tenantId }: { suppliers: Supplier[]; t
                   <TableCell>{supplier.phone ?? "-"}</TableCell>
                   <TableCell>{supplier.email ?? "-"}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{supplier.paymentTerms ?? "Contado"}</Badge>
+                    <Badge variant="outline">{supplier.paymentTerms ?? t("cash")}</Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={supplier.isActive ? "default" : "secondary"}>
-                      {supplier.isActive ? "Ativo" : "Inativo"}
+                      {supplier.isActive ? t("active") : t("inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

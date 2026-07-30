@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getUsers, updateUserRole, createUserAction, deleteUserAction } from '@/app/actions/team';
@@ -84,6 +85,8 @@ export default function TeamSettingsPage() {
   const params = useParams();
   const router = useRouter();
   const tenantId = params.tenantId as string;
+  const tTeam = useTranslations("team");
+  const tc = useTranslations("common");
   const { language } = useLanguage();
   const currentLang = (language === 'es' || language === 'pt') ? language : 'pt';
   const t = translations[currentLang];
@@ -237,7 +240,7 @@ export default function TeamSettingsPage() {
                     required
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Ex: João Silva"
+                    placeholder={tTeam("namePlaceholder")}
                     className="bg-background border-border text-[13px] min-h-[44px] md:h-[40px] rounded-[8px] font-medium shadow-sm"
                   />
                 </div>
@@ -249,7 +252,7 @@ export default function TeamSettingsPage() {
                     required
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="Ex: joao@fazenda.com"
+                    placeholder={tTeam("emailPlaceholder")}
                     className="bg-background border-border text-[13px] min-h-[44px] md:h-[40px] rounded-[8px] font-medium shadow-sm"
                   />
                 </div>
@@ -258,7 +261,7 @@ export default function TeamSettingsPage() {
                   <Label className="text-[11px] text-primary uppercase tracking-widest font-extrabold">{t.role}</Label>
                   <Select value={newRole} onValueChange={(val) => setNewRole(val as Role)}>
                     <SelectTrigger className="bg-background border-border text-[13px] min-h-[44px] md:h-[40px] rounded-[8px]">
-                      <SelectValue placeholder="Selecione a função" />
+                      <SelectValue placeholder={tTeam("selectRole")} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-popover-foreground">
                       <SelectItem value="ADMIN" className="text-[12px]">{t.admin}</SelectItem>
@@ -325,7 +328,7 @@ export default function TeamSettingsPage() {
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-20">
                   <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
-                  <span className="text-[11px] text-muted-foreground font-extrabold uppercase tracking-wider">Carregando...</span>
+                  <span className="text-[11px] text-muted-foreground font-extrabold uppercase tracking-wider">{tc("loading")}</span>
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
@@ -393,7 +396,7 @@ export default function TeamSettingsPage() {
         {loading ? (
           <div className="border border-border/60 rounded-[12px] p-20 text-center bg-card">
             <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
-            <span className="text-[11px] text-muted-foreground font-extrabold uppercase tracking-wider">Carregando...</span>
+            <span className="text-[11px] text-muted-foreground font-extrabold uppercase tracking-wider">{tc("loading")}</span>
           </div>
         ) : users.length === 0 ? (
           <div className="border border-border/60 rounded-[12px] p-20 text-center bg-card">

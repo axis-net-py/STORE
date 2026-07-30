@@ -32,13 +32,22 @@ export async function seedModulePermissions(
   const acoes = permissionsFor(active);
   if (acoes.length === 0) return 0;
 
-  const linhas: Array<{ action: string; role: "SOVEREIGN" | "ADMIN" | "OPERATOR"; tenantId: string }> = [];
+  type Papel = "SOVEREIGN" | "ADMIN" | "OPERATOR" | "AUDITOR";
+  const linhas: Array<{ action: string; role: Papel; tenantId: string }> = [];
+
   for (const action of acoes) {
     linhas.push({ action, role: "SOVEREIGN", tenantId });
-    linhas.push({ action, role: "ADMIN", tenantId });
-    // OPERATOR opera, mas não apaga — mesma política do seed do núcleo.
+    // Apagar é exclusivo do SOVEREIGN, aqui como no núcleo. Ter o ADMIN a
+    // apagar uma safra mas não um cliente seria arbitrário — a política de
+    // eliminação tem de ser a mesma em todo o sistema.
     if (!action.endsWith(":delete")) {
+      linhas.push({ action, role: "ADMIN", tenantId });
       linhas.push({ action, role: "OPERATOR", tenantId });
+    }
+    // AUDITOR confere, não lança. Sem esta linha ficava sem ver o módulo:
+    // requirePermission exige uma linha para este papel.
+    if (action.endsWith(":read")) {
+      linhas.push({ action, role: "AUDITOR", tenantId });
     }
   }
 

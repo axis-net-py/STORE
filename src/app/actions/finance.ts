@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { Currency, TransactionType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { requirePermission } from "@/lib/authz";
 import { z } from "zod";
 
 const FinanceTransactionSchema = z.object({
@@ -19,10 +19,10 @@ export type FinanceTransactionInput = z.infer<typeof FinanceTransactionSchema>;
 
 export async function createFinanceTransaction(data: FinanceTransactionInput) {
   try {
-    const session = await auth();
-    if (!session?.user?.tenantId) {
-      return { success: false, error: "Unauthorized" };
-    }
+    // Lançar dinheiro no razão exige permissão de escrita contabilística, não
+    // apenas sessão. Antes disto, um AUDITOR podia criar lançamentos.
+    const { tenantId } = await requirePermission("accounting:write");
+    const session = { user: { tenantId } };
 
     const totalPyg = data.currency === Currency.PYG ? data.amount : data.amount * data.exchangeRate;
 

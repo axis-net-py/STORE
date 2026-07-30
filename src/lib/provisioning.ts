@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { slugDeNome, slugDisponivel } from "@/lib/tenant-host";
 import { seedModulePermissions } from "@/modules/permissions";
 import { VERTICALS } from "@/modules/registry";
+import { permissoesDoNucleo } from "@/lib/permissoes-nucleo";
 
 /**
  * Provisionamento de um cliente novo.
@@ -29,21 +30,6 @@ const CONTAS = [
   { code: "5.1.01", namePt: "Custo das Mercadorias", nameEs: "Costo de Mercancías", type: "EXPENSE" as const },
   { code: "5.2.01", namePt: "Despesas Operacionais", nameEs: "Gastos Operativos", type: "EXPENSE" as const },
 ];
-
-/** Permissões do núcleo. As dos módulos vêm dos manifestos. */
-const ACOES_NUCLEO = [
-  "dashboard:read",
-  "customers:read", "customers:write", "customers:delete",
-  "suppliers:read", "suppliers:write", "suppliers:delete",
-  "products:read", "products:write", "products:delete",
-  "invoices:read", "invoices:write", "invoices:delete",
-  "inventory:read", "inventory:write",
-  "accounting:read", "accounting:write",
-  "reports:read",
-  "settings:read", "settings:write",
-  "users:manage",
-];
-
 
 export type DadosProvisionamento = {
   nome: string;
@@ -139,14 +125,10 @@ export async function provisionTenant(
       // da transação numa ligação com latência.
       await tx.account.createMany({ data: CONTAS.map((c) => ({ ...c, tenantId: tenant.id })) });
 
-      const permissoes: Array<{ action: string; role: "SOVEREIGN" | "ADMIN" | "OPERATOR"; tenantId: string }> = [];
-      for (const action of ACOES_NUCLEO) {
-        permissoes.push({ action, role: "SOVEREIGN", tenantId: tenant.id });
-        if (!action.includes("delete") && action !== "users:manage") {
-          permissoes.push({ action, role: "ADMIN", tenantId: tenant.id });
-        }
-      }
-      await tx.permission.createMany({ data: permissoes, skipDuplicates: true });
+      await tx.permission.createMany({
+        data: permissoesDoNucleo(tenant.id),
+        skipDuplicates: true,
+      });
 
       // Permissões dos módulos contratados. Sem isto, o módulo fica
       // inacessível a OPERATOR e AUDITOR (ver src/modules/permissions.ts).

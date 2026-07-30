@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { requirePermission } from '@/lib/authz'
 import type { InventoryMovement, Product } from '@prisma/client'
 import { ensureDefaultWarehouse, bumpWarehouseStock } from '@/lib/warehouse'
 
@@ -57,9 +58,10 @@ export async function adjustStock(
   quantity: number,
   reason?: string
 ) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  // Ajustar estoque altera o inventário e alimenta a contabilidade: exige
+  // permissão de escrita, não apenas uma sessão válida. Antes disto, um
+  // AUDITOR — o papel de quem só confere — podia mexer no estoque.
+  const { tenantId } = await requirePermission('inventory:write')
 
   const product = await prisma.product.findFirst({
     where: { id: productId, tenantId },

@@ -93,6 +93,41 @@ async function assertContraparteDoTenant(
   }
 }
 
+/**
+ * Diz se o documento já é um documento fiscal eletrónico perante a SET.
+ *
+ * "Recibo Comum" NÃO conta: é uma venda avulsa que nunca foi transmitida.
+ * A partir do momento em que existe CDC, ou um estado de envio, o documento
+ * deixa de ser um registo interno e passa a ser uma declaração à autoridade.
+ */
+export function ehDocumentoFiscalReal(inv: {
+  sifenCdc?: string | null
+  sifenStatus?: string | null
+}): boolean {
+  return !!inv.sifenCdc || (!!inv.sifenStatus && inv.sifenStatus !== 'RECIBO_COMUN')
+}
+
+/**
+ * Impede alterar um documento já declarado à SET.
+ *
+ * Requisito da SIFEN: um documento eletrónico aceite é imutável. Corrigi-lo
+ * faz-se emitindo uma nota de crédito ou um evento de cancelamento, nunca
+ * editando o original — se o fizermos, os nossos registos deixam de bater
+ * certo com o que foi declarado, e numa fiscalização isso é uma divergência
+ * que a empresa tem de explicar.
+ */
+function assertDocumentoEditavel(inv: {
+  sifenCdc?: string | null
+  sifenStatus?: string | null
+}) {
+  if (ehDocumentoFiscalReal(inv)) {
+    throw new Error(
+      'Esta fatura já foi registrada no SIFEN e não pode ser editada. ' +
+        'Para corrigi-la, cancele o documento ou emita uma nota de crédito.'
+    )
+  }
+}
+
 // Listar faturas do tenant
 export async function getInvoices() {
   const session = await auth()
@@ -423,6 +458,12 @@ export async function cancelInvoice(id: string) {
   if (invoice.status === 'CANCELLED') throw new Error('Fatura já cancelada')
   await assertPeriodOpen(prisma, tenantId, invoice.issuedAt)
 
+  // Cancelar localmente um documento já declarado à SET deixa-o ATIVO lá e
+  // cancelado cá. A integração não suporta o evento de cancelamento — o
+  // SifenClient só sabe submeter — por isso o que se pode fazer é registar a
+  // divergência em vez de a deixar acontecer em silêncio.
+  const eraDocumentoFiscal = ehDocumentoFiscalReal(invoice)
+
   await prisma.$transaction(async (tx: any) => {
     const defaultWarehouse = await ensureDefaultWarehouse(tx, tenantId)
 
@@ -448,7 +489,12 @@ export async function cancelInvoice(id: string) {
     // Marcar fatura como cancelada
     await tx.commercialInvoice.update({
       where: { id },
-      data: { status: 'CANCELLED' },
+      data: {
+        status: 'CANCELLED',
+        // Marca a divergência: o documento continua ativo na SET até alguém
+        // lá o cancelar. Sem esta marca, ninguém saberia que falta fazê-lo.
+        ...(eraDocumentoFiscal ? { sifenStatus: 'CANCELAMENTO_PENDENTE_SET' } : {}),
+      },
     })
 
     // Anular o lançamento contábil vinculado para manter o razão consistente
@@ -464,12 +510,34 @@ export async function cancelInvoice(id: string) {
         action: 'CANCEL_INVOICE',
         entity: 'CommercialInvoice',
         entityId: id,
+        details: {
+          documentNumber: invoice.documentNumber,
+          eraDocumentoFiscal,
+          sifenCdc: invoice.sifenCdc,
+          // Deixa escrito o que fica por fazer fora do sistema.
+          pendente: eraDocumentoFiscal
+            ? 'Cancelamento na SET por transmitir — a integração não suporta o evento.'
+            : null,
+        },
       },
     })
   })
 
   revalidatePath(`/${tenantId}/invoices`)
   revalidatePath(`/${tenantId}/products`)
+
+  return {
+    ok: true,
+    /**
+     * Verdadeiro quando o documento já existia na SET. Quem chama deve avisar
+     * o utilizador: cancelar aqui NÃO cancela lá.
+     */
+    exigeCancelamentoNaSet: eraDocumentoFiscal,
+    aviso: eraDocumentoFiscal
+      ? 'Esta fatura tinha registro no SIFEN. O cancelamento foi feito apenas neste sistema — ' +
+        'é necessário cancelá-la também junto à SET, dentro do prazo legal.'
+      : null,
+  }
 }
 
 /**
@@ -489,8 +557,8 @@ export async function deletePurchaseInvoice(id: string) {
   })
   if (!invoice) throw new Error('Fatura não encontrada')
 
-  const isRealSifenDoc = !!invoice.sifenCdc || (!!invoice.sifenStatus && invoice.sifenStatus !== 'RECIBO_COMUN')
-  if (isRealSifenDoc) {
+  // Mesma regra da edição, uma só definição — ver ehDocumentoFiscalReal.
+  if (ehDocumentoFiscalReal(invoice)) {
     throw new Error('Fatura com registro no SIFEN não pode ser excluída.')
   }
   await assertPeriodOpen(prisma, tenantId, invoice.issuedAt)
@@ -667,6 +735,11 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
   })
   if (!originalInvoice) throw new Error('Fatura não encontrada')
   if (originalInvoice.status === 'CANCELLED') throw new Error('Fatura cancelada não pode ser editada')
+
+  // Imutabilidade do documento fiscal. O deletePurchaseInvoice já aplicava
+  // esta regra; a edição não — e editar é pior do que apagar, porque o
+  // documento continua a existir na SET com outro conteúdo.
+  assertDocumentoEditavel(originalInvoice)
   // Bloqueia edição se a data original OU a nova data caírem em período fechado
   await assertPeriodOpen(prisma, tenantId, originalInvoice.issuedAt)
   await assertPeriodOpen(prisma, tenantId, data.issuedAt ?? originalInvoice.issuedAt)

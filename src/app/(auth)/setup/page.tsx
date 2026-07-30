@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { verificarLinkSetup, definirPrimeiraSenha } from "@/app/actions/setup";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,26 @@ import { Loader2, ShieldCheck, XCircle } from "lucide-react";
  * por isso não precisa de canal cifrado — e ninguém do nosso lado chega a
  * conhecer a password que ele escolher (spec Projeto 2, §5.3).
  */
+/**
+ * A leitura do token vem da query string, e `useSearchParams()` obriga a uma
+ * fronteira de Suspense: sem ela o Next.js não consegue pré-renderizar a
+ * página e o build falha na exportação.
+ */
 export default function SetupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <SetupForm />
+    </Suspense>
+  );
+}
+
+function SetupForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token") ?? "";

@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { assertRefDoTenant } from '@/lib/tenant-ref'
 import { VehicleLogPartialSchema, VehicleLogSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
@@ -37,6 +38,9 @@ export async function createVehicleLog(data: VehicleLogFormData) {
   const parsed = VehicleLogSchema.safeParse(data)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
+  await assertRefDoTenant(prisma, tenantId, 'vehicle', data.vehicleId)
+  await assertRefDoTenant(prisma, tenantId, 'employee', data.employeeId)
+
   const reading = data.odometerOrHours !== undefined ? new Decimal(data.odometerOrHours) : null
 
   await prisma.vehicleLog.create({
@@ -70,6 +74,9 @@ export async function updateVehicleLog(id: string, data: Partial<VehicleLogFormD
 
   const parsed = VehicleLogPartialSchema.safeParse(data)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
+  await assertRefDoTenant(prisma, tenantId, 'vehicle', data.vehicleId)
+  await assertRefDoTenant(prisma, tenantId, 'employee', data.employeeId)
 
   const updateData: any = {}
   if (data.type !== undefined) updateData.type = data.type

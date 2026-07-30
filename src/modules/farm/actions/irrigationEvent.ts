@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { assertRefDoTenant } from '@/lib/tenant-ref'
 import { IrrigationEventSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
@@ -36,6 +37,8 @@ export async function createIrrigationEvent(data: IrrigationEventFormData) {
 
   const parsed = IrrigationEventSchema.safeParse(data)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
+  await assertRefDoTenant(prisma, tenantId, 'employee', data.employeeId)
 
   const plot = await prisma.plot.findFirst({ where: { id: data.plotId, tenantId } })
   if (!plot) throw new Error('Talhão não encontrado')

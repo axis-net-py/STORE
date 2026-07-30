@@ -67,6 +67,31 @@ function validateInvoiceData(data: InvoiceFormData) {
   }
 }
 
+/**
+ * Garante que a contraparte de um documento pertence a este cliente.
+ *
+ * Sem isto, um utilizador podia emitir uma fatura com o customerId de OUTRA
+ * empresa: o documento ficava no tenant certo, mas apontava para um cliente
+ * alheio — e ao abri-lo mostrava o nome e o RUC dessa pessoa. Fuga de dados
+ * entre clientes, e um documento fiscal com a contraparte errada.
+ */
+async function assertContraparteDoTenant(
+  db: any,
+  tenantId: string,
+  tipo: 'SALES' | 'PURCHASE',
+  id?: string | null
+) {
+  if (!id) return
+
+  if (tipo === 'SALES') {
+    const c = await db.customer.findFirst({ where: { id, tenantId }, select: { id: true } })
+    if (!c) throw new Error('Cliente não encontrado.')
+  } else {
+    const s = await db.supplier.findFirst({ where: { id, tenantId }, select: { id: true } })
+    if (!s) throw new Error('Fornecedor não encontrado.')
+  }
+}
+
 // Listar faturas do tenant
 export async function getInvoices() {
   const session = await auth()
@@ -112,6 +137,9 @@ export async function createPurchaseInvoice(data: InvoiceFormData) {
   await assertPeriodOpen(prisma, tenantId, data.issuedAt ?? new Date())
 
   const result = await prisma.$transaction(async (tx: any) => {
+    // O fornecedor tem de ser deste cliente — ver assertContraparteDoTenant.
+    await assertContraparteDoTenant(tx, tenantId, 'PURCHASE', data.customerId)
+
     // 1. Criar a fatura
     const invoice = await tx.commercialInvoice.create({
       data: {
@@ -245,6 +273,9 @@ export async function createSalesInvoice(data: InvoiceFormData) {
         throw new Error(`Estoque insuficiente para o produto: ${product.name}. Disponível: ${product.currentStock}, Solicitado: ${item.quantity}`)
       }
     }
+
+    // O cliente tem de ser deste tenant — ver assertContraparteDoTenant.
+    await assertContraparteDoTenant(tx, tenantId, 'SALES', data.customerId)
 
     // 2. Obter número sequencial se não fornecido
     const docNum = data.documentNumber || await getNextSalesInvoiceNumber(tenantId, tx);
@@ -635,6 +666,11 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
 
     // 4. Atualizar cabeçalho da fatura
     const isSales = data.type === 'SALES'
+
+    // A contraparte tem de ser deste cliente, tal como na criação: sem isto,
+    // bastava EDITAR uma fatura para lhe apontar um cliente de outra empresa.
+    await assertContraparteDoTenant(tx, tenantId, isSales ? 'SALES' : 'PURCHASE', data.customerId)
+
     const docNum = data.documentNumber || (isSales ? await getNextSalesInvoiceNumber(tenantId, tx) : undefined)
 
     await tx.commercialInvoice.update({

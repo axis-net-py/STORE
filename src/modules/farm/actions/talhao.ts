@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { assertRefDoTenant } from '@/lib/tenant-ref'
 import { PlotPartialSchema, PlotSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import type { Plot } from '@prisma/client'
@@ -46,6 +47,8 @@ export async function createPlot(data: PlotFormData) {
   const parsed = PlotSchema.safeParse(data)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
+  await assertRefDoTenant(prisma, tenantId, 'harvest', data.harvestId)
+
   await prisma.plot.create({
     data: {
       tenantId,
@@ -66,6 +69,8 @@ export async function updatePlot(id: string, data: Partial<PlotFormData>) {
 
   const parsed = PlotPartialSchema.safeParse(data)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
+  await assertRefDoTenant(prisma, tenantId, 'harvest', data.harvestId)
 
   const updateData: any = {}
   if (data.name !== undefined) updateData.name = data.name

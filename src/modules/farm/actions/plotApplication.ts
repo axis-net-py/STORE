@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { assertRefDoTenant } from '@/lib/tenant-ref'
 import { PlotApplicationSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import { Decimal } from 'decimal.js'
@@ -37,6 +38,8 @@ export async function createPlotApplication(data: PlotApplicationFormData) {
 
   const parsed = PlotApplicationSchema.safeParse(data)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
+  await assertRefDoTenant(prisma, tenantId, 'employee', data.employeeId)
 
   const product = await prisma.product.findFirst({
     where: { id: data.productId, tenantId },

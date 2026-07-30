@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
+import { assertRefDoTenant } from '@/lib/tenant-ref'
 import { ContractPartialSchema, ContractSchema } from '@/modules/farm/schemas'
 import { revalidatePath } from 'next/cache'
 import type { Contract } from '@prisma/client'
@@ -42,6 +43,8 @@ export async function createContract(data: ContractFormData) {
   const parsed = ContractSchema.safeParse(data)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
+  await assertRefDoTenant(prisma, tenantId, 'harvest', data.harvestId)
+
   await prisma.contract.create({
     data: {
       tenantId,
@@ -67,6 +70,8 @@ export async function updateContract(id: string, data: Partial<ContractFormData>
 
   const parsed = ContractPartialSchema.safeParse(data)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
+
+  await assertRefDoTenant(prisma, tenantId, 'harvest', data.harvestId)
 
   const updateData: any = {}
   if (data.contractNumber !== undefined) updateData.contractNumber = data.contractNumber

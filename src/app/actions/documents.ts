@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
+import { requirePermission } from "@/lib/authz";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -15,12 +16,7 @@ export async function getDocumentUrl(
   documentId: string
 ): Promise<{ url: string; error?: string }> {
   try {
-    const session = await auth();
-    if (!session?.user?.tenantId) {
-      return { url: "", error: "Unauthorized" };
-    }
-
-    const tenantId = session.user.tenantId;
+    await requirePermission("invoices:read");
 
     if (type === "laser") {
       return { url: `/api/v1/invoices/${documentId}/generate` };
@@ -41,19 +37,18 @@ export async function validateDocumentAccess(
   documentType: "invoice" | "receipt" | "label"
 ): Promise<{ valid: boolean; tenantId?: string; error?: string }> {
   try {
-    const session = await auth();
-    if (!session?.user?.tenantId) {
-      return { valid: false, error: "Unauthorized" };
-    }
-
-    const tenantId = session.user.tenantId;
+    const { tenantId } = await requirePermission("invoices:read");
 
     if (documentType === "invoice") {
-      const doc = await prisma.commercialInvoice.findUnique({
-        where: { id: documentId },
-        select: { tenantId: true },
+      // findFirst com o tenantId no filtro, e não findUnique seguido de
+      // comparação: procurar pelo id e só depois comparar deixava a consulta
+      // ler a linha de outra empresa antes de a rejeitar. O resultado era o
+      // mesmo, mas o filtro no banco é o que se demonstra numa auditoria.
+      const doc = await prisma.commercialInvoice.findFirst({
+        where: { id: documentId, tenantId },
+        select: { id: true },
       });
-      if (!doc || doc.tenantId !== tenantId) {
+      if (!doc) {
         return { valid: false, error: "Document not found" };
       }
       return { valid: true, tenantId };

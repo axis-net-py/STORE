@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
 import { assertPeriodOpen } from '@/lib/accounting-period'
@@ -32,10 +31,14 @@ export type FinanceSummary = {
   paidThisMonth: number
 }
 
+/**
+ * Este atalho só verificava que havia sessão, e as consultas de contas a
+ * receber e a pagar passavam por ele: a matriz de permissões não tinha efeito
+ * nenhum sobre a posição financeira da empresa. Passa pela função central,
+ * como o resto (auditoria de 2026-07-30).
+ */
 async function requireTenant() {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  return { tenantId: session.user.tenantId as string, userId: session.user.id as string }
+  return requirePermission('accounting:read')
 }
 
 async function getOrCreateAccount(

@@ -62,16 +62,22 @@ export class SifenRetryService {
    * Called by Vercel Cron or background function.
    */
   async processRetries(
+    tenantId: string,
     signAndSubmit: (xml: string, documentNumber: string) => Promise<{
       success: boolean;
       cdc?: string;
       message?: string;
     }>
   ): Promise<{ processed: number; succeeded: number; failed: number }> {
-    // In production, fetch from failed_submissions table
-    // For now, fetch invoices with PENDING sifenStatus
+    // O tenantId passou a ser obrigatório (auditoria de 2026-07-30). Sem ele,
+    // esta consulta varria as faturas pendentes de TODAS as empresas, e
+    // signAndSubmit — que traz o certificado de UMA — assinava-as a todas.
+    // Documentos de uma empresa iriam à SET assinados por outra. O serviço
+    // ainda não está ligado a nada, e é por isso que se corrige agora: o
+    // problema só aparecia no dia em que alguém o ligasse.
     const pendingInvoices = await this.prisma.commercialInvoice.findMany({
       where: {
+        tenantId,
         sifenStatus: "PENDING",
         sifenCdc: null,
       },

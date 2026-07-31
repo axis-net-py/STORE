@@ -431,13 +431,15 @@ export async function createSalesInvoice(data: InvoiceFormData) {
   }))
 
   // 6. Integração SIFEN (Real-time, non-blocking)
-  // Executado fora da transação para não travar o banco em caso de timeout do Sifen
+  // Executado fora da transação para não travar o banco em caso de timeout do Sifen.
+  //
+  // O try/catch à volta de uma promessa que não é esperada não apanha nada: se
+  // a submissão rejeitar, é uma unhandled rejection e o processo do Node pode
+  // ir abaixo. Tem de ser .catch() na própria promessa.
   if (data.isSifen) {
-    try {
-      submitInvoiceToSifen(tenantId, result.id)
-    } catch (err) {
-      console.error('[SIFEN] Background submission trigger failed:', err)
-    }
+    submitInvoiceToSifen(tenantId, result.id).catch((err) => {
+      console.error('[SIFEN] Falha ao transmitir a fatura', result.id, err)
+    })
   }
 
   revalidatePath(`/${tenantId}/invoices`)
@@ -908,12 +910,11 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
     return updated
   })
 
+  // Ver a nota em createSalesInvoice: .catch() na promessa, não try/catch.
   if (data.type === 'SALES' && data.isSifen) {
-    try {
-      submitInvoiceToSifen(tenantId, id)
-    } catch (err) {
-      console.error('[SIFEN] Background submission trigger failed:', err)
-    }
+    submitInvoiceToSifen(tenantId, id).catch((err) => {
+      console.error('[SIFEN] Falha ao transmitir a fatura', id, err)
+    })
   }
 
   revalidatePath(`/${tenantId}/invoices`)

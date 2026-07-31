@@ -12,6 +12,7 @@
  */
 import prisma from "@/lib/prisma";
 import { getCertificadoAtivo } from "@/lib/certificado-ativo";
+import { mapearParaSifen } from "@/lib/sifen-mapa";
 import { revalidatePath } from "next/cache";
 import type { SifenInvoice, SifenConfig } from "@axis/sifen";
 import { SifenClient } from "@axis/sifen";
@@ -57,32 +58,22 @@ export async function submitInvoiceToSifen(
       orderBy: { date: "desc" },
     });
 
-    // Map invoice to SIFEN format
-    const sifenInvoice: SifenInvoice = {
-      documentType: invoice.type === "SALES" ? "FACTURA" : "FACTURA",
-      documentNumber: invoice.documentNumber || "",
-      stamp: "",
-      issueDate: invoice.issuedAt,
-      totalAmount: Number(invoice.totalAmount),
-      totalIva10: 0, // Calculate from items
-      totalIva5: 0,
-      totalExento: 0,
-      currency: invoice.currency,
-      exchangeRate: exchangeRate ? Number(exchangeRate.ratePYGtoUSD) : undefined,
-      items: invoice.items.map((item) => ({
-        quantity: Number(item.quantity),
-        unitPrice: Number(item.unitPrice),
-        totalPrice: Number(item.totalPrice),
-        description: item.product.name || "",
-        taxType: "IVA_10" as const,
-        taxAmount: 0,
-        unit: item.product.unit || "un",
-      })),
-      customerDocument: invoice.customer?.document || "00000000",
-      customerName: invoice.customer?.name || "Consumidor Final",
-      customerType: "JURIDICA",
-      customerDocType: (invoice.customer?.documentType as "RUC" | "CEDULA" | "PASAPORTE" | "EXTRANJERO") || "RUC",
-    };
+    // Só se declara à SET o que a empresa emite. Uma fatura de COMPRA foi
+    // emitida pelo fornecedor e já foi declarada por ele; transmiti-la em
+    // nome desta empresa seria declarar uma venda que não houve. O mapeamento
+    // anterior tinha `type === "SALES" ? "FACTURA" : "FACTURA"` — os dois
+    // ramos iguais, o que na prática permitia a compra passar.
+    if (invoice.type !== "SALES") {
+      return { success: false, message: "Apenas faturas de venda são transmitidas à SET." };
+    }
+
+    // Mapeamento em lib/sifen-mapa.ts, com testes. Recusa transmitir sem
+    // timbrado, sem número ou com o documento do cliente por preencher, em vez
+    // de os substituir por vazio e por "00000000" como antes.
+    const sifenInvoice: SifenInvoice = mapearParaSifen(
+      invoice,
+      exchangeRate ? Number(exchangeRate.ratePYGtoUSD) : undefined
+    );
 
     // Certificado DESTE cliente, não o global (spec Projeto 2, §6).
     //
@@ -108,8 +99,11 @@ export async function submitInvoiceToSifen(
     const result = await sifenClient.submitInvoice(sifenInvoice);
 
     // Update invoice with SIFEN response
-    await prisma.commercialInvoice.update({
-      where: { id: invoiceId },
+    // updateMany com o tenantId no filtro, e não update por id: o id já veio
+    // de uma consulta filtrada, mas quem escreve o CDC de um documento fiscal
+    // não deve depender disso.
+    await prisma.commercialInvoice.updateMany({
+      where: { id: invoiceId, tenantId },
       data: {
         sifenStatus: result.success ? "APPROVED" : result.shouldRetry ? "PENDING" : "REJECTED",
         sifenCdc: result.cdc || undefined,
@@ -163,15 +157,28 @@ export async function submitInvoiceToSifen(
 }
 
 /**
- * Retry all pending SIFEN submissions.
- * Called by Vercel Cron or background job.
+ * NÃO IMPLEMENTADO. Ver o relatório de auditoria de 2026-07-30, item aberto 1.
+ *
+ * Devolvia `{ processed: 0, succeeded: 0, failed: 0 }` — a forma exata de uma
+ * execução bem-sucedida que não encontrou nada por fazer. Quem ligasse isto a
+ * um cron veria zeros todos os dias e concluiria que não havia pendências,
+ * enquanto os documentos com sifenStatus 'PENDING' continuavam por declarar à
+ * SET. Uma fatura não transmitida é uma fatura não declarada, e o silêncio era
+ * indistinguível de estar tudo bem.
+ *
+ * Falta o essencial: o XML assinado não é guardado em lado nenhum, e sem ele
+ * não há o que retransmitir (packages/sifen/services/retry.ts, processRetries,
+ * passa `""` como XML). Implementar exige primeiro persistir o XML.
+ *
+ * Até lá, falha em voz alta em vez de mentir em silêncio.
  */
-export async function retryPendingSifenSubmissions(tenantId: string): Promise<{
+export async function retryPendingSifenSubmissions(_tenantId: string): Promise<{
   processed: number;
   succeeded: number;
   failed: number;
 }> {
-  // This would be implemented with the SifenRetryService
-  // For now, return a placeholder
-  return { processed: 0, succeeded: 0, failed: 0 };
+  throw new Error(
+    "Retransmissão automática à SET ainda não implementada: o XML assinado não é " +
+      "guardado. Reenvie o documento manualmente a partir da fatura."
+  );
 }

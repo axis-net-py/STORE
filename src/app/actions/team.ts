@@ -3,104 +3,102 @@
 import prisma from "@/lib/prisma";
 import type { Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { requirePermission } from "@/lib/authz";
+import { permissoesDoNucleo } from "@/lib/permissoes-nucleo";
 import { hash } from "bcryptjs";
 import { randomBytes } from "crypto";
 
-// ─── Helper: Check permission inline ──────────────────────
-
-async function checkPermission(userId: string, action: string, tenantId: string): Promise<boolean> {
-  const user = await prisma.user.findFirst({
-    where: { id: userId, tenantId },
-    select: { role: true },
-  });
-  if (!user) return false;
-  if (user.role === "SOVEREIGN") return true;
-
-  const perm = await prisma.permission.findFirst({
-    where: { action, role: user.role, tenantId },
-  });
-  return !!perm;
-}
+/**
+ * Gestão de equipa e permissões.
+ *
+ * REGRA DESTE FICHEIRO: o tenant vem SEMPRE da sessão, nunca do parâmetro.
+ *
+ * As funções mantêm o parâmetro `tenantId` porque a interface o passa, mas ele
+ * é ignorado. Usá-lo permitiria a um SOVEREIGN de uma empresa listar, alterar
+ * permissões e mudar papéis de utilizadores de OUTRA — a verificação de
+ * permissão corre sempre contra o tenant da sessão, e a consulta correria
+ * contra o que o cliente pedisse.
+ */
 
 async function logAudit(userId: string, tenantId: string, action: string, details: any) {
   await prisma.auditLog.create({
-    data: {
-      tenantId,
-      userId,
-      action,
-      details,
-    },
+    data: { tenantId, userId, action, details },
   });
 }
 
-// ─── Get Users for Tenant ────────────────────────────────
+// ─── Utilizadores do cliente ─────────────────────────────────
 
-export async function getUsers(tenantId: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const hasPerm = await checkPermission(session.user.id, "settings:read", tenantId);
-  if (!hasPerm) throw new Error("Forbidden");
+export async function getUsers(_tenantId?: string) {
+  const { tenantId } = await requirePermission("settings:read");
 
-  return await prisma.user.findMany({
+  return prisma.user.findMany({
     where: { tenantId },
     select: { id: true, email: true, name: true, role: true },
     orderBy: { email: "asc" },
   });
 }
 
-// ─── Update User Role ──────────────────────────────────────
+// ─── Mudar o papel de um utilizador ──────────────────────────
 
 export async function updateUserRole(userId: string, newRole: Role) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  const { tenantId, userId: autorId } = await requirePermission("users:manage");
 
-  // Get tenant from target user
-  const targetUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { tenantId: true },
+  // O alvo tem de ser do MESMO cliente. Sem este filtro, um SOVEREIGN podia
+  // promover-se a si próprio dentro da empresa de outra pessoa.
+  const alvo = await prisma.user.findFirst({
+    where: { id: userId, tenantId },
+    select: { id: true, role: true },
   });
-  if (!targetUser) throw new Error("User not found");
+  if (!alvo) throw new Error("Usuário não encontrado");
 
-  const hasPerm = await checkPermission(session.user.id, "users:manage", targetUser.tenantId);
-  if (!hasPerm) throw new Error("Forbidden");
+  // Rebaixar o último SOVEREIGN deixaria a conta sem dono — ninguém poderia
+  // voltar a gerir utilizadores nem permissões.
+  if (alvo.role === "SOVEREIGN" && newRole !== "SOVEREIGN") {
+    const quantos = await prisma.user.count({ where: { tenantId, role: "SOVEREIGN" } });
+    if (quantos <= 1) {
+      throw new Error("Não é possível rebaixar o único usuário Sovereign da conta.");
+    }
+  }
 
   const user = await prisma.user.update({
-    where: { id: userId },
+    where: { id: alvo.id },
     data: { role: newRole },
+    select: { id: true, name: true, email: true, role: true },
   });
 
-  await logAudit(session.user.id, targetUser.tenantId, "UPDATE_USER_ROLE", { userId, newRole });
-  revalidatePath(`/${targetUser.tenantId}/settings/team`);
+  await logAudit(autorId, tenantId, "UPDATE_USER_ROLE", {
+    userId,
+    de: alvo.role,
+    para: newRole,
+  });
+  revalidatePath(`/${tenantId}/settings/team`);
   return { success: true, user };
 }
 
-// ─── Get Permissions for Tenant ─────────────────────────────
+// ─── Permissões ──────────────────────────────────────────────
 
-export async function getPermissions(tenantId: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const hasPerm = await checkPermission(session.user.id, "settings:read", tenantId);
-  if (!hasPerm) throw new Error("Forbidden");
+export async function getPermissions(_tenantId?: string) {
+  const { tenantId } = await requirePermission("settings:read");
 
-  return await prisma.permission.findMany({
+  return prisma.permission.findMany({
     where: { tenantId },
     orderBy: { action: "asc" },
   });
 }
 
-// ─── Update Permission ──────────────────────────────────────
-
 export async function updatePermission(
-  tenantId: string,
+  _tenantId: string | undefined,
   action: string,
   role: Role,
   enabled: boolean
 ) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const hasPerm = await checkPermission(session.user.id, "settings:write", tenantId);
-  if (!hasPerm) throw new Error("Forbidden");
+  const { tenantId, userId } = await requirePermission("settings:write");
+
+  // SOVEREIGN não passa pela matriz (ver lib/authz.ts): dar-lhe ou tirar-lhe
+  // linhas não teria efeito, e tirá-las daria a impressão errada de que teve.
+  if (role === "SOVEREIGN") {
+    throw new Error("O papel Sovereign tem acesso total por definição e não é configurável.");
+  }
 
   if (enabled) {
     await prisma.permission.upsert({
@@ -109,62 +107,38 @@ export async function updatePermission(
       create: { action, role, tenantId },
     });
   } else {
-    await prisma.permission.deleteMany({
-      where: { action, role, tenantId },
-    });
+    await prisma.permission.deleteMany({ where: { action, role, tenantId } });
   }
 
-  await logAudit(session.user.id, tenantId, "UPDATE_PERMISSION", { action, role, enabled });
+  await logAudit(userId, tenantId, "UPDATE_PERMISSION", { action, role, enabled });
   revalidatePath(`/${tenantId}/settings/team`);
   return { success: true };
 }
 
-// ─── Seed Default Permissions ──────────────────────────────
+export async function seedDefaultPermissions(_tenantId?: string) {
+  const { tenantId, userId } = await requirePermission("settings:write");
 
-export async function seedDefaultPermissions(tenantId: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const hasPerm = await checkPermission(session.user.id, "settings:write", tenantId);
-  if (!hasPerm) throw new Error("Forbidden");
+  // Usa a matriz oficial (lib/permissoes-nucleo.ts), a mesma do
+  // provisionamento. Esta função concedia TODAS as 21 ações a ADMIN, OPERATOR
+  // e AUDITOR, incluindo apagar e gerir utilizadores — um clique aqui dava ao
+  // AUDITOR, que é quem confere, o poder de apagar faturas.
+  const linhas = permissoesDoNucleo(tenantId);
+  const r = await prisma.permission.createMany({ data: linhas, skipDuplicates: true });
 
-  const actions = [
-    "dashboard:read", "customers:read", "customers:write", "customers:delete",
-    "suppliers:read", "suppliers:write", "suppliers:delete",
-    "products:read", "products:write", "products:delete",
-    "invoices:read", "invoices:write", "invoices:delete",
-    "inventory:read", "inventory:write",
-    "accounting:read", "accounting:write",
-    "reports:read",
-    "settings:read", "settings:write",
-    "users:manage",
-  ];
-
-  const roles = ["ADMIN", "OPERATOR", "AUDITOR"] as const;
-
-  for (const action of actions) {
-    for (const role of roles) {
-      await prisma.permission.upsert({
-        where: { action_role_tenantId: { action, role, tenantId } },
-        update: {},
-        create: { action, role, tenantId },
-      });
-    }
-  }
-
-  await logAudit(session.user.id, tenantId, "SEED_PERMISSIONS", { count: actions.length * roles.length });
+  await logAudit(userId, tenantId, "SEED_PERMISSIONS", {
+    criadas: r.count,
+    totalNaMatriz: linhas.length,
+  });
   revalidatePath(`/${tenantId}/settings/team`);
-  return { success: true, count: actions.length * roles.length };
+  return { success: true, count: r.count };
 }
 
+// ─── Criar e remover utilizadores ────────────────────────────
+
 export async function createUserAction(data: { name: string; email: string; role: Role }) {
-  const session = await auth();
-  if (!session?.user?.id || !session?.user?.tenantId) throw new Error("Unauthorized");
-  const tenantId = session.user.tenantId;
+  const { tenantId, userId: autorId } = await requirePermission("users:manage");
 
-  const hasPerm = await checkPermission(session.user.id, "users:manage", tenantId);
-  if (!hasPerm) throw new Error("Forbidden");
-
-  // Senha temporária aleatória por usuário (nunca uma senha padrão compartilhada)
+  // Senha temporária aleatória por usuário (nunca uma senha padrão partilhada)
   const tempPassword = `Cx-${randomBytes(9).toString("base64url")}`;
   const hashedPassword = await hash(tempPassword, 10);
 
@@ -173,9 +147,7 @@ export async function createUserAction(data: { name: string; email: string; role
   // criaria uma segunda conta ao lado de "ana@x.com".
   const email = data.email.trim().toLowerCase();
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
+  const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) throw new Error("E-mail já cadastrado");
 
   const newUser = await prisma.user.create({
@@ -190,33 +162,28 @@ export async function createUserAction(data: { name: string; email: string; role
     select: { id: true, name: true, email: true, role: true },
   });
 
-  await logAudit(session.user.id, tenantId, "CREATE_USER", { userId: newUser.id, email: newUser.email, role: newUser.role });
+  await logAudit(autorId, tenantId, "CREATE_USER", {
+    userId: newUser.id,
+    email: newUser.email,
+    role: newUser.role,
+  });
   revalidatePath(`/${tenantId}/settings/team`);
   return { success: true, user: newUser, tempPassword };
 }
 
 export async function deleteUserAction(userId: string) {
-  const session = await auth();
-  if (!session?.user?.id || !session?.user?.tenantId) throw new Error("Unauthorized");
-  const tenantId = session.user.tenantId;
+  const { tenantId, userId: autorId } = await requirePermission("users:manage");
 
-  if (session.user.id === userId) throw new Error("Não é possível excluir seu próprio usuário");
+  if (autorId === userId) throw new Error("Não é possível excluir seu próprio usuário");
 
-  const hasPerm = await checkPermission(session.user.id, "users:manage", tenantId);
-  if (!hasPerm) throw new Error("Forbidden");
-
-  const targetUser = await prisma.user.findFirst({
-    where: { id: userId, tenantId },
-  });
+  const targetUser = await prisma.user.findFirst({ where: { id: userId, tenantId } });
   if (!targetUser) throw new Error("Usuário não encontrado ou não pertence a este inquilino");
 
   if (targetUser.role === "SOVEREIGN") throw new Error("Não é possível excluir um usuário Sovereign");
 
-  await prisma.user.delete({
-    where: { id: userId },
-  });
+  await prisma.user.delete({ where: { id: userId } });
 
-  await logAudit(session.user.id, tenantId, "DELETE_USER", { userId, email: targetUser.email });
+  await logAudit(autorId, tenantId, "DELETE_USER", { userId, email: targetUser.email });
   revalidatePath(`/${tenantId}/settings/team`);
   return { success: true };
 }

@@ -70,14 +70,19 @@ export async function validateDocumentAccess(
 
 // ─── Log Print Action (Audit) ─────────────────────
 
+// O tenantId vinha por parâmetro e era escrito tal e qual no registo de
+// auditoria. Como este ficheiro é 'use server', dava para inserir entradas
+// forjadas no histórico de auditoria de OUTRA empresa — precisamente o
+// registo em que se confia numa fiscalização. Vem da sessão.
 export async function logPrintAction(
   documentId: string,
   printType: PrintType,
-  tenantId: string
+  _tenantId?: string
 ) {
   try {
     const session = await auth();
-    if (!session?.user?.id) return;
+    if (!session?.user?.id || !session.user.tenantId) return;
+    const tenantId = session.user.tenantId;
 
     await prisma.auditLog.create({
       data: {

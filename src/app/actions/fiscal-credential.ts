@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
-import { cifrar, decifrar, CHAVE_TENANT } from '@/lib/crypto'
+import { cifrar, CHAVE_TENANT } from '@/lib/crypto'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -153,29 +153,4 @@ export async function deleteFiscalCredential(id: string) {
   })
 
   revalidatePath(`/${tenantId}/settings/fiscal`)
-}
-
-/**
- * Devolve o certificado ativo, decifrado, para uso da integração SIFEN.
- *
- * NÃO é uma server action exposta ao browser: é chamada de servidor para
- * servidor, a partir de actions/sifen.ts. Devolver isto ao cliente entregaria
- * a assinatura digital da empresa a quem abrisse as ferramentas do navegador.
- */
-export async function getCertificadoAtivo(tenantId: string): Promise<
-  { certificate: string; password: string; environment: string } | null
-> {
-  const c = await prisma.fiscalCredential.findFirst({
-    where: { tenantId, isActive: true },
-  })
-  if (!c) return null
-
-  return {
-    certificate: decifrar(
-      { cipher: c.certificateCipher, iv: c.certificateIv, tag: c.certificateTag },
-      CHAVE_TENANT
-    ),
-    password: decifrar({ cipher: c.passCipher, iv: c.passIv, tag: c.passTag }, CHAVE_TENANT),
-    environment: c.environment,
-  }
 }

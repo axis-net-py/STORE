@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import type { CommercialInvoice, InvoiceItem } from '@prisma/client'
 import { postInvoiceToLedger } from './accounting'
-import { submitInvoiceToSifen } from './sifen'
+import { submitInvoiceToSifen } from '@/lib/sifen-submit'
 
 export type InvoiceFormData = {
   type: 'PURCHASE' | 'SALES'
@@ -646,10 +646,10 @@ export async function getLatestExchangeRate() {
 }
 
 // Forçar atualização manual das taxas de câmbio
-export async function fetchExchangeRatesAction(tenantId: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  if (session.user.tenantId !== tenantId) throw new Error('Forbidden')
+// O tenantId continua na assinatura porque a página o passa, mas é ignorado:
+// o cliente vem sempre da sessão. Ver a regra em actions/team.ts.
+export async function fetchExchangeRatesAction(_tenantId?: string) {
+  const { tenantId } = await requirePermission('settings:write')
 
   await getOrFetchExchangeRate(tenantId, true)
   revalidatePath(`/${tenantId}/settings/exchange-rates`)
@@ -670,7 +670,10 @@ export async function fetchExchangeRatesAction(tenantId: string) {
  * segunda transação falha e é repetida por quem chama. Não confiar nesta
  * função sozinha para garantir sequência.
  */
-export async function getNextSalesInvoiceNumber(tenantId: string, tx?: any) {
+// Não exportada: este ficheiro é 'use server'. Exportá-la punha na rede um
+// endpoint que aceita o tenantId do cliente e devolve a numeração fiscal de
+// outra empresa. Só tem chamadores dentro deste ficheiro.
+async function getNextSalesInvoiceNumber(tenantId: string, tx?: any) {
   const db = tx || prisma
 
   const tenant = await db.tenant.findUnique({

@@ -296,13 +296,14 @@ export async function voidJournalEntry(entryId: string, reason: string) {
   return { success: true, entry };
 }
 
-export async function getAccounts(tenantId?: string) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tId = tenantId || session.user.tenantId;
+// O parâmetro tenantId era usado quando vinha preenchido ("tenantId ||
+// sessão"), e este ficheiro é 'use server': qualquer utilizador autenticado
+// podia pedir o plano de contas inteiro de OUTRA empresa. Agora é ignorado.
+export async function getAccounts(_tenantId?: string) {
+  const { tenantId } = await requirePermission("accounting:read");
 
   return prisma.account.findMany({
-    where: { tenantId: tId, isActive: true },
+    where: { tenantId, isActive: true },
     orderBy: { code: "asc" },
   });
 }

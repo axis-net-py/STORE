@@ -1,7 +1,17 @@
-"use server";
-
+/**
+ * Submissão de documentos à SIFEN.
+ *
+ * ESTE MÓDULO NÃO PODE SER 'use server'.
+ *
+ * submitInvoiceToSifen recebe o tenantId por parâmetro. Como server action,
+ * isso era um endpoint HTTP público onde qualquer utilizador autenticado
+ * podia mandar transmitir à SET uma fatura de OUTRA empresa, em nome dela —
+ * um ato com efeitos legais. Auditoria de 2026-07-30.
+ *
+ * Chamadores legítimos: actions/invoice.ts, servidor para servidor.
+ */
 import prisma from "@/lib/prisma";
-import { getCertificadoAtivo } from "@/app/actions/fiscal-credential";
+import { getCertificadoAtivo } from "@/lib/certificado-ativo";
 import { revalidatePath } from "next/cache";
 import type { SifenInvoice, SifenConfig } from "@axis/sifen";
 import { SifenClient } from "@axis/sifen";

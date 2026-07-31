@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
@@ -22,9 +21,7 @@ export type CustomerFormData = {
 
 // Listar clientes do tenant
 export async function getCustomers(): Promise<Customer[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('customers:read')
 
   return prisma.customer.findMany({
     where: { tenantId },
@@ -34,9 +31,7 @@ export async function getCustomers(): Promise<Customer[]> {
 
 // Buscar cliente por ID
 export async function getCustomerById(id: string): Promise<Customer | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('customers:read')
 
   return prisma.customer.findFirst({
     where: { id, tenantId },

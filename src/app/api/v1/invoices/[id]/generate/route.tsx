@@ -2,35 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { SifenInvoicePDF } from '@/components/pdf/SifenInvoicePDF';
 import prisma from '@/lib/prisma';
-import { auth } from '@/auth';
+import { requirePermission } from '@/lib/authz';
 
 // ─── API: Generate SIFEN Invoice PDF ─────────────────
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // A autorização estava duplicada aqui, e a cópia dava passe livre ao ADMIN —
+  // exatamente o que lib/authz.ts deixou de fazer na auditoria de 2026-07-30.
+  // Duas cópias de uma regra de acesso divergem sempre; esta rota devolve um
+  // documento fiscal, e a que valia era a mais permissiva.
+  let tenantId: string;
+  let userId: string;
   try {
-    const session = await auth();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    ({ tenantId, userId } = await requirePermission('invoices:read'));
+  } catch {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
+  try {
     const { id } = await params;
-    const tenantId = session.user.tenantId;
-
-    // Inline permission check
-    const user = await prisma.user.findFirst({ where: { id: session.user.id, tenantId } });
-    if (!user) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    if (user.role !== 'SOVEREIGN' && user.role !== 'ADMIN') {
-      const hasPermission = await prisma.permission.findFirst({
-        where: { tenantId, role: user.role, action: 'accounting:read' },
-      });
-      if (!hasPermission) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
-    }
 
     // Fetch invoice with all related data (scoped to tenant)
     const invoice = await prisma.commercialInvoice.findUnique({
@@ -81,7 +73,7 @@ export async function GET(
         invoice={invoiceData}
         language="pt"
         tenantId={tenantId}
-        userId={session.user.id}
+        userId={userId}
         checksum={Buffer.from(JSON.stringify(invoiceData)).toString('base64')}
       />
     );

@@ -5,10 +5,10 @@
  * detalhe do provisionamento, e tem de poder ser testada isoladamente.
  *
  * Os QUATRO papéis têm de aparecer aqui. requirePermission (lib/authz.ts)
- * liberta SOVEREIGN e ADMIN por regra, mas exige uma linha na tabela para
- * OPERATOR e AUDITOR — e o recurso legado só se aplica quando o cliente não
- * tem matriz nenhuma. Um cliente com permissões semeadas e sem linhas para
- * estes dois fica com eles trancados fora de tudo.
+ * liberta apenas o SOVEREIGN por regra; ADMIN, OPERATOR e AUDITOR exigem uma
+ * linha na tabela — e o recurso legado só se aplica quando o cliente não tem
+ * matriz nenhuma. Um cliente com permissões semeadas e sem linhas para estes
+ * papéis fica com eles trancados fora de tudo.
  *
  * Auditoria de 2026-07-30: era exatamente o caso. Os dois papéis tinham zero
  * permissões, e o utilizador operator@axis.erp não conseguia executar nada.

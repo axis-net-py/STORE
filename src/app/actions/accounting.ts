@@ -1,16 +1,13 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { auth } from "@/auth";
 import { requirePermission } from "@/lib/authz";
 import { assertPeriodOpen } from "@/lib/accounting-period";
 import { CurrencyEngine } from "@axis/currency";
 import { Prisma } from "@prisma/client";
 
 export async function getJournalEntries(filters?: any) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId } = await requirePermission("accounting:read")
 
   const where: any = { tenantId };
   if (filters?.status) where.status = filters.status;
@@ -41,9 +38,7 @@ export async function getLedgerEntriesWithShadow(filters?: any) {
 }
 
 export async function getTrialBalance(filters?: any) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId } = await requirePermission("accounting:read")
 
   const entries = await prisma.journalEntry.findMany({
     where: { tenantId, status: "POSTED" },
@@ -73,9 +68,7 @@ export async function getTrialBalance(filters?: any) {
  * Handles Sales and Purchases with appropriate tax (IVA) and entity accounts.
  */
 export async function postInvoiceToLedger(invoiceId: string, tx?: any) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId, userId } = await requirePermission("accounting:write")
 
   const db = tx || prisma;
 
@@ -116,7 +109,7 @@ export async function postInvoiceToLedger(invoiceId: string, tx?: any) {
     referenceType: "invoice",
     referenceId: invoice.id,
     postedAt: new Date(),
-    createdBy: session.user.id,
+    createdBy: userId,
   };
 
   const entry = existingEntry

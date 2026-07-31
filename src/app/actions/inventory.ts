@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
 import type { InventoryMovement, Product } from '@prisma/client'
@@ -16,9 +15,7 @@ export type ProductWithStock = Product & {
 
 // Listar movimentações de estoque do tenant
 export async function getInventoryMovements(productId?: string): Promise<MovementWithDetails[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('inventory:read')
 
   return prisma.inventoryMovement.findMany({
     where: {
@@ -36,9 +33,7 @@ export async function getInventoryMovements(productId?: string): Promise<Movemen
 
 // Buscar extrato de um produto específico
 export async function getProductStockHistory(productId: string): Promise<ProductWithStock | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('inventory:read')
 
   return prisma.product.findFirst({
     where: { id: productId, tenantId },

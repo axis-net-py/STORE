@@ -133,9 +133,7 @@ function assertDocumentoEditavel(inv: {
 
 // Listar faturas do tenant
 export async function getInvoices() {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('invoices:read')
 
   return prisma.commercialInvoice.findMany({
     where: { tenantId },
@@ -150,9 +148,7 @@ export async function getInvoices() {
 
 // Buscar fatura por ID com detalhes
 export async function getInvoiceById(id: string) {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('invoices:read')
 
   return prisma.commercialInvoice.findFirst({
     where: { id, tenantId },
@@ -638,9 +634,7 @@ import { getOrFetchExchangeRate } from '@/lib/exchange'
 
 // Obter última taxa de câmbio (com atualização automática)
 export async function getLatestExchangeRate() {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('invoices:read')
 
   return getOrFetchExchangeRate(tenantId)
 }

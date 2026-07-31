@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
@@ -27,9 +26,7 @@ export type ProductFormData = {
 
 // Listar produtos do tenant
 export async function getProducts(): Promise<any[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('products:read')
 
   const products = await prisma.product.findMany({
     where: { tenantId },
@@ -47,9 +44,7 @@ export async function getProducts(): Promise<any[]> {
 
 // Buscar produto por ID
 export async function getProductById(id: string): Promise<any | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('products:read')
 
   const product = await prisma.product.findFirst({
     where: { id, tenantId },
@@ -171,9 +166,7 @@ export async function deleteProduct(id: string): Promise<{ archived: boolean }> 
 
 // Buscar produto por SKU (para validação)
 export async function getProductBySku(sku: string): Promise<Product | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('products:read')
 
   return prisma.product.findFirst({
     where: { tenantId, sku },

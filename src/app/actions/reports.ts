@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requirePermission } from "@/lib/authz";
 
 export type ReportItem = {
   id: string;
@@ -16,9 +16,7 @@ export async function getReportData(
   startDateStr?: string,
   endDateStr?: string
 ): Promise<ReportItem[]> {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant não encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId } = await requirePermission("reports:read");
 
   const startDate = startDateStr ? new Date(startDateStr) : new Date(Date.now() - 30 * 86400000);
   const endDate = endDateStr ? new Date(endDateStr) : new Date();

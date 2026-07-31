@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
@@ -23,9 +22,7 @@ export type SupplierFormData = {
 
 // Listar fornecedores do tenant
 export async function getSuppliers(): Promise<Supplier[]> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('suppliers:read')
 
   return prisma.supplier.findMany({
     where: { tenantId },
@@ -35,9 +32,7 @@ export async function getSuppliers(): Promise<Supplier[]> {
 
 // Buscar fornecedor por ID
 export async function getSupplierById(id: string): Promise<Supplier | null> {
-  const session = await auth()
-  if (!session?.user?.tenantId) throw new Error('Tenant não encontrado')
-  const tenantId = session.user.tenantId
+  const { tenantId } = await requirePermission('suppliers:read')
 
   return prisma.supplier.findFirst({
     where: { id, tenantId },

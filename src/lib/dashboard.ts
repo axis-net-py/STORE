@@ -1,12 +1,10 @@
 'use server'
 
 import prisma from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requirePermission } from "@/lib/authz";
 
 export async function getDashboardStats(dateRange?: { start?: Date; end?: Date }) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId } = await requirePermission("dashboard:read");
 
   const [
     salesAggregate,
@@ -39,9 +37,7 @@ export async function getDashboardStats(dateRange?: { start?: Date; end?: Date }
 }
 
 export async function getTrendData(dateRange?: { start?: Date; end?: Date }) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId } = await requirePermission("dashboard:read");
 
   const startDate = dateRange?.start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const endDate = dateRange?.end || new Date();
@@ -62,9 +58,7 @@ export async function getTrendData(dateRange?: { start?: Date; end?: Date }) {
 }
 
 export async function getTopProducts(dateRange?: { start?: Date; end?: Date }, limit = 5) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId } = await requirePermission("dashboard:read");
 
   const startDate = dateRange?.start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const endDate = dateRange?.end || new Date();

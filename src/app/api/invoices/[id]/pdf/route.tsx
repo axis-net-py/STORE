@@ -12,8 +12,15 @@ export async function GET(
     return new NextResponse("Missing invoice ID", { status: 400 });
   }
 
-  // Buscar fatura com detalhes
-  const invoice = await getInvoiceById(id);
+  // getInvoiceById exige invoices:read e filtra pelo tenant da sessão, por isso
+  // não há aqui fuga entre empresas. Mas sem este try, um pedido sem sessão
+  // rebentava com 500 e a pilha de erro do Next — respondemos 403 e ponto.
+  let invoice: Awaited<ReturnType<typeof getInvoiceById>>;
+  try {
+    invoice = await getInvoiceById(id);
+  } catch {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
   if (!invoice) {
     return new NextResponse("Invoice not found", { status: 404 });
   }

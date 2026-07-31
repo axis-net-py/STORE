@@ -1,7 +1,7 @@
 'use server'
 
 import prisma from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requirePermission } from "@/lib/authz";
 
 /**
  * Consultas de dashboard específicas do agronegócio.
@@ -11,9 +11,7 @@ import { auth } from "@/auth";
  */
 
 export async function getPlotsBreakdown() {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId } = await requirePermission("dashboard:read");
 
   const plots = await prisma.plot.findMany({
     where: { tenantId },
@@ -48,9 +46,7 @@ export async function getPlotsBreakdown() {
 }
 
 export async function getRecentContracts(limit = 5) {
-  const session = await auth();
-  if (!session?.user?.tenantId) throw new Error("Tenant nao encontrado");
-  const tenantId = session.user.tenantId;
+  const { tenantId } = await requirePermission("dashboard:read");
 
   const contracts = await prisma.contract.findMany({
     where: { tenantId },

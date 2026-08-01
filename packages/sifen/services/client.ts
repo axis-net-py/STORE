@@ -165,26 +165,38 @@ export class SifenClient {
   }
 
   /**
-   * Apply XML digital signature.
-   * This is a simplified implementation - production would use full XMLDSig.
+   * NÃO IMPLEMENTADO. Ver o relatório de auditoria de 2026-07-30, item 1.
+   *
+   * Esta função chamava-se "aplicar assinatura" e fazia `return xml` — devolvia
+   * o documento POR ASSINAR. Todo o trabalho acima, extrair a chave privada e o
+   * certificado do .p12, era decoração: a chave era extraída e deitada fora, e
+   * o documento seguia para a SET sem assinatura nenhuma.
+   *
+   * A assinatura digital é o que dá valor legal ao documento eletrónico. Sem
+   * ela não há documento fiscal — há um ficheiro XML.
+   *
+   * Passa a recusar. Assim a venda continua a ser gravada (submitInvoice
+   * apanha o erro e devolve success:false), o documento fica por transmitir de
+   * forma visível, e ninguém entrega isto a um cliente a acreditar que emite
+   * faturas eletrónicas válidas.
+   *
+   * Implementar exige XMLDSig conforme o Manual Técnico da SET:
+   *   1. canonicalização C14N do XML
+   *   2. digest SHA-256
+   *   3. assinatura RSA do digest com a chave privada do .p12
+   *   4. elemento Signature com SignedInfo, SignatureValue e KeyInfo/X509
+   * O node-forge sozinho não faz XMLDSig; é preciso uma biblioteca própria.
    */
   private applyXMLSignature(
-    xml: string,
+    _xml: string,
     _privateKey: forge.pki.PrivateKey,
     _cert: forge.pki.Certificate
   ): string {
-    // For SIFEN compliance, this should implement:
-    // 1. Canonicalize the XML (C14N)
-    // 2. Compute digest (SHA-256)
-    // 3. Sign the digest with RSA private key
-    // 4. Insert Signature element with:
-    //    - SignedInfo
-    //    - SignatureValue
-    //    - KeyInfo with X509Certificate
-
-    // This is a placeholder - actual SIFEN integration requires
-    // vendor-specific XML signature library compliant with SET standards
-    return xml; // Return unsigned for now - integrate with proper XMLDSig lib
+    throw new Error(
+      "Assinatura digital XMLDSig não implementada. O documento não foi " +
+        "transmitido à SET — transmitir sem assinatura produziria um documento " +
+        "sem valor fiscal."
+    );
   }
 
   /**

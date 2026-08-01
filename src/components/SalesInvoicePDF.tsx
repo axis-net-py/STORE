@@ -1,5 +1,6 @@
 import React from "react";
 import { Document, Page, View, Text, StyleSheet, Font } from "@react-pdf/renderer";
+import { dataFiscalLegivel } from "@/lib/fuso";
 
 // Helvetica is a standard PDF font - no registration needed
 // Custom fonts can be registered here if needed
@@ -65,7 +66,10 @@ export function SalesInvoicePDF({ invoice, locale = "pt-BR" }: InvoicePDFProps) 
               #{invoice.id.slice(-8).toUpperCase()}
             </Text>
             <Text style={{ textAlign: "right", fontSize: 10 }}>
-              {new Date(invoice.issuedAt).toLocaleDateString("pt-BR")}
+              {/* A data impressa num documento fiscal é a data de emissão
+                  declarada. toLocaleDateString converte para o fuso de quem
+                  renderiza e trocava o dia. Ver lib/fuso.ts. */}
+              {dataFiscalLegivel(invoice.issuedAt)}
             </Text>
           </View>
         </View>

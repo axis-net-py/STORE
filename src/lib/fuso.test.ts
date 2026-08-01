@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parteDataFiscal, dataFiscalAAAAMMDD, dataFiscalISO } from './fuso.ts'
+import { parteDataFiscal, dataFiscalAAAAMMDD, dataFiscalISO, dataFiscalLegivel } from './fuso.ts'
 
 // ─── Data de calendário: o que a pessoa escolheu no <input type="date"> ──────
 
@@ -69,4 +69,13 @@ test('ISO para mostrar e gravar', () => {
 test('recusa data inválida', () => {
   assert.throws(() => parteDataFiscal(new Date('nada')), /Data inválida/)
   assert.throws(() => parteDataFiscal('não é data'), /Data inválida/)
+})
+
+test('DD/MM/AAAA para mostrar, sem converter para o fuso de quem vê', () => {
+  // Foi assim que se apanhou o defeito: um timbrado gravado como válido até
+  // 31/12/2026 aparecia como 30/12/2026 no navegador.
+  assert.equal(dataFiscalLegivel(new Date('2026-12-31')), '31/12/2026')
+  assert.equal(dataFiscalLegivel(new Date('2026-01-01')), '01/01/2026')
+  assert.equal(dataFiscalLegivel(null), '—')
+  assert.equal(dataFiscalLegivel(undefined), '—')
 })

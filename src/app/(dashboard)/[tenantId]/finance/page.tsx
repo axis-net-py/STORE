@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { dataFiscalLegivel } from "@/lib/fuso";
 import {
   getOpenInvoices,
   getFinanceSummary,
@@ -57,8 +58,11 @@ import { cn } from "@/lib/utils";
 const fmtGs = (n: number) =>
   `${new Intl.NumberFormat("es-PY", { maximumFractionDigits: 0 }).format(n)} Gs.`;
 
-const fmtDate = (d: Date | string | null) =>
-  d ? new Date(d).toLocaleDateString("pt-BR") : "—";
+// dataFiscalLegivel e não toLocaleDateString: esta converte para o fuso do
+// navegador, e um vencimento gravado a 31/12 aparecia como 30/12 a quem esteja
+// a oeste de UTC. Um dia de diferença num vencimento muda se está em atraso.
+// Ver lib/fuso.ts.
+const fmtDate = dataFiscalLegivel;
 
 const texts = {
   pt: {

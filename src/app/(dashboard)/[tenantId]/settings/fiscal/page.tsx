@@ -17,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ShieldCheck, Upload, Trash2, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
+import { TimbradoSection } from "@/components/fiscal/TimbradoSection";
+import { dataFiscalLegivel } from "@/lib/fuso";
 
 const t = {
   pt: {
@@ -231,7 +233,7 @@ export default function FiscalSettingsPage() {
                 </TableCell>
                 <TableCell>{c.environment === "prod" ? s.producao : s.teste}</TableCell>
                 <TableCell>
-                  {c.validUntil ? new Date(c.validUntil).toLocaleDateString() : "—"}
+                  {dataFiscalLegivel(c.validUntil)}
                   {c.diasParaExpirar !== null && c.diasParaExpirar >= 0 && c.diasParaExpirar <= 30 && (
                     <span className="ml-2 text-xs font-semibold text-amber-600">
                       {s.expiraEm(c.diasParaExpirar)}
@@ -274,6 +276,12 @@ export default function FiscalSettingsPage() {
           </TableBody>
         </Table>
       )}
+
+      {/* O certificado assina; o timbrado autoriza. Faltando qualquer um dos
+          dois não há emissão eletrónica, por isso vivem no mesmo ecrã. */}
+      <div className="border-t pt-8">
+        <TimbradoSection />
+      </div>
     </div>
   );
 }

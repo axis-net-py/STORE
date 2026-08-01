@@ -84,8 +84,25 @@ export function dataFiscalAAAAMMDD(entrada: Date | string): string {
   return `${ano}${String(mes).padStart(2, "0")}${String(dia).padStart(2, "0")}`;
 }
 
-/** AAAA-MM-DD, para mostrar e para gravar em campos de data. */
+/** AAAA-MM-DD, para gravar em campos de data e para <input type="date">. */
 export function dataFiscalISO(entrada: Date | string): string {
   const { ano, mes, dia } = parteDataFiscal(entrada);
   return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+/**
+ * DD/MM/AAAA para mostrar ao utilizador.
+ *
+ * NÃO usar `new Date(d).toLocaleDateString()` para datas fiscais. Essa
+ * converte para o fuso do NAVEGADOR, e uma data gravada como 31/12/2026
+ * aparece como 30/12/2026 a quem esteja a oeste de UTC — foi assim que se
+ * apanhou este defeito, com um timbrado válido até 31/12 a mostrar 30/12.
+ *
+ * Aqui não há conversão nenhuma: os componentes vêm de parteDataFiscal, que
+ * já decidiu a que dia o registo pertence, e só se formatam.
+ */
+export function dataFiscalLegivel(entrada: Date | string | null | undefined): string {
+  if (!entrada) return "—";
+  const { ano, mes, dia } = parteDataFiscal(entrada);
+  return `${String(dia).padStart(2, "0")}/${String(mes).padStart(2, "0")}/${ano}`;
 }

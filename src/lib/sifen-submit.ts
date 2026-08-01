@@ -106,7 +106,9 @@ export async function submitInvoiceToSifen(
       where: { id: invoiceId, tenantId },
       data: {
         sifenStatus: result.success ? "APPROVED" : result.shouldRetry ? "PENDING" : "REJECTED",
-        sifenCdc: result.cdc || undefined,
+        // O CDC NÃO se escreve aqui: foi calculado por nós na emissão e já
+        // está gravado. Escrevê-lo de novo a partir da resposta permitiria
+        // que a resposta trocasse a identidade do documento.
         sifenXmlUrl: result.xmlUrl || undefined,
       },
     });

@@ -12,6 +12,7 @@ import { Prisma } from '@prisma/client'
 import type { CommercialInvoice, InvoiceItem } from '@prisma/client'
 import { postInvoiceToLedger } from './accounting'
 import { submitInvoiceToSifen } from '@/lib/sifen-submit'
+import { prepararEmissaoFiscal } from '@/lib/emissao-fiscal'
 
 export type InvoiceFormData = {
   type: 'PURCHASE' | 'SALES'
@@ -316,6 +317,16 @@ export async function createSalesInvoice(data: InvoiceFormData) {
 
     // 2. Obter número sequencial se não fornecido
     const docNum = data.documentNumber || await getNextSalesInvoiceNumber(tenantId, tx);
+    const issuedAt = data.issuedAt ?? new Date()
+
+    // 2b. Se é documento eletrónico, tem de ter timbrado válido e CDC. Dentro
+    // da mesma transação de propósito: um timbrado desativado a meio da
+    // emissão tem de invalidar a fatura, não passar despercebido.
+    // Falha aqui — antes de a fatura existir — em vez de gravar um documento
+    // fiscal incompleto e descobrir o problema na fiscalização.
+    const fiscal = data.isSifen
+      ? await prepararEmissaoFiscal(tx, tenantId, docNum, issuedAt)
+      : null
 
     // 3. Criar a fatura
     const invoice = await tx.commercialInvoice.create({
@@ -325,8 +336,10 @@ export async function createSalesInvoice(data: InvoiceFormData) {
         status: 'APPROVED',
         customerId: data.customerId,
         documentNumber: docNum,
-        timbrado: data.timbrado,
-        issuedAt: data.issuedAt ?? new Date(),
+        timbrado: fiscal?.timbrado ?? data.timbrado,
+        sifenCdc: fiscal?.cdc,
+        sifenSecurityCode: fiscal?.codigoSeguranca,
+        issuedAt,
         dueDate: data.dueDate,
         currency: data.currency as any ?? 'PYG',
         exchangeRate: new Prisma.Decimal(data.exchangeRate ?? 1),

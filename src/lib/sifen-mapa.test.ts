@@ -1,11 +1,28 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { mapearParaSifen, DadosFiscaisIncompletos, type FaturaParaSifen } from './sifen-mapa.ts'
+import { gerarCDC, TIPO_DE } from './cdc.ts'
+
+// CDC válido para os testes: gerado por gerarCDC e conferido por cdcValido.
+const CDC = gerarCDC({
+  tipoDocumento: TIPO_DE.FACTURA,
+  rucEmissor: '80012345',
+  dvRucEmissor: 6,
+  establecimiento: '001',
+  puntoExpedicion: '001',
+  numeroDocumento: '42',
+  tipoContribuinte: '2',
+  dataEmissao: new Date('2026-07-30'),
+  tipoEmissao: '1',
+  codigoSeguranca: '123456789',
+})
 
 function fatura(over: Partial<FaturaParaSifen> = {}): FaturaParaSifen {
   return {
     documentNumber: '001-001-0000042',
     timbrado: '12345678',
+    sifenCdc: CDC,
+    sifenSecurityCode: '123456789',
     issuedAt: new Date('2026-07-30T10:00:00Z'),
     totalAmount: '1100000',
     totalIva10: '90909',

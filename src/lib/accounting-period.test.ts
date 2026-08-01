@@ -44,38 +44,39 @@ test('fecho de um mês não afeta os outros', async () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DEFEITO CONHECIDO — fuso horário
+// Fuso horário — CORRIGIDO em 2026-07-31
 //
-// `assertPeriodOpen` usa getFullYear()/getMonth(), que são hora LOCAL, sobre
-// datas que frequentemente chegam em UTC. `new Date('2026-08-01')` é meia-noite
-// UTC = 31/07 às 21h em America/Asuncion ou America/Sao_Paulo (UTC-3).
+// `assertPeriodOpen` usava getFullYear()/getMonth(), que leem o fuso do
+// servidor. Na Vercel isso é UTC, e `new Date('2026-08-01')` — o que um
+// <input type="date"> produz — é 31/07 às 21h em Assunção. O primeiro dia de
+// cada mês era tratado como pertencendo ao mês anterior: fechado julho, uma
+// fatura de 1 de agosto era recusada.
 //
-// Resultado: o primeiro dia de cada mês é tratado como pertencendo ao mês
-// anterior. Fechado julho, uma fatura de 1 de agosto é recusada.
-//
-// Alcançável no caminho principal: `data.issuedAt` vindo de <input type="date">
-// produz exatamente este valor (invoice.ts:112, 234), e `invoice.issuedAt` lido
-// de volta do Postgres preserva-o (invoice.ts:390, 462, 593).
-//
-// NÃO corrigido aqui: nem UTC nem hora local estão certos isoladamente — com
-// `new Date()` às 22h de 31/07 em Assunção, os getters UTC dariam agosto a um
-// documento que fiscalmente é de julho. A correção exige normalizar como as
-// datas são guardadas, com validação fiscal. Ver inventário §7.
-//
-// O teste abaixo fixa o comportamento ERRADO ATUAL para que a unificação não o
-// altere por acidente antes de haver uma decisão.
+// Nem UTC nem hora local estão certos isoladamente. A regra e o porquê estão
+// em lib/fuso.ts; aqui ficam os dois casos que a correção tem de acertar ao
+// mesmo tempo.
 // ─────────────────────────────────────────────────────────────────────────────
 
-test('DEFEITO: dia 1 é atribuído ao mês anterior (fuso UTC-3)', async () => {
+test('uma fatura de 1 de agosto passa com julho fechado', async () => {
   const db = fakeDb([{ tenantId: TENANT, year: 2026, month: 7 }])
-  await assert.rejects(
-    () => assertPeriodOpen(db, TENANT, new Date('2026-08-01')),
-    /07\/2026/,
-    'comportamento atual, incorreto — ver bloco acima'
-  )
+  await assertPeriodOpen(db, TENANT, new Date('2026-08-01'))
 })
 
-test.todo('1 de agosto deve pertencer ao período de agosto, não ao de julho')
+test('e continua a ser recusada se for agosto que está fechado', async () => {
+  const db = fakeDb([{ tenantId: TENANT, year: 2026, month: 8 }])
+  await assert.rejects(() => assertPeriodOpen(db, TENANT, new Date('2026-08-01')), /08\/2026/)
+})
+
+test('às 22h de 31 de julho em Assunção o lançamento ainda é de julho', async () => {
+  // O outro lado do mesmo problema: 22h em Assunção é 01h UTC do dia 1. Ler
+  // em UTC daria agosto a um lançamento que fiscalmente é de julho, e ele
+  // passaria com julho fechado.
+  const db = fakeDb([{ tenantId: TENANT, year: 2026, month: 7 }])
+  await assert.rejects(
+    () => assertPeriodOpen(db, TENANT, new Date('2026-08-01T01:00:00Z')),
+    /07\/2026/
+  )
+})
 
 test('fecho de um tenant não afeta outro tenant', async () => {
   const db = fakeDb([{ tenantId: 'outro-tenant', year: 2026, month: 7 }])

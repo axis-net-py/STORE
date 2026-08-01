@@ -1,4 +1,4 @@
-import forge from "node-forge";
+import { abrirCertificado, assinarXML } from "../lib/assinatura";
 import axios, { AxiosError } from "axios";
 import type { SifenConfig, SifenInvoice, SifenInvoiceItem } from "../lib/xml-generator";
 import generateRDEXML from "../lib/xml-generator";
@@ -79,10 +79,10 @@ export class SifenClient {
 
     for (let attempt = 0; attempt < (this.config.retryAttempts || 3); attempt++) {
       try {
-        const signedXml = await this.signXML(xml);
+        const signedXml = await this.signXML(xml, invoice.cdc);
         const response = await this.sendToSifen(signedXml, invoice.documentNumber);
 
-        return this.parseSifenResponse(response.data, response.headers);
+        return this.parseSifenResponse(response.data, invoice.cdc);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
@@ -123,80 +123,9 @@ export class SifenClient {
    * Sign XML using .p12 certificate (in memory, no disk I/O for private key).
    * SECURITY: Private key never touches logs or disk.
    */
-  private async signXML(xml: string): Promise<string> {
-    try {
-      // Decode base64 certificate
-      const p12Der = forge.util.decode64(this.config.certificate);
-      const p12Asn1 = forge.asn1.fromDer(p12Der);
-      const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, this.config.certificatePass);
-
-      // Extract private key and certificate
-      let privateKey: forge.pki.PrivateKey | null = null;
-      let cert: forge.pki.Certificate | null = null;
-
-      // Iterate through bags to find key and cert
-      for (const contents of p12.safeContents as any[]) {
-        if (!contents) continue;
-
-        for (const bag of contents.safeBags || []) {
-          if (bag.type === forge.pki.oids.pkcs8ShroudedKeyBag && bag.key) {
-            privateKey = bag.key;
-          }
-          if (bag.type === forge.pki.oids.certBag && bag.cert) {
-            cert = bag.cert;
-          }
-        }
-      }
-
-      if (!privateKey || !cert) {
-        throw new Error("Could not extract key/certificate from .p12");
-      }
-
-      // Create XML signature
-      // Note: Full XMLDSig implementation would use forge's xml signature module
-      // For SIFEN, we need to sign specific elements of the XML
-      const signedXml = this.applyXMLSignature(xml, privateKey, cert);
-      return signedXml;
-    } catch (error) {
-      // SECURITY: Do not log certificate-related errors with sensitive data
-      console.error("[SIFEN] Signing failed");
-      throw new Error("XML signing failed");
-    }
-  }
-
-  /**
-   * NÃO IMPLEMENTADO. Ver o relatório de auditoria de 2026-07-30, item 1.
-   *
-   * Esta função chamava-se "aplicar assinatura" e fazia `return xml` — devolvia
-   * o documento POR ASSINAR. Todo o trabalho acima, extrair a chave privada e o
-   * certificado do .p12, era decoração: a chave era extraída e deitada fora, e
-   * o documento seguia para a SET sem assinatura nenhuma.
-   *
-   * A assinatura digital é o que dá valor legal ao documento eletrónico. Sem
-   * ela não há documento fiscal — há um ficheiro XML.
-   *
-   * Passa a recusar. Assim a venda continua a ser gravada (submitInvoice
-   * apanha o erro e devolve success:false), o documento fica por transmitir de
-   * forma visível, e ninguém entrega isto a um cliente a acreditar que emite
-   * faturas eletrónicas válidas.
-   *
-   * Implementar exige XMLDSig conforme o Manual Técnico da SET:
-   *   1. canonicalização C14N do XML
-   *   2. digest SHA-256
-   *   3. assinatura RSA do digest com a chave privada do .p12
-   *   4. elemento Signature com SignedInfo, SignatureValue e KeyInfo/X509
-   * O node-forge sozinho não faz XMLDSig; é preciso uma biblioteca própria.
-   */
-  private applyXMLSignature(
-    _xml: string,
-    _privateKey: forge.pki.PrivateKey,
-    _cert: forge.pki.Certificate
-  ): string {
-    throw new Error(
-      "Assinatura digital XMLDSig não implementada. O documento não foi " +
-        "transmitido à SET — transmitir sem assinatura produziria um documento " +
-        "sem valor fiscal."
-    );
+  private async signXML(xml: string, cdc: string): Promise<string> {
+    const chaves = abrirCertificado(this.config.certificate, this.config.certificatePass);
+    return assinarXML(xml, cdc, chaves);
   }
 
   /**
@@ -220,7 +149,7 @@ export class SifenClient {
   /**
    * Parse SIFEN API response.
    */
-  private parseSifenResponse(data: any, _headers: any): SifenResponse {
+  private parseSifenResponse(data: any, cdcEmitido: string): SifenResponse {
     // SIFEN returns XML response - parse it
     // Expected response codes:
     // 1000: Approved
@@ -231,13 +160,13 @@ export class SifenClient {
     const responseStr = typeof data === "string" ? data : JSON.stringify(data);
 
     if (responseStr.includes("1000") || responseStr.includes("APPROVED")) {
-      // Extract CDC (44-digit control code)
-      const cdcMatch = responseStr.match(/(\d{44})/);
-      const cdc = cdcMatch ? cdcMatch[1] : undefined;
-
+      // O CDC é NOSSO: calculamo-lo antes de assinar (src/lib/cdc.ts). Aqui
+      // procurava-se `/(\d{44})/` na resposta e usava-se o que aparecesse — o
+      // primeiro número de 44 algarismos do corpo, viesse de onde viesse.
+      // Devolvemos o que emitimos.
       return {
         success: true,
-        cdc,
+        cdc: cdcEmitido,
         status: "APPROVED",
         message: "Invoice approved by SIFEN",
         shouldRetry: false,

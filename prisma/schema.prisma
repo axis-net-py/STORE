@@ -91,6 +91,9 @@ model Tenant {
   emissionPoint    String?  @default("001")
   address          String?
   economicActivity String?
+  /// Tipo de contribuinte para o CDC: "1" pessoa física, "2" pessoa jurídica.
+  /// Entra na posição 25 do CDC — ver src/lib/cdc.ts.
+  taxpayerType     String?  @default("2")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -133,6 +136,7 @@ model Tenant {
   appointments  Appointment[]
 
   fiscalCredentials FiscalCredential[]
+  timbrados         Timbrado[]
 }
 
 /// Certificado digital fiscal (SIFEN) de um cliente.
@@ -173,6 +177,46 @@ model FiscalCredential {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+/// Timbrado: a autorização da SET para emitir documentos.
+///
+/// Não é um número solto. Tem prazo de validade e um intervalo de numeração,
+/// e a SET exige que, na data de emissão, o documento esteja dentro dos dois.
+/// Até 2026-07-30 o timbrado era uma coluna de texto livre na fatura — sem
+/// validade, sem intervalo e sem verificação: o sistema emitia com um timbrado
+/// expirado e quem respondia era o cliente.
+///
+/// Regras e mensagens em src/lib/timbrado.ts, com testes.
+model Timbrado {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  /// 8 algarismos, como a SET o emite.
+  numero String
+
+  /// O timbrado é autorizado para um ponto de emissão concreto. Uma empresa
+  /// com duas lojas tem timbrados diferentes.
+  establishment String @default("001")
+  emissionPoint String @default("001")
+
+  validFrom DateTime
+  /// Nulo = sem data de fim declarada.
+  validTo DateTime?
+
+  /// Intervalo de numeração autorizado, inclusive nos dois extremos.
+  rangeFrom Int @default(1)
+  rangeTo   Int
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, numero, establishment, emissionPoint])
   @@index([tenantId])
   @@index([tenantId, isActive])
 }
@@ -320,6 +364,10 @@ model CommercialInvoice {
   documentNumber String?
   timbrado       String?
   sifenCdc       String?
+  /// Código de segurança do CDC: 9 algarismos aleatórios gerados na emissão.
+  /// Tem de ser guardado — entra no CDC e no QR, e sem ele o CDC não se
+  /// consegue recalcular nem conferir (src/lib/cdc.ts).
+  sifenSecurityCode String?
   sifenXmlUrl    String?
   sifenStatus    String?
   attachmentUrl  String?

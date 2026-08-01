@@ -32,6 +32,13 @@ export interface SifenInvoice {
   documentType: "FACTURA" | "NOTA_CREDITO" | "NOTA_DEBITO" | "REMISION";
   documentNumber: string;     // Format: EEE-PPP-NNNNNNN (001-001-0000001)
   stamp: string;              // Timbrado number
+  /** CDC de 44 algarismos. Vai no atributo Id do elemento DE e é o que a
+   *  assinatura referencia — ver src/lib/cdc.ts e lib/assinatura.ts. */
+  cdc: string;
+  /** Os 9 algarismos do código de segurança que entram no CDC. */
+  securityCode: string;
+  /** Início da validade do timbrado (dFeIniT). */
+  stampValidFrom?: Date | string;
   issueDate: Date | string;
   totalAmount: number | string | Decimal;
   totalIva10: number | string | Decimal;
@@ -65,17 +72,48 @@ export function generateRDEXML(
   const puntoExpedicion = docParts[1] || config.emissionPoint;
   const numeroDocumento = docParts[2] || invoice.documentNumber;
 
+  // Totais gravados = base tributável, somada a partir dos itens.
+  //
+  // Antes, dTotGrav10 recebia o VALOR DO IVA (invoice.totalIva10), o mesmo
+  // número que dTotIVA soma logo a seguir. A base tributável e o imposto não
+  // podem ser o mesmo valor — era internamente incoerente, para além de
+  // declarar errado. Auditoria de 2026-07-30.
+  const gravado10 = somarPorImposto(invoice, "IVA_10");
+  const gravado5 = somarPorImposto(invoice, "IVA_5");
+
   const root = xmlBuilder({
     rDE: {
       "@xmlns": "http://setschema.set.gov.py/sifem/cmd/DE_v150.xsd",
       "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
       "@xsi:schemaLocation": "http://setschema.set.gov.py/sifem/cmd/DE_v150.xsd",
       "@version": "150",
-      "gOpeDE": {
-        "iTipDE": getDocumentTypeCode(invoice.documentType),
-        "dDesTipDE": getDocumentTypeDesc(invoice.documentType),
-        "dCodAut": invoice.stamp,
-      },
+      // O elemento DE leva o CDC no atributo Id. É o que a assinatura
+      // referencia (URI="#<CDC>"); sem ele não há nada para assinar, e foi por
+      // isso que a assinatura nunca existiu. Ver packages/sifen/lib/assinatura.ts.
+      "DE": {
+        "@Id": invoice.cdc,
+        "dDVId": invoice.cdc.slice(-1),
+        "gOpeDE": {
+          "iTipDE": getDocumentTypeCode(invoice.documentType),
+          "dDesTipDE": getDocumentTypeDesc(invoice.documentType),
+          "iTipEmi": "1",
+          "dDesTipEmi": "Normal",
+          "dCodSeg": invoice.securityCode,
+        },
+        // O timbrado ia em `dCodAut` e chegava VAZIO: o mapeamento punha
+        // `stamp: ""`. Passa a ter grupo próprio, com o número, o ponto de
+        // emissão e o número do documento.
+        "gTimb": {
+          "iTiDE": getDocumentTypeCode(invoice.documentType),
+          "dDesTiDE": getDocumentTypeDesc(invoice.documentType),
+          "dNumTim": invoice.stamp,
+          "dEst": establecimiento,
+          "dPunExp": puntoExpedicion,
+          "dNumDoc": numeroDocumento,
+          ...(invoice.stampValidFrom
+            ? { "dFeIniT": formatDate(new Date(invoice.stampValidFrom)) }
+            : {}),
+        },
       "gDatGralOpe": {
         "dFeEmiDE": fecha,
         "dHorEmi": hora,
@@ -152,16 +190,24 @@ export function generateRDEXML(
       })),
       "gTotSub": {
         "dTotOpe": String(invoice.totalAmount),
-        "dTotGrav10": invoice.totalIva10 ? String(invoice.totalIva10) : "0",
-        "dTotGrav5": invoice.totalIva5 ? String(invoice.totalIva5) : "0",
-        "dTotExento": invoice.totalExento ? String(invoice.totalExento) : "0",
+        "dTotGrav10": String(gravado10),
+        "dTotGrav5": String(gravado5),
+        "dTotExento": String(invoice.totalExento ?? 0),
         "dTotIVA": String(Number(invoice.totalIva10) + Number(invoice.totalIva5)),
         "dTotGenOp": String(invoice.totalAmount),
+      },
       },
     },
   });
 
   return root.end({ pretty: true, indent: "  " });
+}
+
+/** Soma o valor bruto dos itens de um regime de imposto. */
+function somarPorImposto(invoice: SifenInvoice, tipo: "IVA_10" | "IVA_5"): number {
+  return invoice.items
+    .filter((i) => i.taxType === tipo)
+    .reduce((s, i) => s + Number(i.totalPrice), 0);
 }
 
 // Helper functions

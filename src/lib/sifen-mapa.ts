@@ -24,6 +24,8 @@
  * fiscalização, a divergência aparece à primeira conferência.
  */
 
+import { cdcValido } from "./cdc.ts";
+
 export type TipoImposto = "IVA_10" | "IVA_5" | "EXENTO";
 export type TipoDocCliente = "RUC" | "CEDULA" | "PASAPORTE" | "EXTRANJERO";
 export type TipoPessoa = "FISICA" | "JURIDICA";
@@ -31,6 +33,10 @@ export type TipoPessoa = "FISICA" | "JURIDICA";
 export type FaturaParaSifen = {
   documentNumber: string | null;
   timbrado: string | null;
+  /** CDC de 44 algarismos, calculado na emissão (src/lib/cdc.ts). */
+  sifenCdc: string | null;
+  /** Os 9 algarismos do código de segurança que entram no CDC. */
+  sifenSecurityCode: string | null;
   issuedAt: Date;
   totalAmount: unknown;
   totalIva10: unknown;
@@ -52,6 +58,8 @@ export type DocumentoSifen = {
   documentType: "FACTURA";
   documentNumber: string;
   stamp: string;
+  cdc: string;
+  securityCode: string;
   issueDate: Date;
   totalAmount: number;
   totalIva10: number;
@@ -141,6 +149,14 @@ export function mapearParaSifen(
 
   if (fatura.items.length === 0) faltas.push("a fatura não tem itens");
 
+  // Sem CDC não há documento eletrónico: é a identidade do documento e é o que
+  // a assinatura digital referencia. Calcula-se na emissão
+  // (lib/emissao-fiscal.ts); se falta, a fatura não passou por lá.
+  if (!cdcValido(fatura.sifenCdc)) faltas.push("a fatura não tem CDC válido");
+  if (!/^\d{9}$/.test(fatura.sifenSecurityCode ?? "")) {
+    faltas.push("a fatura não tem código de segurança");
+  }
+
   if (faltas.length > 0) throw new DadosFiscaisIncompletos(faltas);
 
   const cliente = fatura.customer!;
@@ -150,6 +166,8 @@ export function mapearParaSifen(
     documentType: "FACTURA",
     documentNumber: fatura.documentNumber!.trim(),
     stamp: fatura.timbrado!.trim(),
+    cdc: fatura.sifenCdc!.replace(/\D/g, ""),
+    securityCode: fatura.sifenSecurityCode!,
     issueDate: fatura.issuedAt,
     totalAmount: num(fatura.totalAmount),
     totalIva10: num(fatura.totalIva10),

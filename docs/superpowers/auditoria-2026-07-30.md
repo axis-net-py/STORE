@@ -8,23 +8,27 @@
 
 ## Resumo
 
-Foram encontradas **26 falhas**, das quais 24 estão corrigidas e verificadas.
-Duas ficam em aberto por exigirem trabalho que ultrapassa uma auditoria — e
-são, de longe, as mais graves.
+Foram encontradas **31 falhas**, todas corrigidas e verificadas.
 
-A conclusão que interessa é esta: **o sistema ainda não pode emitir documentos
-fiscais eletrónicos no Paraguai.** Não por falta de campos ou de ecrãs, mas
-porque o documento seguia para a SET sem assinatura digital, com o timbrado
-vazio e a declarar zero de IVA. Estava tudo escrito de forma a parecer que
-funcionava.
+A conclusão inicial desta auditoria era que **o sistema não podia emitir
+documentos fiscais eletrónicos no Paraguai** — não por falta de campos ou de
+ecrãs, mas porque o documento seguia para a SET sem assinatura digital, sem
+CDC, com o timbrado vazio e a declarar zero de IVA. Estava tudo escrito de
+forma a parecer que funcionava.
 
-As falhas dividem-se em três famílias, e cada uma tem uma causa única:
+Isso está resolvido no código. **Falta a homologação com a SET**, que é a única
+coisa que não se consegue fazer aqui: o CDC e a assinatura seguem a
+especificação e a norma, mas nunca foram confrontados com o ambiente de teste
+da autoridade. É o passo obrigatório antes de emitir para um cliente real.
+
+As falhas dividem-se em quatro famílias, e cada uma tem uma causa única:
 
 | Família | Falhas | Causa |
 |---|---|---|
-| Isolamento entre clientes | 8 | `tenantId` recebido do cliente em vez de vir da sessão |
-| Controlo de acesso | 6 | a matriz de permissões não era consultada nas leituras |
-| Conformidade fiscal | 12 | campos por preencher, e funções que fingiam estar implementadas |
+| Isolamento entre clientes | 9 | `tenantId` recebido do cliente em vez de vir da sessão |
+| Controlo de acesso | 7 | a matriz de permissões não era consultada nas leituras |
+| Conformidade fiscal | 14 | campos por preencher, e funções que fingiam estar implementadas |
+| Datas e fuso horário | 1 | o dia de um documento lido no fuso errado |
 
 ---
 
@@ -114,7 +118,7 @@ ficavam sem nada. Não basta não negar: é preciso conceder.
 
 ## 3. Conformidade fiscal (SIFEN)
 
-### ABERTO — 3.1 Não há assinatura digital
+### CORRIGIDO — 3.1 Não havia assinatura digital
 
 `applyXMLSignature` chamava-se "aplicar assinatura" e fazia `return xml`.
 Devolvia o documento **por assinar**. Todo o trabalho acima — abrir o `.p12`,
@@ -124,24 +128,45 @@ deitada fora.
 A assinatura digital é o que dá valor legal ao documento eletrónico. Sem ela
 não há documento fiscal; há um ficheiro XML.
 
-**Já não transmite:** a função passa a lançar. A venda continua a ser gravada,
-o documento fica por transmitir de forma visível, e ninguém entrega o sistema a
-um cliente a acreditar que emite faturas eletrónicas válidas.
+Implementada em `packages/sifen/lib/assinatura.ts`, com 14 testes:
+canonicalização exclusiva C14N, digest SHA-256, assinatura RSA-SHA256, e o
+elemento `Signature` com `SignedInfo`, `SignatureValue` e o certificado público
+em `KeyInfo/X509Data` para a SET poder verificar. A referência aponta para o
+elemento `DE` pelo atributo `Id`, que é o CDC.
 
-**Falta implementar:** XMLDSig conforme o Manual Técnico da SET — canonicalização
-C14N, digest SHA-256, assinatura RSA da chave do `.p12`, e o elemento
-`Signature` com `SignedInfo`, `SignatureValue` e `KeyInfo/X509Certificate`. O
-`node-forge` sozinho não faz XMLDSig.
+Os testes geram um `.p12` auto-assinado e fazem o percurso completo — assinar,
+verificar, e confirmar que **alterar o total de um documento assinado invalida
+a assinatura**, que é exatamente o que ela serve para impedir.
 
-> Esta é a condição de entrada. Enquanto não estiver feita, nada mais no SIFEN
-> tem efeito prático.
-
-### ABERTO — 3.2 O CDC não é gerado
+### CORRIGIDO — 3.2 O CDC não era gerado
 
 O CDC (Código de Control, 44 dígitos) é calculado pelo emissor e vai no próprio
-documento. Não existe em lado nenhum do código. O que existe é o
-`parseSifenResponse` a extrair qualquer sequência de 44 dígitos da resposta com
-`/(\d{44})/` — o que não é gerar um CDC, é procurar um número na resposta.
+documento. Não existia em lado nenhum. O que havia era o `parseSifenResponse` a
+extrair qualquer sequência de 44 dígitos da resposta com `/(\d{44})/` — o que
+não é gerar um CDC, é procurar um número na resposta.
+
+`src/lib/cdc.ts`, 18 testes. Os 44 algarismos com o dígito verificador por
+módulo 11 — **multiplicadores 2..9, e não 2..7 como o do RUC**. São dois
+algoritmos parecidos e distintos, e há um teste que os distingue, porque trocar
+um pelo outro produz um CDC que a SET rejeita.
+
+O código de segurança são 9 algarismos de `crypto.getRandomValues`, não
+`Math.random`: um gerador previsível deixaria terceiros antecipar o CDC de
+documentos ainda por emitir. Fica gravado em `CommercialInvoice.sifenSecurityCode`
+— sem ele o CDC não se consegue recalcular nem conferir.
+
+### CORRIGIDO — 3.2b O timbrado era texto livre
+
+A SET exige que o timbrado esteja dentro da validade na data de emissão e que o
+número do documento caia no intervalo autorizado. Nada disso era verificável:
+o timbrado era uma coluna de texto na fatura. O sistema emitia alegremente com
+um timbrado expirado, e quem responde perante a SET é o cliente.
+
+Modelo `Timbrado` com validade e intervalo, regras em `src/lib/timbrado.ts` com
+20 testes, e cadastro em *Configurações › Fiscal* com aviso antes de esgotar
+("Expira em 19 dias", "A esgotar"). As mensagens dizem o que fazer — *"expirou
+em 30/06/2026"*, *"fora do intervalo autorizado (1 a 100)"* — e não "timbrado
+inválido".
 
 ### CORRIGIDO — 3.3 Declarava-se zero de IVA em todas as vendas
 
@@ -238,6 +263,52 @@ qualquer `prisma.*.create/update/delete` na camada de IA.
 Era possível emitir uma fatura com o `customerId` de outra empresa: o documento
 ficava no cliente certo mas mostrava o nome e o RUC de uma pessoa alheia.
 
+### CORRIGIDO — 3.13 A base tributável era o próprio imposto
+
+No XML, `dTotGrav10` recebia `totalIva10` — o **valor do IVA** — e `dTotIVA`
+somava logo a seguir esses mesmos valores. A base tributável e o imposto não
+podem ser o mesmo número; era incoerente antes de ser sequer uma questão de
+conformidade. Passa a ser somada a partir dos itens.
+
+### CORRIGIDO — 3.14 Produtos sem validação nenhuma
+
+`createProduct` e `updateProduct` não validavam. Existia um `ProductSchema` e
+nunca era chamado; havia um segundo `ProductFormData` escrito à mão, com um
+comentário a avisar que "podem divergir". Divergiam.
+
+Os parâmetros de uma server action chegam por HTTP: o tipo do TypeScript
+desaparece na compilação e não protege nada em tempo de execução.
+`createProduct({ price: -100 })` ia direto para o banco, e um preço negativo
+distorce todas as faturas que usem o produto e o razão que delas resulta. Nada
+impedia `taxType: "IVA_0"` de ser gravado.
+
+---
+
+## 3b. Datas e fuso horário — CORRIGIDO
+
+O Paraguai está em UTC−3 o ano inteiro, e o JavaScript trata a mesma string de
+duas maneiras conforme quem a escreveu. `new Date('2026-08-01')` — o que um
+`<input type="date">` produz — é 31 de julho às 21h em Assunção.
+
+Nem UTC nem hora local estão certos isoladamente, porque chegam **duas coisas
+diferentes**: uma data de calendário escolhida por uma pessoa, e um instante do
+relógio. A distinção é observável — uma data de calendário aterra exatamente na
+meia-noite UTC. É essa a regra em `src/lib/fuso.ts`, com 11 testes.
+
+Onde tinha consequência:
+
+- **`assertPeriodOpen`** — era o defeito conhecido, marcado com `test.todo`. O
+  dia 1 de cada mês caía no mês anterior: fechado julho, uma fatura de 1 de
+  agosto era recusada.
+- **O CDC** — a data de emissão são 8 dos seus 44 algarismos.
+- **A apresentação** — apanhado ao verificar a tabela de timbrados no browser:
+  um timbrado gravado como válido até 31/12/2026 aparecia como **30/12/2026**.
+  `toLocaleDateString` converte para o fuso do navegador. Corrigido na validade
+  do timbrado e do certificado, nos vencimentos do financeiro (um dia muda se o
+  título está em atraso) e na data de emissão da fatura impressa.
+- **`next-intl`** — não tinha fuso global configurado e avisava em todos os
+  pedidos: o servidor formatava em UTC e o navegador no fuso do utilizador.
+
 ---
 
 ## 4. Autenticação e superfície exposta — CORRIGIDO
@@ -251,23 +322,27 @@ ficava no cliente certo mas mostrava o nome e o RUC de uma pessoa alheia.
 | 4.5 | Rebaixar o último SOVEREIGN deixava a conta sem dono, sem ninguém que pudesse gerir utilizadores |
 | 4.6 | `seedDefaultPermissions` concedia as 21 ações a todos os papéis, incluindo apagar e gerir utilizadores — um clique dava ao AUDITOR, que é quem confere, o poder de apagar faturas |
 | 4.7 | `/api/invoices/[id]/pdf` sem guarda própria: um pedido sem sessão devolvia 500 com a pilha de erro do Next |
+| 4.8 | As server actions de um módulo verificavam a permissão mas não se o módulo estava contratado. O guarda de rotas fecha o URL; as ações continuavam chamáveis por HTTP, e o SOVEREIGN passa sem consultar a matriz — o dono de um cliente só-store chamava as ações do farm |
 
 ---
 
 ## 5. O que falta fazer
 
-### Antes de vender a alguém
+### Antes de emitir para um cliente real
 
-1. **Assinatura digital XMLDSig** (3.1) — condição de entrada
-2. **Geração do CDC** (3.2)
-3. **Modelo de timbrado** — hoje é texto livre no documento. A SET exige que o
-   timbrado seja válido na data de emissão e que o número esteja dentro do
-   intervalo autorizado. Nada disso é verificável sem guardar validade e
-   intervalo. Sem isto, o sistema emite alegremente com um timbrado expirado, e
-   quem responde é o cliente
-4. **Evento de cancelamento à SET** (ver 3.10)
-5. **Persistir o XML assinado**, sem o qual não há retransmissão (3.5)
-6. **Confirmar o algoritmo do RUC** contra RUC reais (3.8)
+1. **Homologação com a SET.** O CDC e a assinatura seguem a especificação e a
+   norma XMLDSig, e os testes provam a mecânica — mas nunca foram confrontados
+   com o ambiente de teste da autoridade. Submeter um documento em homologação
+   e confirmar que o CDC e a assinatura são aceites. **É a única coisa que não
+   se consegue verificar a partir do código.**
+2. **Validar o XML contra o XSD v150.** A estrutura foi corrigida no que era
+   demonstravelmente incoerente (timbrado vazio, IVA a zero, base tributável
+   igual ao imposto), mas a ordem e os nomes dos elementos só se confirmam
+   contra o esquema publicado.
+3. **Evento de cancelamento à SET** (ver 3.10). Hoje o cancelamento é local e a
+   divergência fica registada.
+4. **Persistir o XML assinado**, sem o qual não há retransmissão (3.5).
+5. **Confirmar o algoritmo do RUC** contra RUC reais conhecidos (3.8).
 
 ### Do lado da operação
 
@@ -275,18 +350,18 @@ ficava no cliente certo mas mostrava o nome e o RUC de uma pessoa alheia.
   `CONNECTION_SECRET_KEY`, `CONTROL_PLANE_DATABASE_URL`
 - Trocar as palavras-passe fracas que ficaram do desenvolvimento
 - Comprar o domínio, para os subdomínios por cliente ficarem ativos
+- **Cadastrar o timbrado de cada cliente** em *Configurações › Fiscal*, e
+  corrigir o RUC da empresa se for de teste — sem os dois não há emissão, por
+  desenho
 
 ### Conhecido e aceite por agora
 
-- `assertPeriodOpen` compara datas em UTC e não no fuso do Paraguai: um
-  lançamento feito nas últimas horas do dia 31 pode cair no mês seguinte
-  (`test.todo` no sítio)
-- As ações dos módulos verificam permissão mas não verificam se o módulo está
-  contratado. Um SOVEREIGN de um cliente só-store consegue chamar uma ação do
-  farm — e ver os seus próprios dados vazios. É uma questão comercial, não de
-  segurança
 - Migração para Auth.js v5 desenhada, à espera do domínio
-- `ProductFormData` está duplicado entre `lib/schemas` e `actions/product.ts`
+- Uma fatura marcada como eletrónica fica imutável assim que é criada, mesmo
+  que a transmissão falhe: o número e o CDC já foram consumidos. É o
+  comportamento correto para um documento fiscal, mas convém saber que é assim
+- A agenda do módulo clinic mostra instantes reais no fuso do navegador, o que
+  ali é o que se quer — não foi alterada com o resto das datas
 
 ---
 
@@ -296,11 +371,21 @@ Cada correção foi verificada por código de saída, não por leitura do result
 
 ```
 npx tsc --noEmit     0
-npm test             204 testes, 203 passam, 1 todo, 0 falham
+npm test             284 testes, 284 passam, 0 falham
 npm run build        0
 npm run check:i18n   0
 ```
 
-Os testes novos desta auditoria: `server-actions-contrato.test.ts` (4),
-`sifen-mapa.test.ts` (11), `ruc.test.ts`, `permissoes-nucleo.test.ts`,
-`numeracao-fiscal.test.ts`, `documento-fiscal.test.ts`.
+O cadastro de timbrado foi verificado no browser: renderiza, ordena por
+validade, os avisos aparecem, e as datas batem certo com o que está gravado —
+foi assim que apareceu o defeito de fuso na apresentação (3b).
+
+Testes novos desta auditoria: `cdc.test.ts` (18), `timbrado.test.ts` (20),
+`assinatura.test.ts` (14), `sifen-mapa.test.ts` (11), `fuso.test.ts` (11),
+`produto.test.ts` (10), `server-actions-contrato.test.ts` (4), mais os do
+módulo (6), `ruc.test.ts`, `permissoes-nucleo.test.ts`,
+`numeracao-fiscal.test.ts` e `documento-fiscal.test.ts`.
+
+Dois deles encontraram falhas que a leitura manual tinha deixado passar:
+`server-actions-contrato.test.ts` apanhou o plano de contas e o registo de
+auditoria expostos, e a verificação no browser apanhou o erro de data.

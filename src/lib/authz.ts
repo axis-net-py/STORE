@@ -1,5 +1,6 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { acaoBloqueadaPorModulo } from '@/modules/registry'
 
 export type AuthContext = {
   tenantId: string
@@ -32,12 +33,21 @@ export async function requirePermission(action: string): Promise<AuthContext> {
   const tenantId = session.user.tenantId as string
   const userId = session.user.id as string
 
-  // Papel sempre lido do banco — o JWT pode estar desatualizado após mudança de papel
+  // Papel sempre lido do banco — o JWT pode estar desatualizado após mudança de
+  // papel. Os módulos contratados vêm na mesma consulta, sem ida extra ao banco.
   const user = await prisma.user.findFirst({
     where: { id: userId, tenantId },
-    select: { role: true },
+    select: { role: true, tenant: { select: { modules: true } } },
   })
   if (!user) throw new Error('Forbidden')
+
+  // Módulo não contratado fecha a ação para TODA a gente, SOVEREIGN incluído:
+  // isto não é uma questão de papel, é de o módulo não existir para este
+  // cliente. O guarda de rotas (modules/guard.ts) fechava o URL, mas as server
+  // actions do módulo continuavam chamáveis por HTTP.
+  if (acaoBloqueadaPorModulo(action, user.tenant?.modules ?? [])) {
+    throw new Error('Forbidden: módulo não contratado')
+  }
 
   const ctx: AuthContext = { tenantId, userId, role: user.role }
 

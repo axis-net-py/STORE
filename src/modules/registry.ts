@@ -78,3 +78,30 @@ export function isRotaBloqueada(segmento: string, active: string[]): boolean {
     (m) => !ativos.has(m.name) && m.routes.includes(segmento)
   );
 }
+
+/**
+ * De que módulo é esta ação de permissão, se for de algum.
+ *
+ * `farm:write` é do farm; `invoices:write` é do núcleo e devolve null.
+ */
+export function moduloDaAcao(action: string): string | null {
+  for (const m of Object.values(MODULES)) {
+    if (m.permissions.includes(action)) return m.name;
+  }
+  return null;
+}
+
+/**
+ * Diz se uma ação está fechada para este cliente por o módulo não estar
+ * contratado.
+ *
+ * O guarda de rotas fecha o URL, mas as server actions de um módulo eram
+ * chamáveis à mesma: verificavam a permissão e não se o módulo existia para
+ * aquele cliente. Como o SOVEREIGN passa sem consultar a matriz de permissões
+ * (lib/authz.ts), o dono de um cliente só-store conseguia chamar as ações do
+ * farm. Auditoria de 2026-07-30.
+ */
+export function acaoBloqueadaPorModulo(action: string, active: string[]): boolean {
+  const modulo = moduloDaAcao(action);
+  return modulo !== null && !active.includes(modulo);
+}

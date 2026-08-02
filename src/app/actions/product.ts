@@ -5,24 +5,30 @@ import { requirePermission } from '@/lib/authz'
 import { revalidatePath } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import type { Product } from '@prisma/client'
+import { z } from 'zod'
+import { ProductSchema } from '@/lib/schemas'
 
-// NOTA: existe um segundo ProductFormData em lib/schemas/index.ts, derivado do
-// ProductSchema com z.input. Os dois descreveram sempre a mesma coisa e podem
-// divergir — candidato a unificação, fora do âmbito desta fase.
-export type ProductFormData = {
-  sku: string
-  name: string
-  price: number | string
-  cost: number | string
-  unit?: string
-  currentStock?: number
-  minStock?: number
-  isActive?: boolean
-  tags?: string
-  isService?: boolean
-  currency?: 'PYG' | 'USD' | 'BRL'
-  taxType?: 'IVA_10' | 'IVA_5' | 'EXENTO'
+/** Valida e normaliza. Não é exportada: este ficheiro é 'use server'. */
+function validarProduto(data: unknown) {
+  const r = ProductSchema.safeParse(data)
+  if (!r.success) throw new Error(`Dados inválidos: ${r.error.issues[0].message}`)
+  return r.data
 }
+
+/**
+ * Um só ProductFormData, derivado do ProductSchema.
+ *
+ * Havia um segundo, escrito à mão aqui, com o aviso de que "podem divergir".
+ * Divergiam: o daqui aceitava `price` negativo, e nada nesta ação chegava
+ * sequer a olhar para o ProductSchema.
+ *
+ * E isso importa mais do que parece. Os parâmetros de uma server action chegam
+ * por HTTP: o tipo do TypeScript desaparece na compilação e não protege nada
+ * em tempo de execução. `createProduct({ price: -100 })` ia direto para o
+ * banco, e um preço negativo distorce todas as faturas que usem o produto e o
+ * razão que delas resulta. Auditoria de 2026-07-30.
+ */
+export type ProductFormData = z.input<typeof ProductSchema>
 
 // Listar produtos do tenant
 export async function getProducts(): Promise<any[]> {
@@ -72,21 +78,26 @@ export async function getProductById(id: string): Promise<any | null> {
 export async function createProduct(data: ProductFormData) {
   const { tenantId } = await requirePermission('products:write')
 
+  // O schema faz mais do que recusar: converte preço e custo de texto para
+  // número e aplica os valores por omissão. É por isso que o resto da função
+  // deixa de precisar de `?? 'un'` e afins.
+  const d = validarProduto(data)
+
   const criado = await prisma.product.create({
     data: {
       tenantId,
-      sku: data.sku,
-      name: data.name,
-      price: new Prisma.Decimal(data.price),
-      cost: new Prisma.Decimal(data.cost ?? 0),
-      currency: data.currency ?? 'PYG',
-      unit: data.unit ?? 'un',
-      currentStock: data.isService ? 0 : (data.currentStock ?? 0),
-      minStock: data.isService ? 0 : (data.minStock ?? 0),
-      isActive: data.isActive ?? true,
-      tags: data.tags,
-      isService: data.isService ?? false,
-      taxType: data.taxType ?? 'IVA_10',
+      sku: d.sku,
+      name: d.name,
+      price: new Prisma.Decimal(d.price),
+      cost: new Prisma.Decimal(d.cost),
+      currency: d.currency,
+      unit: d.unit,
+      currentStock: d.isService ? 0 : d.currentStock,
+      minStock: d.isService ? 0 : d.minStock,
+      isActive: d.isActive,
+      tags: d.tags,
+      isService: d.isService,
+      taxType: d.taxType,
     },
   })
 
@@ -98,18 +109,26 @@ export async function createProduct(data: ProductFormData) {
 export async function updateProduct(id: string, data: Partial<ProductFormData>) {
   const { tenantId } = await requirePermission('products:write')
 
+  // Edição parcial: só se valida o que veio. `.partial()` mantém as mesmas
+  // regras — preço não negativo, SKU não vazio — sem exigir os campos ausentes.
+  const parsed = ProductSchema.partial().safeParse(data)
+  if (!parsed.success) {
+    throw new Error(`Dados inválidos: ${parsed.error.issues[0].message}`)
+  }
+  const d = parsed.data
+
   const updateData: any = {}
-  if (data.sku !== undefined) updateData.sku = data.sku
-  if (data.name !== undefined) updateData.name = data.name
-  if (data.price !== undefined) updateData.price = new Prisma.Decimal(data.price)
-  if (data.cost !== undefined) updateData.cost = new Prisma.Decimal(data.cost ?? 0)
-  if (data.currency !== undefined) updateData.currency = data.currency
-  if (data.unit !== undefined) updateData.unit = data.unit
-  if (data.currentStock !== undefined) updateData.currentStock = data.isService ? 0 : data.currentStock
-  if (data.minStock !== undefined) updateData.minStock = data.isService ? 0 : data.minStock
-  if (data.isActive !== undefined) updateData.isActive = data.isActive
-  if (data.tags !== undefined) updateData.tags = data.tags
-  if (data.isService !== undefined) updateData.isService = data.isService
+  if (d.sku !== undefined) updateData.sku = d.sku
+  if (d.name !== undefined) updateData.name = d.name
+  if (d.price !== undefined) updateData.price = new Prisma.Decimal(d.price)
+  if (d.cost !== undefined) updateData.cost = new Prisma.Decimal(d.cost)
+  if (d.currency !== undefined) updateData.currency = d.currency
+  if (d.unit !== undefined) updateData.unit = d.unit
+  if (d.currentStock !== undefined) updateData.currentStock = d.isService ? 0 : d.currentStock
+  if (d.minStock !== undefined) updateData.minStock = d.isService ? 0 : d.minStock
+  if (d.isActive !== undefined) updateData.isActive = d.isActive
+  if (d.tags !== undefined) updateData.tags = d.tags
+  if (d.isService !== undefined) updateData.isService = d.isService
 
   await prisma.product.updateMany({
     where: { id, tenantId },

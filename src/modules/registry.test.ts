@@ -6,7 +6,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { navFor, isRotaBloqueada, CORE_NAV, MODULES } from './registry.ts'
+import { navFor, isRotaBloqueada, CORE_NAV, MODULES, moduloDaAcao, acaoBloqueadaPorModulo } from './registry.ts'
 
 /** Ordem exata da barra lateral antes da extração (Sidebar.tsx, linhas 33-45). */
 const ORDEM_ORIGINAL = [
@@ -172,6 +172,48 @@ test('cada rota declarada no manifesto tem entrada de menu correspondente', () =
     const hrefs = m.nav.map((n) => n.href)
     for (const rota of m.routes) {
       assert.ok(hrefs.includes(rota), `módulo ${m.name}: rota "${rota}" sem entrada de menu`)
+    }
+  }
+})
+
+// ─── Ações de módulo não contratado ─────────────────────────
+//
+// O guarda de rotas fecha o URL, mas as server actions de um módulo eram
+// chamáveis por HTTP à mesma. Como o SOVEREIGN passa sem consultar a matriz
+// de permissões, o dono de um cliente só-store conseguia chamar as ações do
+// farm. Auditoria de 2026-07-30.
+
+test('uma ação de módulo é atribuída ao seu módulo', () => {
+  assert.equal(moduloDaAcao('farm:write'), 'farm')
+  assert.equal(moduloDaAcao('clinic:read'), 'clinic')
+})
+
+test('uma ação do núcleo não pertence a módulo nenhum', () => {
+  assert.equal(moduloDaAcao('invoices:write'), null)
+  assert.equal(moduloDaAcao('accounting:read'), null)
+  assert.equal(moduloDaAcao('users:manage'), null)
+})
+
+test('ação de módulo não contratado é bloqueada', () => {
+  assert.ok(acaoBloqueadaPorModulo('farm:write', ['store']))
+  assert.ok(acaoBloqueadaPorModulo('clinic:read', ['store', 'farm']))
+})
+
+test('ação de módulo contratado passa', () => {
+  assert.ok(!acaoBloqueadaPorModulo('farm:write', ['store', 'farm']))
+})
+
+test('o núcleo nunca é bloqueado por módulo', () => {
+  // Um cliente sem módulo nenhum continua a faturar: o núcleo é de todos.
+  assert.ok(!acaoBloqueadaPorModulo('invoices:write', []))
+  assert.ok(!acaoBloqueadaPorModulo('dashboard:read', []))
+})
+
+test('toda ação declarada num manifesto é reconhecida como sendo dele', () => {
+  for (const m of Object.values(MODULES)) {
+    for (const acao of m.permissions) {
+      assert.equal(moduloDaAcao(acao), m.name, acao)
+      assert.ok(acaoBloqueadaPorModulo(acao, []), acao + ' devia ser bloqueada sem o módulo')
     }
   }
 })

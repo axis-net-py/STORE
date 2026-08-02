@@ -102,7 +102,25 @@ export function Header({ tenantId, onToggleSidebar }: HeaderProps) {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive cursor-pointer"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              /**
+               * O redirecionamento é nosso, não do NextAuth, de propósito.
+               *
+               * Com `signOut({ callbackUrl })` quem decide o destino é o
+               * NextAuth, que resolve o caminho relativo contra NEXTAUTH_URL.
+               * Se essa variável apontar para outro lado — e apontava, para um
+               * deploy antigo — o utilizador sai da sessão e aterra no login de
+               * OUTRA aplicação. Aconteceu em produção.
+               *
+               * Assim o NextAuth só faz o que lhe compete (destruir a sessão) e
+               * a navegação fica na origem em que o utilizador está, seja ela
+               * qual for: domínio próprio, subdomínio de cliente ou o host de
+               * deploy. Corrigir a variável continua a ser preciso; isto tira-lhe
+               * o poder de partir o logout outra vez.
+               */
+              onClick={async () => {
+                await signOut({ redirect: false });
+                window.location.href = "/login";
+              }}
             >
               <LogOut className="mr-2 h-4 w-4" />
               {t("signOut")}

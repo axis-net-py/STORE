@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import { DashboardShell } from "@/components/DashboardShell";
 import { AIAssistant } from "@/components/AIAssistant";
 import { verificarCoerencia } from "@/lib/tenant-context";
+import { acentoDoCliente } from "@/lib/tema";
+import { AcentoNoDocumento } from "@/components/AcentoNoDocumento";
 import { CertificadoBanner } from "@/components/CertificadoBanner";
 
 export default async function DashboardLayout({
@@ -50,26 +52,42 @@ export default async function DashboardLayout({
     redirect("/change-password");
   }
 
-  // Módulos ativos deste cliente. Tolerante a base ainda não migrada: sem a
-  // coluna, assume-se o vertical de origem em vez de derrubar a aplicação.
+  // Módulos ativos e cor do design system. Tolerante a base ainda não migrada:
+  // sem as colunas, assume-se o vertical de origem em vez de derrubar a
+  // aplicação.
   let modules: string[] = ["store"];
+  let themeColor: string | null = null;
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { modules: true },
+      select: { modules: true, themeColor: true },
     });
     if (tenant?.modules?.length) modules = tenant.modules;
+    themeColor = tenant?.themeColor ?? null;
   } catch (err) {
-    console.error("[layout] Falha ao ler Tenant.modules (migração pendente?):", err);
+    console.error("[layout] Falha ao ler Tenant.modules/themeColor (migração pendente?):", err);
   }
 
+  // Resolvida no servidor, e não no cliente, de propósito: a cor vai no HTML
+  // da primeira resposta. Decidida no navegador, o utilizador via a paleta
+  // trocar depois da página pintada, a cada carregamento.
+  const acento = acentoDoCliente(themeColor, modules);
+
   return (
-    <>
+    /**
+     * `display: contents` — o contentor existe para as variáveis CSS serem
+     * herdadas por tudo o que está dentro, e não para a disposição do ecrã.
+     * Envolve também o assistente, que é irmão do painel: sem isto ficava de
+     * fora do acento e aparecia com a cor neutra por cima de uma interface
+     * verde ou offwhite.
+     */
+    <div data-accent={acento} className="contents">
+      <AcentoNoDocumento acento={acento} />
       <DashboardShell tenantId={tenantId} modules={modules}>
         <CertificadoBanner tenantId={tenantId} />
         {children}
       </DashboardShell>
       <AIAssistant tenantId={tenantId} />
-    </>
+    </div>
   );
 }

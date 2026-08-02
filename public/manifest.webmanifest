@@ -1,7 +1,7 @@
 {
-  "name": "AXIS STORE",
-  "short_name": "AXIS STORE",
-  "description": "Sistema de gestão empresarial para comércio geral",
+  "name": "AXIS ERP",
+  "short_name": "AXIS ERP",
+  "description": "Sistema de gestão empresarial para comércio, agronegócio e saúde",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

@@ -23,6 +23,7 @@ import {
   Boxes,
   ShoppingCart,
   ShieldCheck,
+  Palette,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BrazilFlag, ParaguayFlag } from "@/components/icons/Flags";
@@ -40,6 +41,7 @@ interface SidebarProps {
 const bottomItems = [
   { icon: RefreshCw,   key: "cambio",   href: "settings/exchange-rates" },
   { icon: ShieldCheck, key: "fiscal",   href: "settings/fiscal" },
+  { icon: Palette,     key: "aparencia", href: "settings/aparencia" },
   { icon: Settings,    key: "settings", href: "settings/team" },
 ];
 
@@ -64,11 +66,11 @@ export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) 
         className={cn(
           "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 group",
           active
-            ? "bg-[#2e3f53] text-white border-r-2 border-[#0a6ed1]"
-            : "text-[#94a3b8] hover:bg-[#253548] hover:text-white"
+            ? "bg-sidebar-hover text-white border-r-2 border-sidebar-mark"
+            : "text-sidebar-muted hover:bg-sidebar-hover hover:text-white"
         )}
       >
-        <Icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-white" : "text-[#94a3b8] group-hover:text-white")} />
+        <Icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-white" : "text-sidebar-muted group-hover:text-white")} />
         {!collapsed && <span className="truncate">{label}</span>}
         {!collapsed && active && <ChevronRight className="ml-auto h-3 w-3 opacity-80" />}
       </Link>
@@ -88,17 +90,17 @@ export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) 
   return (
     <aside
       className={cn(
-        "flex flex-col border-r border-[#2e3f53] bg-[#1d2d3e] transition-all duration-200 h-full text-slate-300",
+        "flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-200 h-full text-sidebar-foreground",
         collapsed ? "w-14" : "w-56"
       )}
     >
       {/* Logo */}
-      <div className={cn("flex h-14 items-center border-b border-[#2e3f53] px-3", collapsed ? "justify-center" : "gap-2")}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#0a6ed1] text-white text-xs font-bold shadow-sm">
+      <div className={cn("flex h-14 items-center border-b border-sidebar-border px-3", collapsed ? "justify-center" : "gap-2")}>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-sidebar-mark text-white text-xs font-bold shadow-sm">
           A
         </div>
         {!collapsed && (
-          <span className="font-serif text-sm font-semibold tracking-tight text-white">AXIS Store</span>
+          <span className="font-serif text-sm font-semibold tracking-tight text-white">AXIS ERP</span>
         )}
       </div>
 
@@ -110,7 +112,7 @@ export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) 
       </nav>
 
       {/* Bottom nav */}
-      <div className="border-t border-[#2e3f53] px-2 py-3 space-y-2">
+      <div className="border-t border-sidebar-border px-2 py-3 space-y-2">
         <div className="space-y-0.5">
           {bottomItems.map((item) => (
             <NavLink key={item.href} icon={item.icon} labelKey={item.key} href={item.href} />
@@ -118,12 +120,12 @@ export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) 
         </div>
         
         {!collapsed && (
-          <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-[#2e3f53]/60">
+          <div className="pt-2 flex items-center justify-between gap-1.5 border-t border-sidebar-border/60">
             {/* Language Toggle Button */}
             <button
               type="button"
               onClick={() => setLanguage(language === "pt" ? "es" : "pt")}
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-[#2e3f53] bg-[#152332] hover:bg-[#253548] hover:border-[#384b60] text-[11px] font-bold text-slate-400 hover:text-white transition-all shadow-inner cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-sidebar-border bg-sidebar-inset hover:bg-sidebar-hover hover:border-sidebar-muted/50 text-[11px] font-bold text-sidebar-muted hover:text-white transition-all shadow-inner cursor-pointer"
               title={tH("switchLanguage")}
             >
               {language === "pt" ? (
@@ -138,7 +140,7 @@ export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) 
             <button
               type="button"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-[#2e3f53] bg-[#152332] hover:bg-[#253548] hover:border-[#384b60] text-[11px] font-bold text-slate-400 hover:text-white transition-all shadow-inner cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-sidebar-border bg-sidebar-inset hover:bg-sidebar-hover hover:border-sidebar-muted/50 text-[11px] font-bold text-sidebar-muted hover:text-white transition-all shadow-inner cursor-pointer"
               title={tH("toggleTheme")}
             >
               {theme === "dark" ? (
@@ -148,7 +150,7 @@ export function Sidebar({ tenantId, modules, collapsed = false }: SidebarProps) 
                 </>
               ) : (
                 <>
-                  <Moon className="h-3.5 w-3.5 text-slate-400" />
+                  <Moon className="h-3.5 w-3.5 text-sidebar-muted" />
                   <span>{tH("themeDark")}</span>
                 </>
               )}

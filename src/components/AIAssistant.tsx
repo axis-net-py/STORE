@@ -334,7 +334,7 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
                     msg.sender === "user"
                       ? "bg-primary/10 border border-primary/20 text-foreground font-medium"
                       : msg.isDiagnostic
-                      ? "bg-blue-950/20 border border-blue-800/30 text-foreground"
+                      ? "bg-accent border border-ring/30 text-accent-foreground"
                       : "bg-muted/40 border border-border text-foreground/90"
                   }`}
                 >
@@ -456,10 +456,14 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
       {/* Floating circular toggle button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 active:scale-95 text-white ${
+        /* Segue a paleta do cliente. Era um degradê azul fixo: num cliente do
+           agronegócio ou de uma clínica ficava um botão azul-berrante por cima
+           de uma interface verde ou offwhite — o único elemento do ecrã que
+           não pertencia ao sistema. */
+        className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 active:scale-95 ${
           isOpen
-            ? "bg-slate-800 hover:bg-slate-700 hover:rotate-90"
-            : "bg-gradient-to-tr from-blue-600 to-sky-500 hover:shadow-blue-950/20 hover:scale-105"
+            ? "bg-sidebar text-sidebar-foreground hover:rotate-90"
+            : "bg-primary text-primary-foreground hover:scale-105"
         }`}
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageSquare className="w-5.5 h-5.5 animate-pulse" />}

@@ -24,6 +24,15 @@
   --ring: #1d2d3e;
   --badge-posted-bg: #e8ebf0;
   --badge-posted-text: #1d2d3e;
+  /* Omissão da barra lateral. Só é usada se um ecrã com barra aparecer sem
+   * `data-accent` — não deve acontecer, mas sem isto ficaria transparente. */
+  --sidebar: #1d2d3e;
+  --sidebar-border: #2e3f53;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-mark: #0a6ed1;
+  --sidebar-hover: #253548;
+  --sidebar-muted: #94a3b8;
+  --sidebar-inset: #152332;
 }
 
 .dark {
@@ -50,7 +59,239 @@
   --badge-posted-text: #60a5fa;
 }
 
+/* ─── Cores por cliente ──────────────────────────────────────────────
+ *
+ * Antes da unificação cada vertical era uma build com a sua cor. Ao juntar
+ * tudo, ficou a paleta do store para toda a gente. Estas quatro paletas
+ * devolvem a identidade a cada um, e passam a ser escolha do cliente
+ * (ver src/lib/tema.ts e as configurações de Aparência).
+ *
+ * Aplicam-se num elemento com `data-accent`, não no `<html>`: o cliente só se
+ * conhece dentro do painel, e o login — que é anterior a qualquer cliente —
+ * fica com a paleta neutra de cima.
+ *
+ * No tema claro os fundos são tons pastel e a cor forte fica reservada a
+ * texto, ícones e ações. Um fundo saturado num ecrã que se olha oito horas
+ * por dia cansa, e num ERP a informação é que tem de saltar, não a moldura.
+ *
+ * `.dark [data-accent=…]` tem especificidade 0-2-0 e ganha a `[data-accent=…]`
+ * (0-1-0): é isso que faz o tema escuro sobrepor-se sem !important.
+ */
+
+[data-accent="blue"] {
+  --color-background: #f3f6fb;
+  --color-card: #ffffff;
+  --color-popover: #ffffff;
+  --color-foreground: #16233a;
+  --color-card-foreground: #16233a;
+  --color-popover-foreground: #16233a;
+  --color-primary: #1e4fa3;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e9f0f9;
+  --color-secondary-foreground: #16233a;
+  --color-muted: #eef3f9;
+  --color-muted-foreground: #5c6f88;
+  --color-accent: #e4edf9;
+  --color-accent-foreground: #16233a;
+  --color-border: #dbe4f0;
+  --color-input: #dbe4f0;
+  --color-ring: #1e4fa3;
+  --badge-posted-bg: #e4edf9;
+  --badge-posted-text: #1e4fa3;
+  --color-sidebar: #1d2d3e;
+  --color-sidebar-border: #2e3f53;
+  --color-sidebar-foreground: #cbd5e1;
+  --color-sidebar-mark: #0a6ed1;
+  --color-sidebar-hover: #253548;
+  --color-sidebar-muted: #94a3b8;
+  --color-sidebar-inset: #152332;
+}
+
+[data-accent="green"] {
+  --color-background: #f2f8f4;
+  --color-card: #ffffff;
+  --color-popover: #ffffff;
+  --color-foreground: #14301f;
+  --color-card-foreground: #14301f;
+  --color-popover-foreground: #14301f;
+  --color-primary: #1f6b45;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e4f1ea;
+  --color-secondary-foreground: #14301f;
+  --color-muted: #ecf5f0;
+  --color-muted-foreground: #56705f;
+  --color-accent: #dff0e6;
+  --color-accent-foreground: #14301f;
+  --color-border: #d8e8de;
+  --color-input: #d8e8de;
+  --color-ring: #1f6b45;
+  --badge-posted-bg: #dff0e6;
+  --badge-posted-text: #1f6b45;
+  --color-sidebar: #172a1f;
+  --color-sidebar-border: #26402f;
+  --color-sidebar-foreground: #cbdbd0;
+  --color-sidebar-mark: #2f9e5f;
+  --color-sidebar-hover: #223a2c;
+  --color-sidebar-muted: #8fa897;
+  --color-sidebar-inset: #12211a;
+}
+
+[data-accent="red"] {
+  --color-background: #fdf5f4;
+  --color-card: #ffffff;
+  --color-popover: #ffffff;
+  --color-foreground: #3a1513;
+  --color-card-foreground: #3a1513;
+  --color-popover-foreground: #3a1513;
+  --color-primary: #a32626;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f7e5e3;
+  --color-secondary-foreground: #3a1513;
+  --color-muted: #faeeed;
+  --color-muted-foreground: #7d5f5c;
+  --color-accent: #f6e0dd;
+  --color-accent-foreground: #3a1513;
+  --color-border: #f0dcda;
+  --color-input: #f0dcda;
+  --color-ring: #a32626;
+  --badge-posted-bg: #f6e0dd;
+  --badge-posted-text: #a32626;
+  --color-sidebar: #2e1b19;
+  --color-sidebar-border: #452926;
+  --color-sidebar-foreground: #e0cdca;
+  --color-sidebar-mark: #d14343;
+  --color-sidebar-hover: #3d2422;
+  --color-sidebar-muted: #b09490;
+  --color-sidebar-inset: #241413;
+}
+
+/* O offwhite não é ausência de cor: é uma paleta quente, de papel, que era a
+ * identidade do clinic. O primário é grafite morno, não preto. */
+[data-accent="offwhite"] {
+  --color-background: #faf9f5;
+  --color-card: #ffffff;
+  --color-popover: #ffffff;
+  --color-foreground: #2b2924;
+  --color-card-foreground: #2b2924;
+  --color-popover-foreground: #2b2924;
+  --color-primary: #4a4740;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1efe6;
+  --color-secondary-foreground: #2b2924;
+  --color-muted: #f4f2ea;
+  --color-muted-foreground: #74705f;
+  --color-accent: #edeae0;
+  --color-accent-foreground: #2b2924;
+  --color-border: #e6e3da;
+  --color-input: #e6e3da;
+  --color-ring: #4a4740;
+  --badge-posted-bg: #edeae0;
+  --badge-posted-text: #4a4740;
+  --color-sidebar: #23211a;
+  --color-sidebar-border: #3a372c;
+  --color-sidebar-foreground: #ddd8ca;
+  --color-sidebar-mark: #b8a878;
+  --color-sidebar-hover: #302d24;
+  --color-sidebar-muted: #a49e8d;
+  --color-sidebar-inset: #1b1913;
+}
+
+.dark [data-accent="blue"] {
+  --color-background: #0e1626;
+  --color-card: #17233a;
+  --color-popover: #17233a;
+  --color-foreground: #e7eefb;
+  --color-card-foreground: #e7eefb;
+  --color-popover-foreground: #e7eefb;
+  --color-primary: #5b9bf3;
+  --color-primary-foreground: #0b1220;
+  --color-secondary: #131e31;
+  --color-secondary-foreground: #e7eefb;
+  --color-muted: #131e31;
+  --color-muted-foreground: #93a5c0;
+  --color-accent: #1c2b45;
+  --color-accent-foreground: #e7eefb;
+  --color-border: #2b3b57;
+  --color-input: #2b3b57;
+  --color-ring: #5b9bf3;
+  --badge-posted-bg: rgba(91, 155, 243, 0.15);
+  --badge-posted-text: #8dbaf7;
+}
+
+.dark [data-accent="green"] {
+  --color-background: #0d1a13;
+  --color-card: #16281d;
+  --color-popover: #16281d;
+  --color-foreground: #e3f2e9;
+  --color-card-foreground: #e3f2e9;
+  --color-popover-foreground: #e3f2e9;
+  --color-primary: #46b877;
+  --color-primary-foreground: #07160e;
+  --color-secondary: #111f18;
+  --color-secondary-foreground: #e3f2e9;
+  --color-muted: #111f18;
+  --color-muted-foreground: #90ab9b;
+  --color-accent: #1b3325;
+  --color-accent-foreground: #e3f2e9;
+  --color-border: #27412f;
+  --color-input: #27412f;
+  --color-ring: #46b877;
+  --badge-posted-bg: rgba(70, 184, 119, 0.15);
+  --badge-posted-text: #7bd0a1;
+}
+
+.dark [data-accent="red"] {
+  --color-background: #1a0f0e;
+  --color-card: #2a1a18;
+  --color-popover: #2a1a18;
+  --color-foreground: #f8e6e4;
+  --color-card-foreground: #f8e6e4;
+  --color-popover-foreground: #f8e6e4;
+  --color-primary: #f2726a;
+  --color-primary-foreground: #1a0f0e;
+  --color-secondary: #211412;
+  --color-secondary-foreground: #f8e6e4;
+  --color-muted: #211412;
+  --color-muted-foreground: #bf9b97;
+  --color-accent: #33201d;
+  --color-accent-foreground: #f8e6e4;
+  --color-border: #432725;
+  --color-input: #432725;
+  --color-ring: #f2726a;
+  --badge-posted-bg: rgba(242, 114, 106, 0.15);
+  --badge-posted-text: #f7a09a;
+}
+
+.dark [data-accent="offwhite"] {
+  --color-background: #17160f;
+  --color-card: #22201a;
+  --color-popover: #22201a;
+  --color-foreground: #f2efe6;
+  --color-card-foreground: #f2efe6;
+  --color-popover-foreground: #f2efe6;
+  --color-primary: #d8d2c4;
+  --color-primary-foreground: #1c1a14;
+  --color-secondary: #1d1b15;
+  --color-secondary-foreground: #f2efe6;
+  --color-muted: #1d1b15;
+  --color-muted-foreground: #a8a292;
+  --color-accent: #2a2820;
+  --color-accent-foreground: #f2efe6;
+  --color-border: #3a372c;
+  --color-input: #3a372c;
+  --color-ring: #d8d2c4;
+  --badge-posted-bg: rgba(216, 210, 196, 0.15);
+  --badge-posted-text: #e4dfd3;
+}
+
 @theme {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-mark: var(--sidebar-mark);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-inset: var(--sidebar-inset);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

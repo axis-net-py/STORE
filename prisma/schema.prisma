@@ -94,6 +94,11 @@ model Tenant {
   /// Tipo de contribuinte para o CDC: "1" pessoa física, "2" pessoa jurídica.
   /// Entra na posição 25 do CDC — ver src/lib/cdc.ts.
   taxpayerType     String?  @default("2")
+  /// Cor do design system: blue, green, red ou offwhite.
+  /// Nulo = usa a cor do vertical (store azul, farm verde, clinic offwhite),
+  /// que é o que cada um tinha antes de a linha de produtos ser unificada
+  /// numa só build. Ver src/lib/tema.ts.
+  themeColor       String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

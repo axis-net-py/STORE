@@ -20,13 +20,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "AXIS Store",
-  description: "Sistema de gestão empresarial para comércio geral",
+  title: "AXIS ERP",
+  description: "Sistema de gestão empresarial para comércio, agronegócio e saúde",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "AXIS Store",
+    title: "AXIS ERP",
   },
 };
 

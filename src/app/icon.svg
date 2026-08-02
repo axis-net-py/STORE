@@ -1,27 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="AXIS ERP">
+  <!--
+    Monograma do AXIS ERP.
+
+    O ícone anterior era um carrinho de compras: dizia "loja", e a mesma build
+    serve hoje o agronegócio e a saúde. Um cliente do farm ou do clinic tinha
+    um carrinho no separador do navegador.
+
+    Fica o "A" da marca sobre grafite. Neutro de propósito: a cor do sistema
+    muda por cliente (src/lib/tema.ts) e o favicon é o mesmo para todos — se
+    acompanhasse a paleta não haveria um ícone de marca, haveria quatro. O
+    dourado é o que já vinha do ícone antigo e é o que se mantém dele.
+
+    A travessa do "A" atravessa e sai à direita: é o eixo que dá nome ao
+    produto, e distingue o monograma de um "A" qualquer num tamanho em que
+    quase tudo se parece.
+  -->
   <defs>
-    <!-- Background Gradient (Methylene Blue theme) -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#002244" />
-      <stop offset="100%" stop-color="#0052a3" />
+    <linearGradient id="fundo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#243141" />
+      <stop offset="100%" stop-color="#131c26" />
     </linearGradient>
-    <!-- Gold Gradient -->
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="marca" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#f3e098" />
       <stop offset="50%" stop-color="#d4a843" />
       <stop offset="100%" stop-color="#a77a1d" />
     </linearGradient>
   </defs>
 
-  <!-- Base rounded background -->
-  <rect width="32" height="32" rx="7" fill="url(#bgGrad)" />
+  <rect width="32" height="32" rx="7" fill="url(#fundo)" />
 
-  <!-- Shopping cart (retail) -->
-  <g fill="none" stroke="url(#goldGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <!-- handle + basket -->
-    <path d="M7 8 H10 L12 19 H23 L25 11 H11" />
+  <g fill="none" stroke="url(#marca)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- pernas do A -->
+    <path d="M8.5 24.5 L16 7.5 L23.5 24.5" />
+    <!-- travessa, prolongada como eixo -->
+    <path d="M11.9 17.6 H26" />
   </g>
-  <!-- wheels -->
-  <circle cx="13" cy="24" r="1.8" fill="#60a5fa" />
-  <circle cx="22" cy="24" r="1.8" fill="#60a5fa" />
 </svg>

@@ -5,6 +5,7 @@ import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { AxisLogo } from "@/components/AxisLogo";
 
 function LoginForm() {
   const router = useRouter();
@@ -95,7 +96,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#FAF9F5] p-4">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <AxisLogo size={88} title="AXIS ERP" />
           <h1 className="text-2xl font-bold text-primary tracking-tight uppercase tracking-widest">
             AXIS ERP
           </h1>

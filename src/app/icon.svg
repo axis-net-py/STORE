@@ -1,38 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="AXIS ERP">
   <!--
-    Monograma do AXIS ERP.
+    Marca do AXIS, redesenhada em vetor a partir do logotipo da empresa:
+    disco verde com anel dourado, o "A" atravessado pela orbita e o "I" ao
+    centro.
 
-    O ícone anterior era um carrinho de compras: dizia "loja", e a mesma build
-    serve hoje o agronegócio e a saúde. Um cliente do farm ou do clinic tinha
-    um carrinho no separador do navegador.
+    O original e um render com relevo e brilhos - bonito em grande, papa em 32
+    pixeis. Aqui ficam as mesmas formas reduzidas ao que ainda se le pequeno.
+    O mesmo desenho vive em src/components/AxisLogo.tsx, para o ecra de login;
+    este ficheiro existe a parte porque o favicon tem de ser um ficheiro.
 
-    Fica o "A" da marca sobre grafite. Neutro de propósito: a cor do sistema
-    muda por cliente (src/lib/tema.ts) e o favicon é o mesmo para todos — se
-    acompanhasse a paleta não haveria um ícone de marca, haveria quatro. O
-    dourado é o que já vinha do ícone antigo e é o que se mantém dele.
-
-    A travessa do "A" atravessa e sai à direita: é o eixo que dá nome ao
-    produto, e distingue o monograma de um "A" qualquer num tamanho em que
-    quase tudo se parece.
+    Cores da marca, nao do tema: a paleta muda por cliente, o logotipo nao.
   -->
   <defs>
-    <linearGradient id="fundo" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#243141" />
-      <stop offset="100%" stop-color="#131c26" />
-    </linearGradient>
-    <linearGradient id="marca" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f3e098" />
-      <stop offset="50%" stop-color="#d4a843" />
-      <stop offset="100%" stop-color="#a77a1d" />
+    <linearGradient id="ouro" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0dfa0" />
+      <stop offset="50%" stop-color="#cfa94e" />
+      <stop offset="100%" stop-color="#a3792a" />
     </linearGradient>
   </defs>
 
-  <rect width="32" height="32" rx="7" fill="url(#fundo)" />
+  <circle cx="16" cy="16" r="15" fill="#1e5b3a" />
+  <circle cx="16" cy="16" r="15" fill="none" stroke="url(#ouro)" stroke-width="2" />
+  <circle cx="16" cy="16" r="12.4" fill="none" stroke="url(#ouro)" stroke-width="0.7" opacity="0.85" />
 
-  <g fill="none" stroke="url(#marca)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-    <!-- pernas do A -->
-    <path d="M8.5 24.5 L16 7.5 L23.5 24.5" />
-    <!-- travessa, prolongada como eixo -->
-    <path d="M11.9 17.6 H26" />
+  <g fill="none" stroke="url(#ouro)" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="16" cy="16.2" rx="9.8" ry="5.4" stroke-width="1.6" transform="rotate(-14 16 16.2)" />
+    <path d="M10.4 22.6 L16 8.8 L21.6 22.6" stroke-width="2.1" />
+    <path d="M13.7 22.6 H18.3 M16 22.6 V15.2 M14.3 15.2 H17.7" stroke-width="1.8" />
   </g>
 </svg>

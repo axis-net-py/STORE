@@ -5,7 +5,7 @@ import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { AxisLogo } from "@/components/AxisLogo";
+import Image from "next/image";
 
 function LoginForm() {
   const router = useRouter();
@@ -97,7 +97,17 @@ export default function LoginPage() {
       <div className="w-full max-w-[400px]">
         {/* Logo */}
         <div className="flex flex-col items-center gap-4 mb-8">
-          <AxisLogo size={88} title="AXIS ERP" />
+          {/* O logótipo da empresa, tal como foi entregue. Não é desenhado
+              em vetor por nós: é a marca, e a marca é do cliente.
+              `priority` porque está acima da dobra e é a primeira coisa que
+              se vê — carregá-lo tarde faz o ecrã saltar. */}
+          <Image
+            src="/axis-emblema.png"
+            alt="AXIS"
+            width={88}
+            height={88}
+            priority
+          />
           <h1 className="text-2xl font-bold text-primary tracking-tight uppercase tracking-widest">
             AXIS ERP
           </h1>

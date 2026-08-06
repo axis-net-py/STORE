@@ -1,31 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="AXIS ERP">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AXIS ERP">
   <!--
-    Marca do AXIS, redesenhada em vetor a partir do logotipo da empresa:
-    disco verde com anel dourado, o "A" atravessado pela orbita e o "I" ao
-    centro.
+    Marca do AXIS: disco verde, anel dourado, duas orbitas entrelacadas e as
+    letras "A" e "I" ao centro.
 
-    O original e um render com relevo e brilhos - bonito em grande, papa em 32
-    pixeis. Aqui ficam as mesmas formas reduzidas ao que ainda se le pequeno.
-    O mesmo desenho vive em src/components/AxisLogo.tsx, para o ecra de login;
-    este ficheiro existe a parte porque o favicon tem de ser um ficheiro.
+    Igual ao src/components/AxisLogo.tsx, que serve o ecra de login. Vive nos
+    dois sitios porque tem de viver: o favicon tem de ser um ficheiro, e o
+    login precisa de um componente que escale. Alterar um sem o outro deixa a
+    marca diferente no separador e na pagina.
+
+    O relevo do original nao vem - e um render com brilhos, bonito em grande e
+    papa em 16 pixeis. Ficam as formas, que sao o que se le em qualquer tamanho.
 
     Cores da marca, nao do tema: a paleta muda por cliente, o logotipo nao.
   -->
   <defs>
-    <linearGradient id="ouro" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="ouro" x1="10%" y1="0%" x2="90%" y2="100%">
       <stop offset="0%" stop-color="#f0dfa0" />
-      <stop offset="50%" stop-color="#cfa94e" />
+      <stop offset="45%" stop-color="#cfa94e" />
       <stop offset="100%" stop-color="#a3792a" />
     </linearGradient>
   </defs>
 
-  <circle cx="16" cy="16" r="15" fill="#1e5b3a" />
-  <circle cx="16" cy="16" r="15" fill="none" stroke="url(#ouro)" stroke-width="2" />
-  <circle cx="16" cy="16" r="12.4" fill="none" stroke="url(#ouro)" stroke-width="0.7" opacity="0.85" />
+  <circle cx="32" cy="32" r="30" fill="#1a6141" />
+  <circle cx="32" cy="32" r="30" fill="none" stroke="url(#ouro)" stroke-width="3.6" />
+  <circle cx="32" cy="32" r="25.4" fill="none" stroke="url(#ouro)" stroke-width="1.1" opacity="0.9" />
 
+  <g fill="none" stroke="url(#ouro)" stroke-width="3.2">
+    <ellipse cx="32" cy="33" rx="19.2" ry="7.8" transform="rotate(-28 32 33)" />
+    <ellipse cx="32" cy="33" rx="19.2" ry="7.8" transform="rotate(28 32 33)" />
+  </g>
+
+  <g fill="none" stroke="#1a6141" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 47.5 L32 15.5 L44 47.5" />
+    <path d="M32 46.5 V29.5 M26.5 29.5 H37.5 M25 47.5 H39" />
+  </g>
   <g fill="none" stroke="url(#ouro)" stroke-linecap="round" stroke-linejoin="round">
-    <ellipse cx="16" cy="16.2" rx="9.8" ry="5.4" stroke-width="1.6" transform="rotate(-14 16 16.2)" />
-    <path d="M10.4 22.6 L16 8.8 L21.6 22.6" stroke-width="2.1" />
-    <path d="M13.7 22.6 H18.3 M16 22.6 V15.2 M14.3 15.2 H17.7" stroke-width="1.8" />
+    <path d="M20 47.5 L32 15.5 L44 47.5" stroke-width="4" />
+    <path d="M32 46.5 V29.5 M26.5 29.5 H37.5 M25 47.5 H39" stroke-width="3.4" />
   </g>
 </svg>

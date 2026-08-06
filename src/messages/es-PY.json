@@ -499,7 +499,8 @@
     "signIn": "Ingresar",
     "invalidCredentials": "Correo o contraseña inválidos",
     "loginError": "Error al iniciar sesión",
-    "copyright": "© {year} AXIS - Soluciones Digitales. Todos los derechos reservados."
+    "copyright": "© {year} AXIS - Soluciones Digitales. Todos los derechos reservados.",
+    "serverMisconfigured": "Servicio de autenticación no disponible — es configuración del servidor, no su contraseña. Abra /api/health/auth para ver qué falta."
   },
   "changePassword": {
     "title": "Cambiar contraseña",

@@ -50,7 +50,25 @@ function LoginForm() {
         router.refresh();
       }
     } catch {
-      setError(t("loginError"));
+      /**
+       * Chegar aqui não é a senha estar errada.
+       *
+       * O `signIn` só atira quando a resposta de `/api/auth` não é sequer
+       * legível — o que acontece quando o NextAuth arranca mal e devolve uma
+       * página de erro em HTML a todas as suas rotas. Faltar o NEXTAUTH_SECRET
+       * é a causa comum, e dizer "erro ao fazer login" manda a pessoa tentar
+       * outra senha em vez de mandar alguém olhar para as variáveis.
+       *
+       * Perguntamos ao servidor o que se passa e dizemos o que ele responder.
+       * Se nem isso resultar, fica a mensagem genérica.
+       */
+      try {
+        const r = await fetch("/api/health/auth", { cache: "no-store" });
+        const saude = await r.json();
+        setError(!saude.ok ? t("serverMisconfigured") : t("loginError"));
+      } catch {
+        setError(t("loginError"));
+      }
     } finally {
       setLoading(false);
     }

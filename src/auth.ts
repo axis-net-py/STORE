@@ -74,6 +74,34 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    /**
+     * O destino de qualquer redirecionamento fica na origem do pedido.
+     *
+     * O NextAuth resolve os destinos contra NEXTAUTH_URL. Se essa variável
+     * apontar para outro lado — e apontava, para um deploy antigo chamado
+     * `cooper` — o utilizador aterrava na aplicação errada. O logout já foi
+     * tornado imune do lado do cliente; isto fecha a porta para os restantes
+     * caminhos, incluindo os que o NextAuth decide sozinho.
+     *
+     * Devolver um caminho relativo é o que faz a diferença: o navegador
+     * resolve-o contra a página onde está, seja ela um domínio próprio, o
+     * subdomínio de um cliente ou o host de deploy. Um destino noutra origem
+     * cai na raiz, em vez de nos levar para fora — que é exatamente o que
+     * este sistema não deve fazer com uma sessão aberta.
+     *
+     * Corrigir a variável no Vercel continua a ser preciso; deixa é de ser
+     * o que decide para onde as pessoas vão.
+     */
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return url;
+      try {
+        const destino = new URL(url);
+        if (destino.origin === baseUrl) return `${destino.pathname}${destino.search}`;
+      } catch {
+        // URL ilegível: cai na raiz, como qualquer destino de fora.
+      }
+      return "/";
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

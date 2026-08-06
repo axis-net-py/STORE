@@ -23,7 +23,6 @@
         },
         {
           "key": "Permissions-Policy",
-          "comment": "A câmera é usada para fotografar faturas no assistente (getUserMedia). Estava fechada a todos, o que fazia o botão de câmera falhar em produção sem erro visível. Fica aberta só à própria origem; microfone e localização continuam fechados a toda a gente, porque o sistema não os usa.",
           "value": "camera=(self), microphone=(), geolocation=()"
         },
         {

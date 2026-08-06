@@ -380,13 +380,30 @@ main > * {
   animation: axis-fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/*
+ * Quem pediu menos movimento tem de receber menos movimento — não mais.
+ *
+ * Encurtar a duração para 0,01ms parece desligar a animação, e desliga as que
+ * correm uma vez. Numa animação `infinite` — `animate-pulse`, `animate-spin`,
+ * os esqueletos de carregamento — não desliga nada: faz o ciclo inteiro
+ * repetir-se cem mil vezes por segundo. O resultado é um estroboscópio. O
+ * botão da IA piscava sem parar, e só a quem tinha ligado "reduzir movimento"
+ * no sistema, que é precisamente quem não pode com isso.
+ *
+ * `animation-iteration-count: 1` é a linha que faltava: a animação corre uma
+ * vez, num instante, e fica quieta no estado final.
+ */
 @media (prefers-reduced-motion: reduce) {
   main > * {
     animation: none;
   }
-  * {
-    transition-duration: 0.01ms !important;
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

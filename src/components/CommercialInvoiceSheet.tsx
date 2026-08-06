@@ -24,10 +24,19 @@ export function CommercialInvoiceSheet({
   tenantId,
   invoice,
   trigger,
+  faturacaoEletronica = false,
 }: {
   tenantId: string;
   invoice?: any;
   trigger?: React.ReactNode;
+  /**
+   * A empresa emite documentos eletrónicos à SET?
+   *
+   * Decide o que uma venda nova é por omissão. Emitir eletronicamente exige
+   * RUC válido, timbrado em vigor e CDC — quem não tem nada disso via a
+   * gravação falhar com um erro fiscal que não sabia que lhe dizia respeito.
+   */
+  faturacaoEletronica?: boolean;
 }) {
   const t = useTranslations("billing");
   const tc = useTranslations("common");
@@ -36,7 +45,11 @@ export function CommercialInvoiceSheet({
   const [type, setType] = useState<"PURCHASE" | "SALES">(invoice?.type ?? "SALES");
   
   // Selection States
-  const [isSifen, setIsSifen] = useState(invoice ? (invoice.sifenStatus === 'PENDING' || invoice.sifenStatus === 'APPROVED') : true);
+  const [isSifen, setIsSifen] = useState(
+    invoice
+      ? invoice.sifenStatus === 'PENDING' || invoice.sifenStatus === 'APPROVED'
+      : faturacaoEletronica
+  );
   const [paymentMethod, setPaymentMethod] = useState<"A_VISTA" | "A_PRAZO">(invoice?.dueDate ? "A_PRAZO" : "A_VISTA");
   const [dueDate, setDueDate] = useState<string>(invoice?.dueDate ? new Date(invoice.dueDate).toISOString().split("T")[0] : "");
   const [currency, setCurrency] = useState<"PYG" | "USD" | "BRL">(invoice?.currency ?? "PYG");
@@ -460,8 +473,11 @@ export function CommercialInvoiceSheet({
             <div className="space-y-5 bg-muted/20 p-5 rounded-2xl border border-border/50">
               <h3 className="text-xs font-bold uppercase tracking-wider text-primary">{t("commercialParams")}</h3>
               
-              {/* Sifen Option (Sales Only) */}
-              {type === "SALES" && (
+              {/* Sifen Option (Sales Only) — e só para quem emite
+                  eletronicamente. A escolha só existe quando ambas as opções
+                  são possíveis; a um documento já emitido continua a mostrar-se
+                  o que ele é. */}
+              {type === "SALES" && (faturacaoEletronica || isSifen) && (
                 <div className="space-y-2">
                   <Label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
                     <FileCheck2 className="w-3.5 h-3.5" /> {t("emissionType")}

@@ -40,6 +40,10 @@ export async function GET(req: NextRequest) {
   }
 
   const tenants = await prisma.tenant.findMany({
+    // Só quem emite eletronicamente. Para os restantes, "não tem certificado"
+    // não é um aviso — é o estado escolhido, e registá-lo todos os dias enchia
+    // o registo de auditoria com ruído que ninguém pode resolver.
+    where: { electronicInvoicing: true },
     select: {
       id: true,
       name: true,

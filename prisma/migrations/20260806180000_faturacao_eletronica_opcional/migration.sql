@@ -1,0 +1,11 @@
+-- Faturação eletrónica passa a ser opcional, e desligada por omissão.
+--
+-- Uma empresa começa a operar com documentos internos e só depois trata do
+-- certificado digital e do timbrado junto da SET. Até aqui o sistema assumia
+-- que toda a gente emitia eletronicamente e avisava, no topo de todos os
+-- ecrãs, que faltava um certificado — a quem nunca o pediu.
+--
+-- Falso para os clientes existentes: nenhum deles tem certificado ativo hoje,
+-- portanto ligar isto por omissão só repunha o aviso que se quer tirar. Quem
+-- emitir eletronicamente liga-o nas configurações fiscais.
+ALTER TABLE "Tenant" ADD COLUMN "electronicInvoicing" BOOLEAN NOT NULL DEFAULT false;

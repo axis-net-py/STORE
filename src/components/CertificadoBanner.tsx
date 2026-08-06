@@ -13,6 +13,16 @@ import { estadoDoCertificado } from "@/lib/certificado-alerta";
 export async function CertificadoBanner({ tenantId }: { tenantId: string }) {
   let cred: { validUntil: Date | null } | null = null;
   try {
+    // Quem não emite documentos eletrónicos não precisa de certificado, e não
+    // tem que ser avisado todos os dias de que lhe falta um. O aviso existe
+    // para quem depende dele — para os outros é ruído que ensina a ignorar
+    // avisos, e um dia o ignorado é o que importava.
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { electronicInvoicing: true },
+    });
+    if (!tenant?.electronicInvoicing) return null;
+
     cred = await prisma.fiscalCredential.findFirst({
       where: { tenantId, isActive: true },
       select: { validUntil: true },

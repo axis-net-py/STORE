@@ -6,6 +6,8 @@ import {
   uploadFiscalCredential,
   activateFiscalCredential,
   deleteFiscalCredential,
+  getFaturacaoEletronica,
+  setFaturacaoEletronica,
   type CredencialResumo,
 } from "@/app/actions/fiscal-credential";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ShieldCheck, Upload, Trash2, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -43,6 +46,12 @@ const t = {
     apagado: "Certificado removido.",
     ativado: "Certificado ativado.",
     confirmar: "Remover este certificado?",
+    modoTitulo: "Faturação eletrônica",
+    modoDesc:
+      "Ligue quando a sua empresa já tiver certificado digital e timbrado para emitir documentos eletrônicos à SET. Desligado, o sistema opera com documentos internos e não cobra nem avisa sobre certificado.",
+    modoLigado: "Emitindo documentos eletrônicos à SET.",
+    modoDesligado: "Operando sem faturação eletrônica.",
+    modoGuardado: "Preferência guardada.",
   },
   es: {
     title: "Certificado Digital",
@@ -66,6 +75,12 @@ const t = {
     apagado: "Certificado eliminado.",
     ativado: "Certificado activado.",
     confirmar: "¿Eliminar este certificado?",
+    modoTitulo: "Facturación electrónica",
+    modoDesc:
+      "Actívela cuando su empresa ya cuente con certificado digital y timbrado para emitir documentos electrónicos a la SET. Apagada, el sistema trabaja con documentos internos y no exige ni avisa sobre el certificado.",
+    modoLigado: "Emitiendo documentos electrónicos a la SET.",
+    modoDesligado: "Trabajando sin facturación electrónica.",
+    modoGuardado: "Preferencia guardada.",
   },
 };
 
@@ -76,6 +91,8 @@ export default function FiscalSettingsPage() {
   const [lista, setLista] = useState<CredencialResumo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
+  const [eletronica, setEletronica] = useState(false);
+  const [aGuardarModo, setAGuardarModo] = useState(false);
 
   const [ficheiro, setFicheiro] = useState<File | null>(null);
   const [senha, setSenha] = useState("");
@@ -87,7 +104,12 @@ export default function FiscalSettingsPage() {
   const recarregar = useCallback(async () => {
     setCarregando(true);
     try {
-      setLista(await getFiscalCredentials());
+      const [credenciais, modo] = await Promise.all([
+        getFiscalCredentials(),
+        getFaturacaoEletronica(),
+      ]);
+      setLista(credenciais);
+      setEletronica(modo);
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -137,6 +159,24 @@ export default function FiscalSettingsPage() {
     }
   };
 
+  const alternarModo = async (ativo: boolean) => {
+    // Optimista: o interruptor responde já e só reverte se o servidor recusar.
+    // A alternativa — esperar pela ida e volta — deixa-o parado no clique, e
+    // isto é uma preferência, não uma transação.
+    const anterior = eletronica;
+    setEletronica(ativo);
+    setAGuardarModo(true);
+    try {
+      await setFaturacaoEletronica(ativo);
+      toast.success(s.modoGuardado);
+    } catch (e: any) {
+      setEletronica(anterior);
+      toast.error(e.message);
+    } finally {
+      setAGuardarModo(false);
+    }
+  };
+
   const estado = (c: CredencialResumo) => {
     if (c.diasParaExpirar !== null && c.diasParaExpirar < 0)
       return <Badge variant="destructive">{s.expirado}</Badge>;
@@ -151,6 +191,26 @@ export default function FiscalSettingsPage() {
           <ShieldCheck className="h-5 w-5" /> {s.title}
         </h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">{s.desc}</p>
+      </div>
+
+      {/* Antes de tudo o resto: a empresa emite eletronicamente ou não? A
+          resposta decide se o que vem a seguir é uma obrigação ou um preparativo. */}
+      <div className="rounded-xl border border-border bg-card p-4 flex items-start justify-between gap-6">
+        <div className="space-y-1">
+          <Label htmlFor="modo-eletronico" className="text-sm font-semibold">
+            {s.modoTitulo}
+          </Label>
+          <p className="text-sm text-muted-foreground max-w-2xl">{s.modoDesc}</p>
+          <p className="text-xs font-medium text-muted-foreground pt-1">
+            {eletronica ? s.modoLigado : s.modoDesligado}
+          </p>
+        </div>
+        <Switch
+          id="modo-eletronico"
+          checked={eletronica}
+          disabled={carregando || aGuardarModo}
+          onCheckedChange={alternarModo}
+        />
       </div>
 
       <form onSubmit={enviar} className="rounded-xl border border-border p-4 space-y-4 bg-card">
@@ -211,10 +271,15 @@ export default function FiscalSettingsPage() {
       {carregando ? (
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : lista.length === 0 ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex gap-3 text-sm">
-          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-          <p>{s.nenhum}</p>
-        </div>
+        // Sem certificado só é um aviso para quem emite eletronicamente. Para
+        // os outros é o estado normal, e um triângulo amarelo a dizê-lo só
+        // ensina a ignorar avisos.
+        eletronica ? (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex gap-3 text-sm">
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+            <p>{s.nenhum}</p>
+          </div>
+        ) : null
       ) : (
         <Table>
           <TableHeader>

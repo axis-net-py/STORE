@@ -94,6 +94,13 @@ model Tenant {
   /// Tipo de contribuinte para o CDC: "1" pessoa física, "2" pessoa jurídica.
   /// Entra na posição 25 do CDC — ver src/lib/cdc.ts.
   taxpayerType     String?  @default("2")
+  /// Emite documentos eletrónicos para a SET (SIFEN)?
+  ///
+  /// Falso por omissão, e é o caso comum: uma empresa começa a operar com
+  /// documentos internos e só depois trata do certificado digital e do
+  /// timbrado. Enquanto estiver desligado, o sistema não pede certificado nem
+  /// avisa que falta — porque não falta nada.
+  electronicInvoicing Boolean @default(false)
   /// Cor do design system: blue, green, red ou offwhite.
   /// Nulo = usa a cor do vertical (store azul, farm verde, clinic offwhite),
   /// que é o que cada um tinha antes de a linha de produtos ser unificada

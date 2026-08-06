@@ -44,7 +44,11 @@ export type Briefing = {
  */
 const cache = new Map<string, Briefing>()
 
-async function apurarFactos(tenantId: string, modules: string[]): Promise<Factos> {
+async function apurarFactos(
+  tenantId: string,
+  modules: string[],
+  faturacaoEletronica: boolean
+): Promise<Factos> {
   const agora = new Date()
   const hoje = new Date(agora.toLocaleString('en-US', { timeZone: FUSO_PARAGUAI }))
   const inicioHoje = new Date(hoje); inicioHoje.setHours(0, 0, 0, 0)
@@ -134,9 +138,12 @@ async function apurarFactos(tenantId: string, modules: string[]): Promise<Factos
     recebimentosVencidos: { quantidade: vencidas.length, total: soma(vencidas) },
     vencemHoje: { quantidade: hojeVencem.length, total: soma(hojeVencem) },
     estoqueAbaixoMinimo: { quantidade: baixos.length, exemplos: baixos.map((p) => p.name) },
-    semCertificado: !certificado,
-    diasCertificado: dias(certificado?.validUntil),
-    diasTimbrado: dias(timbrado?.validTo),
+    // Certificado e timbrado só são assunto para quem emite eletronicamente.
+    // A quem opera com documentos internos, faltar um certificado não é um
+    // problema por resolver — é uma decisão já tomada.
+    semCertificado: faturacaoEletronica ? !certificado : false,
+    diasCertificado: faturacaoEletronica ? dias(certificado?.validUntil) : null,
+    diasTimbrado: faturacaoEletronica ? dias(timbrado?.validTo) : null,
     vendasOntem: Number(vendasOntem._sum.totalAmount ?? 0),
     consultasHoje: consultas,
     certificacoesAExpirar: {
@@ -198,10 +205,14 @@ export async function getBriefing(): Promise<Briefing> {
 
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
-    select: { name: true, modules: true },
+    select: { name: true, modules: true, electronicInvoicing: true },
   })
 
-  const factos = await apurarFactos(tenantId, tenant?.modules ?? [])
+  const factos = await apurarFactos(
+    tenantId,
+    tenant?.modules ?? [],
+    !!tenant?.electronicInvoicing
+  )
   const alertas = alertasDoDia(factos)
   const redigido = await redigir(alertas, tenant?.name ?? 'a empresa')
 

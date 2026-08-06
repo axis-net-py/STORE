@@ -31,7 +31,20 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError(t("invalidCredentials"));
+        /**
+         * A mensagem do servidor ganha à genérica quando existe.
+         *
+         * O `authorize` distingue "credenciais erradas" de "demasiadas
+         * tentativas — aguarde 15 minutos", mas isto mostrava sempre a
+         * primeira. Quem estava em espera lia "senha inválida", concluía que
+         * a senha tinha mudado, e tentava outra vez — o que renova o bloqueio.
+         *
+         * Dizer que há um limite não é dar pistas a ninguém: não revela se a
+         * conta existe nem se a senha estava certa. Esconder o motivo só
+         * prejudica quem tem direito a entrar.
+         */
+        const doServidor = result.error !== "CredentialsSignin" ? result.error : null;
+        setError(doServidor || t("invalidCredentials"));
       } else {
         router.push(callbackUrl);
         router.refresh();

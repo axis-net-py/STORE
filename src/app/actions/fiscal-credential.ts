@@ -154,3 +154,43 @@ export async function deleteFiscalCredential(id: string) {
 
   revalidatePath(`/${tenantId}/settings/fiscal`)
 }
+
+/**
+ * Emite documentos eletrónicos para a SET?
+ *
+ * Desligado, o sistema deixa de pedir certificado e de avisar que falta um —
+ * porque não falta. Ligado, volta a cobrar o que a emissão exige.
+ */
+export async function getFaturacaoEletronica(): Promise<boolean> {
+  const { tenantId } = await requirePermission('settings:read')
+  const t = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { electronicInvoicing: true },
+  })
+  return !!t?.electronicInvoicing
+}
+
+export async function setFaturacaoEletronica(ativo: boolean): Promise<void> {
+  const { tenantId, userId } = await requirePermission('settings:write')
+
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: { electronicInvoicing: ativo },
+  })
+
+  // Fica registado: ligar ou desligar a emissão eletrónica muda o que o
+  // sistema exige antes de faturar, e alguém há de querer saber quando mudou
+  // e por ordem de quem.
+  await prisma.auditLog.create({
+    data: {
+      tenantId,
+      userId,
+      action: ativo ? 'ENABLE_ELECTRONIC_INVOICING' : 'DISABLE_ELECTRONIC_INVOICING',
+      entity: 'Tenant',
+      entityId: tenantId,
+    },
+  })
+
+  // O aviso de certificado vive no layout do painel, que é servido do cache.
+  revalidatePath('/', 'layout')
+}

@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { isRateLimited, recordFailedAttempt, clearAttempts } from "@/lib/rate-limit";
+import { destinoPermitido } from "@/lib/destino-login";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -75,32 +76,29 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     /**
-     * O destino de qualquer redirecionamento fica na origem do pedido.
+     * O destino de qualquer redirecionamento fica na origem da aplicação.
      *
-     * O NextAuth resolve os destinos contra NEXTAUTH_URL. Se essa variável
-     * apontar para outro lado — e apontava, para um deploy antigo chamado
-     * `cooper` — o utilizador aterrava na aplicação errada. O logout já foi
-     * tornado imune do lado do cliente; isto fecha a porta para os restantes
-     * caminhos, incluindo os que o NextAuth decide sozinho.
+     * TEM DE DEVOLVER UM URL ABSOLUTO. O `signIn` do next-auth v4, com
+     * `redirect: false`, faz `new URL(data.url)` sem base — e `new URL("/")`
+     * atira `TypeError: Failed to construct 'URL': Invalid URL`. Uma versão
+     * anterior deste callback devolvia caminhos relativos, para o navegador os
+     * resolver contra a página onde estava. Do lado do servidor era mais
+     * seguro; do lado do cliente rebentava a seguir a uma autenticação BEM
+     * SUCEDIDA — a sessão ficava aberta e o formulário dizia "Erro ao fazer
+     * login". Ninguém entrava, e a senha não tinha nada a ver com isso.
      *
-     * Devolver um caminho relativo é o que faz a diferença: o navegador
-     * resolve-o contra a página onde está, seja ela um domínio próprio, o
-     * subdomínio de um cliente ou o host de deploy. Um destino noutra origem
-     * cai na raiz, em vez de nos levar para fora — que é exatamente o que
-     * este sistema não deve fazer com uma sessão aberta.
+     * O que protege continua cá: um destino noutra origem cai na raiz da
+     * aplicação, em vez de nos levar para fora com uma sessão aberta. O que
+     * muda é a forma — absoluto sobre `baseUrl`, que é o que o next-auth
+     * espera receber.
      *
-     * Corrigir a variável no Vercel continua a ser preciso; deixa é de ser
-     * o que decide para onde as pessoas vão.
+     * `baseUrl` vem do NEXTAUTH_URL, portanto essa variável tem mesmo de estar
+     * certa; quando apontava para um deploy antigo chamado `cooper`, era para
+     * lá que as pessoas iam. O logout está protegido à parte, no cliente, com
+     * `signOut({ redirect: false })` seguido de um destino explícito.
      */
     async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) return url;
-      try {
-        const destino = new URL(url);
-        if (destino.origin === baseUrl) return `${destino.pathname}${destino.search}`;
-      } catch {
-        // URL ilegível: cai na raiz, como qualquer destino de fora.
-      }
-      return "/";
+      return destinoPermitido(url, baseUrl);
     },
     async jwt({ token, user }) {
       if (user) {

@@ -7,6 +7,37 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
+/**
+ * O que correu mal, em texto que se possa colar a quem sabe lê-lo.
+ *
+ * O `signIn` do NextAuth atira por dois motivos, e distinguem-se pelo nome do
+ * erro: `SyntaxError` é a resposta não ser JSON — o servidor devolveu uma
+ * página de erro ou de proteção em HTML; `TypeError` é o pedido não ter
+ * chegado lá — rede, proxy ou bloqueio. Duas coisas que se resolvem em sítios
+ * completamente diferentes, e que a mesma frase amável descrevia.
+ *
+ * Às duas rotas que o `signIn` consulta antes de autenticar perguntamos o
+ * estado e o tipo de conteúdo. Se uma delas responder 200 text/html, está
+ * encontrado o culpado sem ter de abrir os registos do servidor.
+ */
+async function diagnosticar(erro: unknown): Promise<string> {
+  const causa =
+    erro instanceof Error ? `${erro.name}: ${erro.message}` : String(erro);
+  const partes = [causa];
+
+  for (const rota of ["/api/auth/providers", "/api/auth/csrf"]) {
+    try {
+      const r = await fetch(rota, { cache: "no-store" });
+      const tipo = (r.headers.get("content-type") ?? "?").split(";")[0];
+      partes.push(`${rota} → ${r.status} ${tipo}`);
+    } catch (e: any) {
+      partes.push(`${rota} → ${e?.name ?? "sem resposta"}`);
+    }
+  }
+
+  return partes.join(" · ");
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -16,12 +47,19 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [detalhe, setDetalhe] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setDetalhe("");
     setLoading(true);
+
+    // Fora do try: navegar não faz parte de autenticar. Estando lá dentro, um
+    // erro de navegação depois de uma entrada BEM SUCEDIDA aparecia como "erro
+    // ao fazer login" a quem já tinha sessão aberta.
+    let entrou = false;
 
     try {
       const result = await signIn("credentials", {
@@ -46,10 +84,9 @@ function LoginForm() {
         const doServidor = result.error !== "CredentialsSignin" ? result.error : null;
         setError(doServidor || t("invalidCredentials"));
       } else {
-        router.push(callbackUrl);
-        router.refresh();
+        entrou = true;
       }
-    } catch {
+    } catch (erro) {
       /**
        * Chegar aqui não é a senha estar errada.
        *
@@ -60,7 +97,8 @@ function LoginForm() {
        * outra senha em vez de mandar alguém olhar para as variáveis.
        *
        * Perguntamos ao servidor o que se passa e dizemos o que ele responder.
-       * Se nem isso resultar, fica a mensagem genérica.
+       * Se nem isso resultar, fica a mensagem genérica — mas com o detalhe
+       * técnico por baixo, que é o que permite resolver em vez de adivinhar.
        */
       try {
         const r = await fetch("/api/health/auth", { cache: "no-store" });
@@ -69,8 +107,14 @@ function LoginForm() {
       } catch {
         setError(t("loginError"));
       }
+      setDetalhe(await diagnosticar(erro));
     } finally {
       setLoading(false);
+    }
+
+    if (entrou) {
+      router.push(callbackUrl);
+      router.refresh();
     }
   }
 
@@ -105,8 +149,16 @@ function LoginForm() {
       </div>
 
       {error && (
-        <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3">
-          {error}
+        <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 space-y-2">
+          <p>{error}</p>
+          {/* Só existe quando a chamada rebentou — nunca aparece a quem
+              simplesmente enganou-se na senha. Feio de propósito: é para ser
+              copiado, não lido. */}
+          {detalhe && (
+            <p className="font-mono text-[10px] leading-relaxed text-destructive/80 break-all">
+              {detalhe}
+            </p>
+          )}
         </div>
       )}
 

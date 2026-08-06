@@ -19,6 +19,11 @@ const geistMono = Geist_Mono({ subsets: ['latin'] });
 interface StatsCardsProps {
   dateRange: { from: Date; to: Date };
   currency: 'PYG' | 'USD' | 'BRL';
+  /**
+   * O módulo de clínica está ativo? Numa clínica não há clientes, há pacientes
+   * — é assim que o menu lhes chama, e o painel tem de dizer o mesmo.
+   */
+  clinica?: boolean;
 }
 
 const tMap: Record<'pt' | 'es', Record<string, string>> = {
@@ -31,6 +36,8 @@ const tMap: Record<'pt' | 'es', Record<string, string>> = {
     productsSub: "Produtos ativos no catálogo",
     customersTitle: "Clientes Ativos",
     customersSub: "Clientes registrados",
+    patientsTitle: "Pacientes Ativos",
+    patientsSub: "Pacientes registrados",
     error: "Erro ao carregar estatísticas",
   },
   es: {
@@ -42,11 +49,13 @@ const tMap: Record<'pt' | 'es', Record<string, string>> = {
     productsSub: "Productos activos en catálogo",
     customersTitle: "Clientes Activos",
     customersSub: "Clientes registrados",
+    patientsTitle: "Pacientes Activos",
+    patientsSub: "Pacientes registrados",
     error: "Error al cargar estadísticas",
   }
 };
 
-export function StatsCards({ dateRange, currency }: StatsCardsProps) {
+export function StatsCards({ dateRange, currency, clinica = false }: StatsCardsProps) {
   const { language } = useLanguage();
   const currentLang = (language === 'es' || language === 'pt') ? language : 'pt';
   const labels = tMap[currentLang];
@@ -72,6 +81,19 @@ export function StatsCards({ dateRange, currency }: StatsCardsProps) {
     );
   }
 
+  /**
+   * Duas cores fixas e duas do acento, e a divisão não é estética.
+   *
+   * Verde e âmbar querem dizer alguma coisa: dinheiro que entra e dinheiro que
+   * sai. Ninguém tem de aprender isso, lê-se de relance, e não muda de sentido
+   * por a empresa ser uma loja ou uma clínica.
+   *
+   * Produtos e clientes são contagens — não são boas nem más. As cores que
+   * tinham (sky e indigo) não significavam nada, e ficavam a discutir com o
+   * acento do cliente: num tenant azul eram três azuis quase iguais, num verde
+   * eram duas cores de fora da paleta. Passam a seguir o acento, que é o que
+   * lhes dá o único sentido que podem ter: pertencerem a esta empresa.
+   */
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
       {/* Total de Vendas */}
@@ -115,12 +137,12 @@ export function StatsCards({ dateRange, currency }: StatsCardsProps) {
       </Card>
 
       {/* Produtos Cadastrados */}
-      <Card className="border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 border-l-sky-500/80 group">
+      <Card className="border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 border-l-primary/80 group">
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors">
+          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
             {labels.productsTitle}
           </CardTitle>
-          <Package className="h-4 w-4 text-sky-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
+          <Package className="h-4 w-4 text-primary opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-1">
@@ -135,12 +157,12 @@ export function StatsCards({ dateRange, currency }: StatsCardsProps) {
       </Card>
 
       {/* Clientes Ativos */}
-      <Card className="border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 border-l-indigo-500/80 group">
+      <Card className="border border-border bg-card/45 backdrop-blur-md shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-md cursor-default border-l-4 border-l-primary/80 group">
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
-            {labels.customersTitle}
+          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
+            {clinica ? labels.patientsTitle : labels.customersTitle}
           </CardTitle>
-          <Users className="h-4 w-4 text-indigo-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
+          <Users className="h-4 w-4 text-primary opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-1">
@@ -148,7 +170,7 @@ export function StatsCards({ dateRange, currency }: StatsCardsProps) {
               {data.totalCustomers}
             </h3>
             <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-              {labels.customersSub}
+              {clinica ? labels.patientsSub : labels.customersSub}
             </span>
           </div>
         </CardContent>

@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/ui/page-header';
 import { getTranslations } from 'next-intl/server';
 import { BriefingDiario } from '@/components/dashboard/BriefingDiario';
+import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,21 @@ export default async function DashboardPage({
 }) {
   const t = await getTranslations("pages.dashboard");
   const { tenantId } = await params;
+
+  // A barra lateral já trata uma clínica como uma clínica — "Clientes" aparece
+  // lá como "Pacientes". O painel não sabia disso, e o primeiro ecrã que um
+  // médico via contradizia o menu ao lado. Tolerante a base por migrar: sem a
+  // coluna, fica o vocabulário genérico.
+  let clinica = false;
+  try {
+    const empresa = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { modules: true },
+    });
+    clinica = !!empresa?.modules?.includes('clinic');
+  } catch {
+    clinica = false;
+  }
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -46,7 +62,11 @@ export default async function DashboardPage({
           </div>
         }
       >
-        <StatsCards dateRange={defaultDateRange} currency={defaultCurrency} />
+        <StatsCards
+          dateRange={defaultDateRange}
+          currency={defaultCurrency}
+          clinica={clinica}
+        />
       </Suspense>
 
       {/* Charts and Tables */}

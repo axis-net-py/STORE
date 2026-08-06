@@ -14,8 +14,10 @@ import {
   Bot,
   User,
   AlertCircle,
+  Camera,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import { CameraCaptura } from "@/components/CameraCaptura";
 
 interface Message {
   sender: "user" | "bot";
@@ -48,6 +50,24 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** Input separado com `capture`: no telemóvel abre a câmera nativa quando
+   *  getUserMedia não está disponível. */
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [cameraAberta, setCameraAberta] = useState(false);
+  const [temGetUserMedia, setTemGetUserMedia] = useState(false);
+
+  // Só no cliente: no servidor não há `navigator`, e assumir que existe faria
+  // a marcação divergir entre o servidor e o navegador.
+  useEffect(() => {
+    setTemGetUserMedia(
+      typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia
+    );
+  }, []);
+
+  const abrirCamera = () => {
+    if (temGetUserMedia) setCameraAberta(true);
+    else cameraInputRef.current?.click();
+  };
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -190,7 +210,19 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    await processarFicheiro(file);
+    // Limpa o input para que escolher o MESMO ficheiro outra vez volte a
+    // disparar o onChange — sem isto, repetir uma tentativa falhada não fazia
+    // nada e parecia que o botão tinha deixado de funcionar.
+    e.target.value = "";
+  };
 
+  /**
+   * Caminho único do anexo, venha ele do seletor de ficheiros ou da câmera.
+   * A fotografia tirada aqui dentro é um File como qualquer outro — se
+   * tivesse um caminho próprio, cada correcção teria de ser feita duas vezes.
+   */
+  const processarFicheiro = async (file: File) => {
     const fileLabel = file.type === "application/pdf" ? "PDF" : "Imagem";
     const fileName = file.name;
 
@@ -239,8 +271,6 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
       ]);
       setLoading(false);
     }
-    
-    if (e.target) e.target.value = "";
   };
 
   const handleOptionSelect = async (
@@ -408,6 +438,27 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
               onChange={handleFileUpload}
             />
 
+            {/* Recurso para navegadores sem getUserMedia: no telemóvel abre a
+                câmera nativa; no computador cai no seletor de ficheiros. */}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              ref={cameraInputRef}
+              onChange={handleFileUpload}
+            />
+
+            {/* Camera Button */}
+            <button
+              type="button"
+              onClick={abrirCamera}
+              className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-all shrink-0"
+              title={t("takePhoto")}
+            >
+              <Camera className="w-4.5 h-4.5" />
+            </button>
+
             {/* Upload Image Button */}
             <button
               type="button"
@@ -468,6 +519,22 @@ export function AIAssistant({ tenantId }: { tenantId: string }) {
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageSquare className="w-5.5 h-5.5 animate-pulse" />}
       </button>
+
+      <CameraCaptura
+        aberto={cameraAberta}
+        onFechar={() => setCameraAberta(false)}
+        onCapturar={processarFicheiro}
+        textos={{
+          titulo: t("camera.title"),
+          instrucao: t("camera.hint"),
+          tirar: t("camera.shoot"),
+          repetir: t("camera.retake"),
+          usar: t("camera.use"),
+          fechar: t("camera.close"),
+          semPermissao: t("camera.denied"),
+          semCamera: t("camera.unavailable"),
+        }}
+      />
     </div>
   );
 }

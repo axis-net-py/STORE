@@ -21,6 +21,12 @@ export function localeLanguageName(locale: AppLocale): string {
 const messages = {
   "pt-BR": {
     notAuthenticated: "Não autenticado",
+    aiRateLimited:
+      "Muitos pedidos ao assistente em pouco tempo. Aguarde alguns minutos e tente novamente.",
+    aiAttachmentTooLarge:
+      "O arquivo é grande demais. Envie uma foto ou PDF de até 10 MB.",
+    aiAttachmentType:
+      "Formato não aceito. Envie uma foto (JPG, PNG, WEBP, HEIC) ou um PDF.",
     emptyPrompt: "Prompt vazio",
     missingApiKey:
       "A leitura de faturas por foto/PDF exige a chave GEMINI_API_KEY configurada no servidor. Comandos de texto continuam funcionando.",
@@ -51,6 +57,12 @@ const messages = {
   },
   "es-PY": {
     notAuthenticated: "No autenticado",
+    aiRateLimited:
+      "Demasiadas solicitudes al asistente en poco tiempo. Espere unos minutos e intente de nuevo.",
+    aiAttachmentTooLarge:
+      "El archivo es demasiado grande. Envíe una foto o PDF de hasta 10 MB.",
+    aiAttachmentType:
+      "Formato no aceptado. Envíe una foto (JPG, PNG, WEBP, HEIC) o un PDF.",
     emptyPrompt: "Consulta vacía",
     missingApiKey:
       "La lectura de facturas por foto/PDF requiere la clave GEMINI_API_KEY configurada en el servidor. Los comandos de texto siguen funcionando.",

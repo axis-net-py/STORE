@@ -432,7 +432,18 @@
     "importProcessing": "Processando Fatura",
     "importDone": "Importação Concluída",
     "importFailed": "Falha no Processamento",
-    "speechLang": "pt-BR"
+    "speechLang": "pt-BR",
+    "takePhoto": "Fotografar fatura",
+    "camera": {
+      "title": "Fotografar a fatura",
+      "hint": "Enquadre a fatura inteira, sobre uma superfície plana e bem iluminada. Números tortos ou desfocados são lidos errado.",
+      "shoot": "Tirar foto",
+      "retake": "Repetir",
+      "use": "Usar esta foto",
+      "close": "Fechar",
+      "denied": "Permissão de câmera negada. Autorize o acesso nas configurações do navegador e tente de novo.",
+      "unavailable": "Nenhuma câmera disponível neste dispositivo. Use o botão de anexo para enviar uma foto ou PDF."
+    }
   },
   "weather": {
     "loading": "Buscando dados climáticos (GPS)...",

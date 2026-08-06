@@ -432,7 +432,18 @@
     "importProcessing": "Procesando Factura",
     "importDone": "Importación Concluida",
     "importFailed": "Fallo en el Procesamiento",
-    "speechLang": "es-PY"
+    "speechLang": "es-PY",
+    "takePhoto": "Fotografiar factura",
+    "camera": {
+      "title": "Fotografiar la factura",
+      "hint": "Encuadre la factura completa, sobre una superficie plana y bien iluminada. Los números torcidos o borrosos se leen mal.",
+      "shoot": "Tomar foto",
+      "retake": "Volver a tomar",
+      "use": "Usar esta imagen",
+      "close": "Cerrar",
+      "denied": "Permiso de cámara denegado. Autorice el acceso en la configuración del navegador e intente de nuevo.",
+      "unavailable": "No hay cámara disponible en este dispositivo. Use el botón de adjunto para enviar una foto o PDF."
+    }
   },
   "weather": {
     "loading": "Obteniendo datos climáticos (GPS)...",

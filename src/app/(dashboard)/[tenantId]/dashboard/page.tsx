@@ -5,6 +5,7 @@ import { TopProducts } from '@/components/dashboard/TopProducts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/ui/page-header';
 import { getTranslations } from 'next-intl/server';
+import { BriefingDiario } from '@/components/dashboard/BriefingDiario';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,12 +18,23 @@ const defaultDateRange = {
 // Default currency - should come from tenant settings
 const defaultCurrency = 'PYG' as const;
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ tenantId: string }>;
+}) {
   const t = await getTranslations("pages.dashboard");
+  const { tenantId } = await params;
 
   return (
     <div className="space-y-4 md:space-y-6">
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
+
+      {/* Em Suspense próprio: o briefing consulta várias tabelas e não deve
+          atrasar o resto do painel. */}
+      <Suspense fallback={<Skeleton className="h-28 w-full" />}>
+        <BriefingDiario tenantId={tenantId} />
+      </Suspense>
 
       {/* Stats Cards */}
       <Suspense

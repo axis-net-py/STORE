@@ -19,6 +19,12 @@ import { adjustStock } from "@/app/actions/inventory";
 import { transferStock } from "@/app/actions/warehouse";
 import { requirePermission } from "@/lib/authz";
 import {
+  excedeuLimite,
+  registarPedido,
+  anexoDemasiadoGrande,
+  mimeAceite,
+} from "@/lib/ia-limites";
+import {
   resolveLocale,
   localeLanguageName,
   serverMessages,
@@ -188,14 +194,29 @@ function normalizeUnit(name: string, extractedUnit?: string): string {
   return extractedUnit || "un";
 }
 
+/** Modelo em variável: trocar de versão não devia obrigar a mexer no código. */
+const MODELO = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+
+/**
+ * Teto de espera pelo modelo.
+ *
+ * Sem isto, um pedido pendurado ocupava a função até ao limite da plataforma —
+ * o utilizador ficava a olhar para o indicador de carregamento sem nunca
+ * receber resposta nem erro.
+ */
+const TIMEOUT_MODELO_MS = 45_000;
+
 // Helper to query Gemini API via fetch
 async function callGemini(prompt: string, imageBase64?: string, mimeType?: string) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
+  const abortar = new AbortController();
+  const relogio = setTimeout(() => abortar.abort(), TIMEOUT_MODELO_MS);
+
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-    
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`;
+
     let contents: any[] = [];
     if (imageBase64 && mimeType) {
       contents = [
@@ -223,20 +244,33 @@ async function callGemini(prompt: string, imageBase64?: string, mimeType?: strin
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // Em cabeçalho e não em `?key=`: o URL aparece em registos de proxy,
+        // em mensagens de erro e em rastreios de rede. A chave não deve andar
+        // por lá.
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({ contents }),
+      signal: abortar.signal,
     });
 
     if (!response.ok) {
-      console.error("Gemini API error:", await response.text());
+      // Só o código. O corpo do erro repete o pedido, e o pedido leva o
+      // conteúdo da fatura de um cliente — que não tem nada que ir para os
+      // registos da aplicação.
+      console.error(`Gemini respondeu ${response.status}`);
       return null;
     }
 
     const data = await response.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
   } catch (err) {
-    console.error("Failed calling Gemini API:", err);
+    const motivo = err instanceof Error && err.name === "AbortError"
+      ? `sem resposta em ${TIMEOUT_MODELO_MS / 1000}s`
+      : err instanceof Error ? err.message : "erro desconhecido";
+    console.error("Falha ao chamar o modelo:", motivo);
     return null;
+  } finally {
+    clearTimeout(relogio);
   }
 }
 
@@ -479,10 +513,30 @@ export async function POST(req: NextRequest) {
 
   const apiKey = process.env.GEMINI_API_KEY;
 
+  // Cada pedido daqui custa uma chamada a um modelo pago. Sem teto, uma sessão
+  // válida — ou uma cookie roubada — emitia pedidos em cadeia à nossa custa. O
+  // login já estava protegido contra força bruta; o endereço que gasta dinheiro
+  // não estava.
+  if (excedeuLimite(userId)) {
+    return NextResponse.json({ error: m.aiRateLimited }, { status: 429 });
+  }
+  registarPedido(userId);
+
   try {
     const body = await req.json();
     const { text, image, file, mimeType, purpose, attachmentUrl, confirmacao } = body;
     const fileBase64 = file || image;
+
+    // Recusado antes de chegar ao modelo: validar depois seria pagar a chamada
+    // para descobrir que o anexo nunca devia ter sido aceite.
+    if (fileBase64) {
+      if (anexoDemasiadoGrande(fileBase64)) {
+        return NextResponse.json({ error: m.aiAttachmentTooLarge }, { status: 413 });
+      }
+      if (!mimeAceite(mimeType)) {
+        return NextResponse.json({ error: m.aiAttachmentType }, { status: 415 });
+      }
+    }
     // For file uploads, we only support invoice parsing since crop diagnostic is removed
     const activePurpose = purpose || "invoice";
 

@@ -24,6 +24,8 @@ import {
   anexoDemasiadoGrande,
   mimeAceite,
 } from "@/lib/ia-limites";
+import { executarConsulta } from "./consultas-db";
+import { CONSULTAS, consultaLocal, respostaSemModelo } from "@/lib/consultas";
 import {
   resolveLocale,
   localeLanguageName,
@@ -46,6 +48,9 @@ const actionPermissions: Record<string, string> = {
   query_stock: "inventory:read",
   query_sales: "reports:read",
   query_balances: "accounting:read",
+  // `consultar` não entra aqui: cada consulta do catálogo exige a sua própria
+  // permissão, verificada em executarConsulta(). Uma permissão única à entrada
+  // daria a quem pode ver produtos o direito de ler a carteira de clientes.
 };
 
 // Dedupe: localiza cliente por documento ou nome (case-insensitive); cria se não existir
@@ -275,6 +280,50 @@ async function callGemini(prompt: string, imageBase64?: string, mimeType?: strin
 }
 
 // Converte números em formato latino ("500.000", "33,75") para number
+/**
+ * Põe em português o que a base já respondeu.
+ *
+ * Segunda chamada ao modelo, e é barata: leva umas dezenas de linhas em JSON,
+ * não a conversa toda. Vale a pena porque a alternativa — despejar a tabela no
+ * balão de chat — obriga a pessoa a fazer com os olhos o trabalho que ela
+ * queria evitar ao perguntar.
+ *
+ * A instrução mais importante do prompt é a de não acrescentar nada. Devolve
+ * null se falhar, e aí entra a versão determinista: os mesmos factos, sem
+ * prosa. Nunca se responde "não consegui" a uma pergunta cuja resposta já está
+ * calculada.
+ */
+async function redigirResposta(
+  pergunta: string,
+  dados: { titulo: string; linhas: Record<string, unknown>[]; totais?: Record<string, number>; truncado?: boolean },
+  langName: string
+): Promise<string | null> {
+  if (!process.env.GEMINI_API_KEY) return null;
+
+  const prompt = `Responda em ${langName}, como o assistente de um sistema de gestão no Paraguai.
+
+Pergunta do utilizador: "${pergunta}"
+
+O sistema consultou a base de dados e apurou o seguinte (os números JÁ ESTÃO CALCULADOS):
+${JSON.stringify({ titulo: dados.titulo, totais: dados.totais ?? {}, linhas: dados.linhas, listaCortada: !!dados.truncado })}
+
+Regras, sem exceção:
+- Responda SÓ com o que está acima. Não some, não calcule, não estime, não complete.
+- Se as linhas e os totais estiverem vazios, diga claramente que não há nada a mostrar. Nunca invente registos.
+- Valores em guaranis escrevem-se com ponto de milhar e sem casas decimais (ex.: 1.250.000 Gs.).
+- Datas em formato dia/mês/ano.
+- Seja curto: duas ou três frases, ou uma lista de no máximo oito linhas se a pergunta pedir uma lista.
+- Se listaCortada for verdadeiro, diga que há mais e que a lista completa está no ecrã correspondente.
+- Não repita a pergunta nem se apresente.`;
+
+  try {
+    const r = await callGemini(prompt);
+    return r?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 function parseLatamNumber(s: string): number {
   let v = s.trim();
   if (v.includes(".") && v.includes(",")) {
@@ -291,6 +340,19 @@ function parseLatamNumber(s: string): number {
 function localNlpProcessor(text: string, locale: AppLocale = "pt-BR") {
   const m = serverMessages(locale);
   const cleanText = text.toLowerCase().trim();
+
+  // Perguntas antes de comandos, de propósito. Sem chave da API é isto que
+  // responde a "que contas vencem esta semana", e enganar-se para o lado da
+  // leitura é barato — enganar-se para o lado da escrita cria um registo que
+  // alguém tem de ir apagar.
+  const pergunta = consultaLocal(text);
+  if (pergunta) {
+    return {
+      action: "consultar",
+      data: { consulta: pergunta.consulta, ...pergunta.params },
+      message: "",
+    };
+  }
 
   // 0.01 QUERY STOCK — "quanto tem de estoque de X", "estoque baixo"
   if (/quanto (tem|há|ha) (de )?estoque|estoque (do|de|da)|estoque baixo|consultar estoque|cu[áa]nto stock|stock de/.test(cleanText)) {
@@ -817,6 +879,12 @@ Temos as seguintes ações possíveis no ERP comercial:
    - Use para "quanto vendi hoje" (days=1), "vendas da semana" (days=7), "vendas do mês" (days=30).
 13. "query_balances" (Consulta de contas a receber/pagar — somente leitura): campos { direction?: "RECEIVABLE"|"PAYABLE" }
    - Use para "quanto tenho a receber", "contas a pagar", "quem me deve".
+14. "consultar" (Pergunta sobre os dados cadastrados — SOMENTE LEITURA): campos { consulta: string, ...parâmetros }
+   - Use SEMPRE que o utilizador fizer uma pergunta sobre clientes, fornecedores, produtos, compras, vendas, contas ou vencimentos da empresa dele.
+   - Escolha UMA consulta desta lista e devolva o nome exato no campo "consulta". NÃO invente nomes nem escreva SQL.
+${CONSULTAS.map((c) => `   * "${c.nome}" — ${c.descricao}${c.params.length ? ` Parâmetros: ${c.params.map((x) => `${x.nome} (${x.descricao})`).join("; ")}.` : " Sem parâmetros."}`).join("\n")}
+   - Se o utilizador citar um nome de pessoa ou empresa, passe-o tal como ele escreveu.
+   - Não responda com números inventados: devolva a ação "consultar" e o sistema devolve-lhe os dados reais.
 
 Atenção especial para Condição de Pagamento (paymentMethod):
 - Se o usuário citar termos de condição de pagamento como "contado", "a vista", "à vista", "cash", mapeie "paymentMethod" para "A_VISTA".
@@ -1261,6 +1329,20 @@ Se for apenas conversa ou dúvida, retorne:
 
         await transferStock({ productId: product.id, fromWarehouseId: from.id, toWarehouseId: to.id, quantity: qty });
         result.message = `Transferidos ${qty} ${product.unit} de "${product.name}" do depósito ${from.name} para ${to.name}.`;
+      } else if (result.action === "consultar") {
+        /**
+         * O servidor consulta; o modelo escreve.
+         *
+         * Os números que saem daqui vêm todos do Prisma, já somados. O modelo
+         * recebe-os prontos e só os põe numa frase — nunca conta, nunca soma,
+         * nunca completa o que falta. Um assistente que inventa "três faturas
+         * vencidas" onde há uma faz alguém ligar a um cliente a cobrar o que
+         * ele já pagou.
+         */
+        const { consulta, ...params } = result.data ?? {};
+        const dados = await executarConsulta(String(consulta ?? ""), params, tenantId);
+        result.message = (await redigirResposta(text, dados, langName)) ?? respostaSemModelo(dados);
+        result.consulta = dados.consulta;
       } else if (result.action === "query_stock") {
         const fmt = new Intl.NumberFormat("es-PY");
         if (result.data?.productName) {
@@ -1342,7 +1424,11 @@ Se for apenas conversa ou dúvida, retorne:
 
       return NextResponse.json({
         action: result.action,
-        message: result.message
+        message: result.message,
+        // Qual consulta respondeu. Serve para o utilizador perceber de onde
+        // veio o número, e para nós vermos no registo quando ele reclama que
+        // a resposta não era a que esperava.
+        ...(result.consulta ? { consulta: result.consulta } : {}),
       });
     }
 

@@ -23,6 +23,9 @@ export const NIVEL: Record<string, Nivel> = {
   query_stock: 0,
   query_sales: 0,
   query_balances: 0,
+  // Consultar é leitura pura: não muda nada e não precisa de confirmação. A
+  // permissão de cada consulta é verificada uma a uma em consultas-db.ts.
+  consultar: 0,
 
   create_customer: 1,
   create_supplier: 1,

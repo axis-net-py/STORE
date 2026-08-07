@@ -97,3 +97,31 @@ model ProvisioningEvent {
 
   @@index([tenantId, createdAt])
 }
+
+/// Onde procurar um e-mail no momento do login.
+///
+/// Com base partilhada isto não fazia falta: `User.email` é único e a consulta
+/// encontrava a pessoa. Com base dedicada há um problema de ovo e galinha —
+/// para saber a base é preciso saber o cliente, e para saber o cliente é
+/// preciso ler o utilizador, que está na base que ainda não se sabe qual é.
+///
+/// Esta tabela quebra o ciclo, e é a ÚNICA razão para existir. Guarda o e-mail
+/// e nada mais: nem nome, nem papel, nem palavra-passe. A palavra-passe nunca
+/// sai da base do cliente, que é onde tem de estar — este registo diz apenas
+/// "procure ali".
+model UserDirectory {
+  id String @id @default(cuid())
+
+  /// Normalizado em minúsculas antes de gravar, como no `authorize`.
+  email String @unique
+
+  /// Registo do cliente onde este utilizador vive.
+  registryId String
+  /// Espelhado para o login não precisar de segunda consulta.
+  tenantId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([registryId])
+}

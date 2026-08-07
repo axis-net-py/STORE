@@ -39,6 +39,9 @@ function SetupForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token") ?? "";
+  // Qual o cliente. Não é segredo — é o subdomínio — e é o que diz em que
+  // base procurar o token quando o cliente tem base própria.
+  const cliente = params.get("c") ?? undefined;
 
   const [estado, setEstado] = useState<"a-verificar" | "valido" | "invalido">("a-verificar");
   const [motivo, setMotivo] = useState("");
@@ -50,7 +53,7 @@ function SetupForm() {
 
   useEffect(() => {
     (async () => {
-      const r = await verificarLinkSetup(token);
+      const r = await verificarLinkSetup(token, cliente);
       if (r.ok) {
         setInfo({ email: r.email, empresa: r.empresa });
         setEstado("valido");
@@ -59,7 +62,7 @@ function SetupForm() {
         setEstado("invalido");
       }
     })();
-  }, [token]);
+  }, [token, cliente]);
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +72,7 @@ function SetupForm() {
     }
     setAGravar(true);
     try {
-      await definirPrimeiraSenha(token, senha);
+      await definirPrimeiraSenha(token, senha, cliente);
       toast.success("Senha definida. Já pode entrar.");
       router.push("/login");
     } catch (err: any) {

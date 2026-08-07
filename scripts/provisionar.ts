@@ -41,8 +41,8 @@ async function main() {
 
   const base = process.env.TENANT_BASE_DOMAINS?.split(",")[0]?.trim();
   const url = base && base !== "localhost"
-    ? `https://${r.slug}.${base}/setup?token=${r.tokenConfiguracao}`
-    : `https://axisretail.vercel.app/setup?token=${r.tokenConfiguracao}`;
+    ? `https://${r.slug}.${base}/setup?token=${r.tokenConfiguracao}&c=${r.slug}`
+    : `https://axisnetpy.vercel.app/setup?token=${r.tokenConfiguracao}&c=${r.slug}`;
 
   const linha = "─".repeat(72);
   console.log(linha);
@@ -50,6 +50,7 @@ async function main() {
   console.log(`Tenant ID : ${r.tenantId}`);
   console.log(`Subdomínio: ${r.slug}`);
   console.log(`Admin     : ${r.emailAdmin}`);
+  console.log(`Base      : ${r.hospedagem === "DEDICATED" ? `própria (Neon ${r.neonProjectId})` : "partilhada"}`);
   console.log(linha);
   console.log("LINK DE CONFIGURAÇÃO (uso único, entregue ao cliente):");
   console.log(url);

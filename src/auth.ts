@@ -4,6 +4,8 @@ import { compare } from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { isRateLimited, recordFailedAttempt, clearAttempts } from "@/lib/rate-limit";
 import { destinoPermitido } from "@/lib/destino-login";
+import { moradaDoEmail } from "@/lib/control-plane";
+import { resolverEFixar, fixarBase } from "@/lib/tenant-db";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -39,6 +41,27 @@ export const authOptions: NextAuthOptions = {
         const rateKey = `login:${email}`;
         if (isRateLimited(rateKey)) {
           throw new Error("Muitas tentativas de login. Aguarde 15 minutos e tente novamente.");
+        }
+
+        /**
+         * Antes de procurar a pessoa, descobrir em que base ela vive.
+         *
+         * Com base partilhada isto não fazia falta — o e-mail é único e a
+         * consulta encontrava-a. Com base dedicada há um ovo e uma galinha:
+         * para saber a base é preciso saber o cliente, e o cliente está no
+         * registo do utilizador, que vive na base que ainda não se sabe qual é.
+         *
+         * O diretório do control plane quebra o ciclo. Guarda só o e-mail e o
+         * cliente — a palavra-passe nunca sai da base do cliente, que é onde
+         * tem de estar. Sem entrada no diretório (clientes partilhados de
+         * antes disto), procura-se na base do ambiente, como sempre.
+         */
+        const morada = await moradaDoEmail(email);
+        if (morada) {
+          // Dois passos, e a ordem importa: o `await` resolve, o `fixarBase`
+          // corre neste frame. Ver a nota em lib/tenant-db.ts.
+          const base = await resolverEFixar(morada.tenantId);
+          fixarBase(morada.tenantId, base);
         }
 
         const user = await prisma.user.findUnique({
@@ -129,6 +152,22 @@ export const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
-export const auth = () => getServerSession(authOptions);
+/**
+ * A sessão, e a base que lhe corresponde.
+ *
+ * Fixar o contexto aqui — e não só no `requirePermission` — cobre as páginas,
+ * que leem a sessão e consultam a base diretamente sem passar por uma server
+ * action. Ficaria de fora o layout do painel, que é a primeira coisa a correr
+ * em cada ecrã: leria a base partilhada e não encontraria o cliente.
+ */
+export const auth = async () => {
+  const sessao = await getServerSession(authOptions);
+  if (sessao?.user?.tenantId) {
+    const tenantId = sessao.user.tenantId as string;
+    const base = await resolverEFixar(tenantId);
+    fixarBase(tenantId, base);
+  }
+  return sessao;
+};
 export const signIn = () => import("next-auth/react").then((m) => m.signIn);
 export const signOut = () => import("next-auth/react").then((m) => m.signOut);

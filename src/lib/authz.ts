@@ -1,6 +1,7 @@
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { acaoBloqueadaPorModulo } from '@/modules/registry'
+import { resolverEFixar, fixarBase } from '@/lib/tenant-db'
 
 export type AuthContext = {
   tenantId: string
@@ -32,6 +33,12 @@ export async function requirePermission(action: string): Promise<AuthContext> {
 
   const tenantId = session.user.tenantId as string
   const userId = session.user.id as string
+
+  // Fixa a base deste pedido ANTES da primeira consulta. Tudo o que vier a
+  // seguir na mesma cadeia — esta função e a server action que a chamou —
+  // passa a falar com a base do cliente. Um cliente partilhado continua na
+  // base do ambiente, e nada muda para ele.
+  fixarBase(tenantId, await resolverEFixar(tenantId))
 
   // Papel sempre lido do banco — o JWT pode estar desatualizado após mudança de
   // papel. Os módulos contratados vêm na mesma consulta, sem ida extra ao banco.

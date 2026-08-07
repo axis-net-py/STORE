@@ -13,8 +13,8 @@ import { PasswordSchema } from '@/lib/schemas'
  * e por isso ele é de uso único, expira, e só existe em hash na base de dados.
  */
 
-export async function verificarLinkSetup(token: string) {
-  const r = await validarToken(token)
+export async function verificarLinkSetup(token: string, slug?: string) {
+  const r = await validarToken(token, slug)
   if (!r.ok) return { ok: false as const, motivo: r.motivo }
 
   const user = await prisma.user.findUnique({
@@ -31,11 +31,11 @@ export async function verificarLinkSetup(token: string) {
   }
 }
 
-export async function definirPrimeiraSenha(token: string, senha: string) {
+export async function definirPrimeiraSenha(token: string, senha: string, slug?: string) {
   const parsed = PasswordSchema.safeParse(senha)
   if (!parsed.success) throw new Error(parsed.error.issues[0].message)
 
-  const r = await validarToken(token)
+  const r = await validarToken(token, slug)
   if (!r.ok) throw new Error(r.motivo)
 
   const senhaHash = await hash(senha, 10)

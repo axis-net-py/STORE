@@ -8,6 +8,7 @@ import type { ModuleManifest, NavEntry } from "./types";
 import { storeModule } from "./store/manifest.ts";
 import { farmModule } from "./farm/manifest.ts";
 import { clinicModule } from "./clinic/manifest.ts";
+import { foodModule } from "./food/manifest.ts";
 
 /**
  * Registo de módulos e composição dos verticais.
@@ -30,11 +31,12 @@ export const CORE_NAV: NavEntry[] = [
   { icon: BarChart3,       key: "reports",    defaultLabel: "Relatórios",    href: "reports",    order: 110 },
 ];
 
-/** Todos os módulos conhecidos. Food entra no Projeto 3. */
+/** Todos os módulos conhecidos. */
 export const MODULES: Record<string, ModuleManifest> = {
   store: storeModule,
   farm: farmModule,
   clinic: clinicModule,
+  food: foodModule,
 };
 
 /** Composição de cada marca. Um cliente pode ter módulos além dos do seu vertical. */

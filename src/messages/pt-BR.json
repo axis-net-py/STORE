@@ -69,7 +69,10 @@
     "profissionais": "Profissionais",
     "servicos": "Serviços",
     "customersPatients": "Pacientes",
-    "aparencia": "Aparência"
+    "aparencia": "Aparência",
+    "salao": "Salão",
+    "cozinha": "Cozinha",
+    "cardapio": "Cardápio"
   },
   "header": {
     "switchLanguage": "Cambiar a Español",

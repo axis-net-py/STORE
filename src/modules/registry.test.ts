@@ -169,9 +169,15 @@ test('toda entrada de navegação tem tradução nos dois idiomas', async () => 
 
 test('cada rota declarada no manifesto tem entrada de menu correspondente', () => {
   for (const m of Object.values(MODULES)) {
-    const hrefs = m.nav.map((n) => n.href)
+    // Uma rota sem entrada de menu ou é uma entrada esquecida — e fica
+    // inalcançável — ou é uma rota a que se chega de dentro, e nesse caso tem
+    // de estar declarada. Do código as duas são iguais; para quem usa não são.
+    const alcancaveis = [...m.nav.map((n) => n.href), ...(m.routesSemMenu ?? [])]
     for (const rota of m.routes) {
-      assert.ok(hrefs.includes(rota), `módulo ${m.name}: rota "${rota}" sem entrada de menu`)
+      assert.ok(
+        alcancaveis.includes(rota),
+        `módulo ${m.name}: rota "${rota}" sem entrada de menu nem declaração em routesSemMenu`
+      )
     }
   }
 })

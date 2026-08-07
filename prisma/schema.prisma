@@ -74,40 +74,40 @@ enum TaxType {
 // ─── Tenant ─────────────────────────────────────────────────
 
 model Tenant {
-  id               String   @id @default(cuid())
-  name             String
+  id                  String   @id @default(cuid())
+  name                String
   /// Subdomínio deste cliente: `smartbuy` → smartbuy.axisstore.com.
   /// Único em toda a instalação. Ver src/lib/tenant-host.ts para o formato e
   /// a lista de slugs reservados (spec Projeto 2, §3.1).
-  slug             String?  @unique
+  slug                String?  @unique
   /// Módulos ativos deste cliente. O vertical (store/farm/clinic/food) é um
   /// conjunto nomeado destes — ver src/modules/registry.ts. Todas as bases têm
   /// as tabelas de todos os módulos; só esta lista difere (spec Projeto 1, D4).
-  modules          String[] @default(["store"])
-  businessName     String?
-  ruc              String?
-  tradeName        String?
-  establishment    String?  @default("001")
-  emissionPoint    String?  @default("001")
-  address          String?
-  economicActivity String?
+  modules             String[] @default(["store"])
+  businessName        String?
+  ruc                 String?
+  tradeName           String?
+  establishment       String?  @default("001")
+  emissionPoint       String?  @default("001")
+  address             String?
+  economicActivity    String?
   /// Tipo de contribuinte para o CDC: "1" pessoa física, "2" pessoa jurídica.
   /// Entra na posição 25 do CDC — ver src/lib/cdc.ts.
-  taxpayerType     String?  @default("2")
+  taxpayerType        String?  @default("2")
   /// Emite documentos eletrónicos para a SET (SIFEN)?
   ///
   /// Falso por omissão, e é o caso comum: uma empresa começa a operar com
   /// documentos internos e só depois trata do certificado digital e do
   /// timbrado. Enquanto estiver desligado, o sistema não pede certificado nem
   /// avisa que falta — porque não falta nada.
-  electronicInvoicing Boolean @default(false)
+  electronicInvoicing Boolean  @default(false)
   /// Cor do design system: blue, green, red ou offwhite.
   /// Nulo = usa a cor do vertical (store azul, farm verde, clinic offwhite),
   /// que é o que cada um tinha antes de a linha de produtos ser unificada
   /// numa só build. Ver src/lib/tema.ts.
-  themeColor       String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  themeColor          String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   users             User[]
   customers         Customer[]
@@ -147,6 +147,11 @@ model Tenant {
   services      Service[]
   appointments  Appointment[]
 
+  // módulo food
+  mesas     RestaurantTable[]
+  comandas  Comanda[]
+  menuItens MenuItem[]
+
   fiscalCredentials FiscalCredential[]
   timbrados         Timbrado[]
 }
@@ -178,7 +183,7 @@ model FiscalCredential {
   /// Nome do ficheiro original, só para o utilizador se orientar.
   fileName String?
 
-  validFrom DateTime?
+  validFrom  DateTime?
   /// Data de expiração. O aviso automático depende dela (spec §6.5).
   validUntil DateTime?
 
@@ -217,7 +222,7 @@ model Timbrado {
 
   validFrom DateTime
   /// Nulo = sem data de fim declarada.
-  validTo DateTime?
+  validTo   DateTime?
 
   /// Intervalo de numeração autorizado, inclusive nos dois extremos.
   rangeFrom Int @default(1)
@@ -236,9 +241,9 @@ model Timbrado {
 // ─── User ───────────────────────────────────────────────────
 
 model User {
-  id    String @id @default(cuid())
-  email String @unique
-  name  String
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String
   /// Opcional de propósito: um utilizador recém-provisionado NÃO tem password.
   /// Define-a ele próprio através de um PasswordSetupToken de uso único, para
   /// que o fornecedor do sistema nunca conheça credenciais de clientes
@@ -267,11 +272,11 @@ model PasswordSetupToken {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   /// SHA-256 do token. Único, para o poder procurar sem varrer a tabela.
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   /// Preenchido ao ser usado. Um token usado nunca volta a servir.
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
 }
@@ -296,12 +301,14 @@ model Customer {
   updatedAt    DateTime @updatedAt
 
   // módulo clinic: o cliente é também o paciente
-  birthDate    DateTime?
-  healthNotes  String?
+  birthDate   DateTime?
+  healthNotes String?
 
   invoices     CommercialInvoice[]
   orders       Order[]
   appointments Appointment[]
+  // módulo food: contas abertas em nome deste cliente
+  comandas     Comanda[]
 
   @@index([tenantId])
 }
@@ -360,6 +367,9 @@ model Product {
   warehouseStocks WarehouseStock[]
   // módulo farm: aplicação de insumos em talhões
   applications    PlotApplication[]
+  // módulo food: o produto vendido ao balcão e a sua face no cardápio
+  comandaItens    ComandaItem[]
+  menuItem        MenuItem?
 
   @@unique([tenantId, sku])
   @@index([tenantId])
@@ -368,50 +378,50 @@ model Product {
 // ─── Commercial Invoice ─────────────────────────────────────
 
 model CommercialInvoice {
-  id             String        @id @default(cuid())
-  tenantId       String
-  tenant         Tenant        @relation(fields: [tenantId], references: [id])
-  type           InvoiceType
-  status         InvoiceStatus @default(APPROVED)
-  documentNumber String?
-  timbrado       String?
-  sifenCdc       String?
+  id                String        @id @default(cuid())
+  tenantId          String
+  tenant            Tenant        @relation(fields: [tenantId], references: [id])
+  type              InvoiceType
+  status            InvoiceStatus @default(APPROVED)
+  documentNumber    String?
+  timbrado          String?
+  sifenCdc          String?
   /// Código de segurança do CDC: 9 algarismos aleatórios gerados na emissão.
   /// Tem de ser guardado — entra no CDC e no QR, e sem ele o CDC não se
   /// consegue recalcular nem conferir (src/lib/cdc.ts).
   sifenSecurityCode String?
-  sifenXmlUrl    String?
-  sifenStatus    String?
-  attachmentUrl  String?
-  customerId     String?
-  customer       Customer?     @relation(fields: [customerId], references: [id])
-  supplierId     String?
-  supplier       Supplier?     @relation(fields: [supplierId], references: [id])
-  issuedAt       DateTime      @default(now())
-  dueDate        DateTime?
-  currency       Currency      @default(PYG)
-  exchangeRate   Decimal       @default(1) @db.Decimal(12, 4)
-  totalAmount    Decimal       @default(0) @db.Decimal(12, 2)
-  totalUSD       Decimal?      @db.Decimal(12, 2)
-  totalIva10     Decimal       @default(0) @db.Decimal(12, 2)
-  totalIva5      Decimal       @default(0) @db.Decimal(12, 2)
-  totalExento    Decimal       @default(0) @db.Decimal(12, 2)
-  notes          String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  sifenXmlUrl       String?
+  sifenStatus       String?
+  attachmentUrl     String?
+  customerId        String?
+  customer          Customer?     @relation(fields: [customerId], references: [id])
+  supplierId        String?
+  supplier          Supplier?     @relation(fields: [supplierId], references: [id])
+  issuedAt          DateTime      @default(now())
+  dueDate           DateTime?
+  currency          Currency      @default(PYG)
+  exchangeRate      Decimal       @default(1) @db.Decimal(12, 4)
+  totalAmount       Decimal       @default(0) @db.Decimal(12, 2)
+  totalUSD          Decimal?      @db.Decimal(12, 2)
+  totalIva10        Decimal       @default(0) @db.Decimal(12, 2)
+  totalIva5         Decimal       @default(0) @db.Decimal(12, 2)
+  totalExento       Decimal       @default(0) @db.Decimal(12, 2)
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   items     InvoiceItem[]
   movements InventoryMovement[]
   payments  Payment[]
-
-  @@index([tenantId])
-  @@index([customerId])
-  @@index([supplierId])
   /// NOTA: existe um índice ÚNICO PARCIAL criado por SQL na migração
   /// …_unique_sales_document_number, sobre (tenantId, documentNumber) apenas
   /// quando type = 'SALES'. O Prisma não exprime índices parciais, por isso
   /// não aparece aqui — mas é ele que impede duas faturas de venda com o
   /// mesmo número, o que a SET rejeita. Não remover.
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([supplierId])
 }
 
 // ─── Invoice Item ───────────────────────────────────────────
@@ -706,10 +716,12 @@ enum VehicleLogType {
   MAINTENANCE
   FUEL
 }
+
 enum SiloMovementType {
   IN
   OUT
 }
+
 enum LivestockEventType {
   WEIGHING
   HEALTH
@@ -717,63 +729,66 @@ enum LivestockEventType {
 }
 
 model Harvest {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  name        String
-  cropType    String   // soja, milho, trigo, etc.
-  startDate   DateTime
-  endDate     DateTime
-  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, PLANNED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  cropType  String // soja, milho, trigo, etc.
+  startDate DateTime
+  endDate   DateTime
+  status    String   @default("ACTIVE") // ACTIVE, COMPLETED, PLANNED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  plots       Plot[]
-  contracts   Contract[]
-  applications PlotApplication[]
+  plots         Plot[]
+  contracts     Contract[]
+  applications  PlotApplication[]
   siloMovements SiloMovement[]
 
   @@index([tenantId])
 }
+
 model Plot {
-  id           String            @id @default(cuid())
-  tenantId     String
-  tenant       Tenant            @relation(fields: [tenantId], references: [id])
-  name         String
-  area         Decimal           @db.Decimal(10, 2)
-  unit         String            @default("HECTARE") // HECTARE, ALQUEIRE
-  currentCrop  String?
-  status       String            @default("PLANTED") // FALLOW, PLANTED, PREPARING
-  harvestId    String?
-  harvest      Harvest?          @relation(fields: [harvestId], references: [id])
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  applications PlotApplication[]
-  soilAnalyses SoilAnalysis[]
+  id               String            @id @default(cuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  name             String
+  area             Decimal           @db.Decimal(10, 2)
+  unit             String            @default("HECTARE") // HECTARE, ALQUEIRE
+  currentCrop      String?
+  status           String            @default("PLANTED") // FALLOW, PLANTED, PREPARING
+  harvestId        String?
+  harvest          Harvest?          @relation(fields: [harvestId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  applications     PlotApplication[]
+  soilAnalyses     SoilAnalysis[]
   irrigationEvents IrrigationEvent[]
 
   @@index([tenantId])
   @@index([harvestId])
 }
+
 model SoilAnalysis {
-  id              String   @id @default(cuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
-  plotId          String
-  plot            Plot     @relation(fields: [plotId], references: [id])
-  date            DateTime
-  ph              Decimal? @db.Decimal(4, 2)
-  phosphorus      Decimal? @db.Decimal(8, 2) // P, mg/dm³
-  potassium       Decimal? @db.Decimal(8, 2) // K, cmolc/dm³
-  organicMatter   Decimal? @db.Decimal(5, 2) // %
-  recommendation  String?
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  plotId         String
+  plot           Plot     @relation(fields: [plotId], references: [id])
+  date           DateTime
+  ph             Decimal? @db.Decimal(4, 2)
+  phosphorus     Decimal? @db.Decimal(8, 2) // P, mg/dm³
+  potassium      Decimal? @db.Decimal(8, 2) // K, cmolc/dm³
+  organicMatter  Decimal? @db.Decimal(5, 2) // %
+  recommendation String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([tenantId])
   @@index([plotId])
 }
+
 model PlotApplication {
   id         String    @id @default(cuid())
   tenantId   String
@@ -796,21 +811,23 @@ model PlotApplication {
   @@index([tenantId])
   @@index([plotId])
 }
+
 model Vehicle {
-  id               String       @id @default(cuid())
-  tenantId         String
-  tenant           Tenant       @relation(fields: [tenantId], references: [id])
-  name             String
-  type             String       // trator, colheitadeira, pulverizador, caminhao, etc.
-  plate            String?
-  status           String       @default("OPERATIONAL") // OPERATIONAL, MAINTENANCE, OUT_OF_SERVICE
-  currentReading   Decimal?     @db.Decimal(12, 2)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  logs             VehicleLog[]
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id])
+  name           String
+  type           String // trator, colheitadeira, pulverizador, caminhao, etc.
+  plate          String?
+  status         String       @default("OPERATIONAL") // OPERATIONAL, MAINTENANCE, OUT_OF_SERVICE
+  currentReading Decimal?     @db.Decimal(12, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  logs           VehicleLog[]
 
   @@index([tenantId])
 }
+
 model VehicleLog {
   id              String         @id @default(cuid())
   tenantId        String
@@ -833,14 +850,15 @@ model VehicleLog {
   @@index([tenantId])
   @@index([vehicleId])
 }
+
 model Employee {
-  id          String       @id @default(cuid())
-  tenantId    String
-  tenant      Tenant       @relation(fields: [tenantId], references: [id])
-  name        String
-  role        String       // tratorista, agronomo, operador, auxiliar, etc.
-  phone       String?
-  status      String       @default("ACTIVE") // ACTIVE, INACTIVE, LEAVE
+  id               String            @id @default(cuid())
+  tenantId         String
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  name             String
+  role             String // tratorista, agronomo, operador, auxiliar, etc.
+  phone            String?
+  status           String            @default("ACTIVE") // ACTIVE, INACTIVE, LEAVE
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   vehicleLogs      VehicleLog[]
@@ -850,29 +868,31 @@ model Employee {
 
   @@index([tenantId])
 }
+
 model Contract {
-  id             String    @id @default(cuid())
+  id             String         @id @default(cuid())
   tenantId       String
-  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
   contractNumber String
   harvestId      String?
-  harvest        Harvest?  @relation(fields: [harvestId], references: [id])
+  harvest        Harvest?       @relation(fields: [harvestId], references: [id])
   siloName       String
-  grainType      String    // soja, milho, trigo, etc.
-  quantity       Decimal   @db.Decimal(12, 2)
-  unit           String    @default("TON") // TON, BAG, KG
-  pricePerUnit   Decimal   @db.Decimal(12, 2)
-  currency       Currency  @default(USD)
-  status         String    @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  grainType      String // soja, milho, trigo, etc.
+  quantity       Decimal        @db.Decimal(12, 2)
+  unit           String         @default("TON") // TON, BAG, KG
+  pricePerUnit   Decimal        @db.Decimal(12, 2)
+  currency       Currency       @default(USD)
+  status         String         @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
   deliveryDate   DateTime?
   notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   siloMovements  SiloMovement[]
 
   @@index([tenantId])
   @@index([harvestId])
 }
+
 model Silo {
   id           String         @id @default(cuid())
   tenantId     String
@@ -880,13 +900,14 @@ model Silo {
   name         String
   capacity     Decimal        @db.Decimal(12, 2)
   unit         String         @default("TON") // TON, BAG, KG
-  currentStock Decimal        @db.Decimal(12, 2) @default(0)
+  currentStock Decimal        @default(0) @db.Decimal(12, 2)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   movements    SiloMovement[]
 
   @@index([tenantId])
 }
+
 model SiloMovement {
   id           String           @id @default(cuid())
   tenantId     String
@@ -909,22 +930,24 @@ model SiloMovement {
   @@index([tenantId])
   @@index([siloId])
 }
+
 model LivestockBatch {
-  id            String            @id @default(cuid())
+  id            String           @id @default(cuid())
   tenantId      String
-  tenant        Tenant            @relation(fields: [tenantId], references: [id])
+  tenant        Tenant           @relation(fields: [tenantId], references: [id])
   name          String
-  category      String            // bezerro, novilho, vaca, touro, boi, etc.
+  category      String // bezerro, novilho, vaca, touro, boi, etc.
   quantity      Int
-  averageWeight Decimal?          @db.Decimal(8, 2) // kg
-  location      String?           // piquete/pasto atual
-  status        String            @default("ACTIVE") // ACTIVE, SOLD
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  averageWeight Decimal?         @db.Decimal(8, 2) // kg
+  location      String? // piquete/pasto atual
+  status        String           @default("ACTIVE") // ACTIVE, SOLD
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   events        LivestockEvent[]
 
   @@index([tenantId])
 }
+
 model LivestockEvent {
   id          String             @id @default(cuid())
   tenantId    String
@@ -934,8 +957,8 @@ model LivestockEvent {
   type        LivestockEventType
   date        DateTime
   weight      Decimal?           @db.Decimal(8, 2) // WEIGHING: peso médio do lote
-  location    String?            // MOVEMENT: novo piquete/pasto
-  description String?           // HEALTH: vacina/tratamento
+  location    String? // MOVEMENT: novo piquete/pasto
+  description String? // HEALTH: vacina/tratamento
   employeeId  String?
   employee    Employee?          @relation(fields: [employeeId], references: [id])
   notes       String?
@@ -945,39 +968,41 @@ model LivestockEvent {
   @@index([tenantId])
   @@index([batchId])
 }
+
 model Certification {
   id                String    @id @default(cuid())
   tenantId          String
   tenant            Tenant    @relation(fields: [tenantId], references: [id])
-  name              String    // Ex: GLOBALG.A.P, Orgânico IBD, Rainforest Alliance
+  name              String // Ex: GLOBALG.A.P, Orgânico IBD, Rainforest Alliance
   issuingBody       String?
   certificateNumber String?
   issueDate         DateTime?
   expiryDate        DateTime?
   status            String    @default("ACTIVE") // ACTIVE, EXPIRED, PENDING
-  scope             String?   // Ex: "Talhões 1-5, Soja"
+  scope             String? // Ex: "Talhões 1-5, Soja"
   notes             String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@index([tenantId])
 }
+
 model IrrigationEvent {
-  id             String    @id @default(cuid())
-  tenantId       String
-  tenant         Tenant    @relation(fields: [tenantId], references: [id])
-  plotId         String
-  plot           Plot      @relation(fields: [plotId], references: [id])
-  date           DateTime
-  method         String?   // pivo, gotejamento, aspersao, etc.
-  durationHours  Decimal?  @db.Decimal(6, 2)
-  flowRate       Decimal?  @db.Decimal(10, 2)
-  volumeApplied  Decimal?  @db.Decimal(10, 2) // mm ou m³
-  employeeId     String?
-  employee       Employee? @relation(fields: [employeeId], references: [id])
-  notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  plotId        String
+  plot          Plot      @relation(fields: [plotId], references: [id])
+  date          DateTime
+  method        String? // pivo, gotejamento, aspersao, etc.
+  durationHours Decimal?  @db.Decimal(6, 2)
+  flowRate      Decimal?  @db.Decimal(10, 2)
+  volumeApplied Decimal?  @db.Decimal(10, 2) // mm ou m³
+  employeeId    String?
+  employee      Employee? @relation(fields: [employeeId], references: [id])
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([tenantId])
   @@index([plotId])
@@ -1013,6 +1038,7 @@ model Professional {
 
   @@index([tenantId])
 }
+
 model Service {
   id          String   @id @default(cuid())
   tenantId    String
@@ -1028,6 +1054,7 @@ model Service {
 
   @@index([tenantId])
 }
+
 model Appointment {
   id             String            @id @default(cuid())
   tenantId       String
@@ -1049,4 +1076,181 @@ model Appointment {
 
   @@index([tenantId, professionalId, startsAt])
   @@index([tenantId, patientId, startsAt])
+}
+
+// ─── Módulo food (restaurantes e lanchonetes) ───────────────────────
+
+/// Onde um item é preparado. Serve para o item aparecer no ecrã certo: o
+/// hambúrguer na chapa, a caipirinha no bar. Uma bebida engarrafada não passa
+/// por preparação nenhuma e vai direta para entregue.
+enum PreparoArea {
+  COZINHA
+  BAR
+  CHAPA
+  SEM_PREPARO
+}
+
+/// Estado de uma mesa no salão. LIVRE e OCUPADA são derivados da existência de
+/// comanda aberta; RESERVADA e INATIVA são decisões de quem gere a casa e por
+/// isso ficam guardadas.
+enum MesaEstado {
+  LIVRE
+  RESERVADA
+  INATIVA
+}
+
+enum ComandaTipo {
+  MESA
+  BALCAO
+  DELIVERY
+}
+
+enum ComandaEstado {
+  ABERTA
+  FECHADA
+  CANCELADA
+}
+
+/// Ciclo de vida de um item dentro da comanda.
+///
+/// LANCADO é o item escrito mas ainda não enviado — dá tempo ao empregado de
+/// corrigir antes de a cozinha começar. Depois de EM_PREPARO já há comida a ser
+/// feita, e cancelar passa a ter custo.
+enum ComandaItemEstado {
+  LANCADO
+  EM_PREPARO
+  PRONTO
+  ENTREGUE
+  CANCELADO
+}
+
+model RestaurantTable {
+  id       String     @id @default(cuid())
+  tenantId String
+  tenant   Tenant     @relation(fields: [tenantId], references: [id])
+  /// Como a casa lhe chama: "12", "Varanda 3", "Balcão 1".
+  nome     String
+  /// Zona do salão, para agrupar no ecrã: salão, varanda, mezanino.
+  zona     String?
+  lugares  Int        @default(2)
+  estado   MesaEstado @default(LIVRE)
+
+  comandas Comanda[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+}
+
+/// O que num restaurante se chama comanda e numa lanchonete é o pedido do
+/// balcão: uma conta aberta que recebe itens ao longo do tempo e só no fim se
+/// transforma em documento fiscal.
+model Comanda {
+  id       String        @id @default(cuid())
+  tenantId String
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  /// Sequencial por cliente, para se poder chamar pelo número em voz alta.
+  numero   Int
+  tipo     ComandaTipo   @default(MESA)
+  estado   ComandaEstado @default(ABERTA)
+
+  mesaId String?
+  mesa   RestaurantTable? @relation(fields: [mesaId], references: [id])
+
+  /// Opcional de propósito: a maioria das contas de balcão não tem cliente
+  /// identificado, e exigir um afastaria as pessoas do sistema.
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  /// Quantas pessoas na mesa. Só serve para dividir a conta.
+  pessoas Int @default(1)
+
+  /// Percentagem de serviço acordada com o cliente no momento de fechar.
+  /// Guardada na comanda e não numa definição global: uma casa pode não
+  /// cobrar serviço no balcão e cobrar na esplanada, e o valor cobrado tem de
+  /// continuar legível daqui a um ano.
+  servicoPct Decimal @default(0) @db.Decimal(5, 2)
+
+  /// Desconto em valor absoluto, na moeda da conta.
+  desconto Decimal @default(0) @db.Decimal(12, 2)
+
+  notas String?
+
+  /// Fatura em que a comanda foi fechada, quando foi.
+  invoiceId String?
+
+  abertaPor String?
+  abertaEm  DateTime  @default(now())
+  fechadaEm DateTime?
+
+  itens ComandaItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, numero])
+  @@index([tenantId, estado])
+  @@index([mesaId])
+}
+
+model ComandaItem {
+  id        String  @id @default(cuid())
+  comandaId String
+  comanda   Comanda @relation(fields: [comandaId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantidade Decimal @db.Decimal(10, 2)
+  /// Copiado do produto no momento do lançamento. Se o preço da casa mudar
+  /// amanhã, a conta de hoje continua a dizer o que se cobrou hoje.
+  precoUnit  Decimal @db.Decimal(12, 2)
+
+  /// "sem cebola", "ao ponto". Vai para a cozinha tal e qual.
+  observacao String?
+
+  estado ComandaItemEstado @default(LANCADO)
+  area   PreparoArea       @default(COZINHA)
+
+  enviadoEm DateTime?
+  prontoEm  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([comandaId])
+  @@index([productId])
+}
+
+/// A face de um produto no cardápio.
+///
+/// O produto continua a ser a entidade de estoque e de fatura — não se duplica.
+/// O que se acrescenta é o que só interessa ao salão: em que secção do menu
+/// aparece, por que ordem, para onde vai preparar-se, e se hoje há.
+model MenuItem {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  /// Único: um produto tem uma face no cardápio, não várias. Duas entradas
+  /// para o mesmo prato seriam dois preços a divergir com o tempo.
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Secção do menu: Entradas, Pratos, Bebidas, Sobremesas.
+  seccao String
+  ordem  Int         @default(0)
+  area   PreparoArea @default(COZINHA)
+
+  /// Acabou hoje. Diferente de desativar o produto: amanhã há outra vez, e o
+  /// histórico de vendas não se toca.
+  disponivel Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, productId])
+  @@index([tenantId, seccao])
 }

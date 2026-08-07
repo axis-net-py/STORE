@@ -32,6 +32,16 @@ export type ModuleManifest = {
    */
   routes: string[];
   /**
+   * Rotas deste módulo a que se chega de dentro, e não pelo menu.
+   *
+   * A comanda de uma mesa é o caso: abre-se carregando na mesa, no salão, que
+   * é como se chega a ela na vida real — uma entrada de menu "Comandas" seria
+   * um sítio onde ninguém carrega. Tem de ser declarado aqui para o teste de
+   * coerência do registo distinguir isto de uma entrada de menu esquecida, que
+   * é a mesma coisa vista do código e o oposto vista do utilizador.
+   */
+  routesSemMenu?: string[];
+  /**
    * Ações de permissão que este módulo introduz, no formato `modulo:nivel`.
    * São semeadas quando o módulo é ativado para um cliente — sem isso o
    * requirePermission nega OPERATOR e AUDITOR (lib/authz.ts:38-52).

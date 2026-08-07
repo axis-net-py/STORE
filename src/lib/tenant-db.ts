@@ -149,6 +149,57 @@ export function baseAtual(): PrismaClient {
   return contexto.getStore()?.client ?? basePartilhada();
 }
 
+/**
+ * Quanto tempo se confia no registo de um cliente sem voltar a lê-lo.
+ *
+ * A hospedagem de um cliente muda uma vez na vida — quando passa de partilhada
+ * para própria. Um minuto de atraso a notar isso é irrelevante; ir ao control
+ * plane em cada consulta seria uma ida à base extra por cada linha lida.
+ */
+const VALIDADE_CACHE_MS = 60_000;
+
+const cacheRegisto = new Map<string, { client: PrismaClient; expira: number }>();
+
+/**
+ * A base deste pedido, resolvida do zero se for preciso.
+ *
+ * Primeiro tenta o contexto, que `auth()` e `requirePermission` fixam quando
+ * conseguem. Quando não há — e não há sempre que a consulta é feita DEPOIS de
+ * uma dessas funções ter retornado, porque o `enterWith` não sobe para o
+ * chamador — lê a sessão e resolve pelo próprio pé.
+ *
+ * A sessão é a única fonte de verdade sobre de quem é o pedido: vem de um JWT
+ * assinado, não de nada que o navegador possa escrever. Fora de um pedido
+ * autenticado — crons, provisionamento, scripts — não há sessão e devolve-se a
+ * partilhada, que é o que esse código espera.
+ */
+export async function baseDoPedido(): Promise<PrismaClient> {
+  const doContexto = contexto.getStore();
+  if (doContexto) return doContexto.client;
+
+  let tenantId: string | null = null;
+  try {
+    // Importado aqui dentro para não criar um ciclo: `auth` importa `prisma`,
+    // que importa este módulo. Em tempo de execução o ciclo já está resolvido.
+    const { auth: lerSessao } = await import("@/auth");
+    const sessao = await lerSessao();
+    tenantId = (sessao?.user as any)?.tenantId ?? null;
+  } catch {
+    // Sem contexto de pedido — código de sistema. Segue para a partilhada.
+    return basePartilhada();
+  }
+
+  if (!tenantId) return basePartilhada();
+
+  const agora = Date.now();
+  const guardado = cacheRegisto.get(tenantId);
+  if (guardado && guardado.expira > agora) return guardado.client;
+
+  const client = await baseDoCliente(tenantId);
+  cacheRegisto.set(tenantId, { client, expira: agora + VALIDADE_CACHE_MS });
+  return client;
+}
+
 /** De que cliente é o contexto atual. Nulo fora de um pedido autenticado. */
 export function tenantDoContexto(): string | null {
   return contexto.getStore()?.tenantId ?? null;
